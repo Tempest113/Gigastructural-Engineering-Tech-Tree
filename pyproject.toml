@@ -1,0 +1,18 @@
+[project]
+name = "gigastructures-tech-tree-pipeline"
+version = "0.1.0"
+description = "Extract/Compute pipeline for the Gigastructural Engineering tech tree visualiser"
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["pipeline*"]

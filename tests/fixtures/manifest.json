@@ -1,0 +1,418 @@
+{
+  "$comment": "Reproduced by tools/regenerate_fixtures.py from vendor/. Do not hand-edit the sha256 fields; run 'python tools/regenerate_fixtures.py --update' after intentionally changing a source/lines/segments value. See tests/fixtures/NOTES.md for what each fixture is testing.",
+  "fixtures": [
+    {
+      "dest": "gigastructures/giga_01_physics.txt",
+      "source": "mods/gigastructures/common/technology/giga_01_physics.txt",
+      "type": "whole",
+      "sha256": "956c9f44492e8f9972e5472c4a32a978b30f93f310b3156aa2ec1963991c3e12"
+    },
+    {
+      "dest": "gigastructures/giga_02_society.txt",
+      "source": "mods/gigastructures/common/technology/giga_02_society.txt",
+      "type": "whole",
+      "sha256": "2fc4ef057ca06a1a8329402f429914e544b126677d94aed625c070ab7c1cfdfb"
+    },
+    {
+      "dest": "gigastructures/giga_03_engineering.txt",
+      "source": "mods/gigastructures/common/technology/giga_03_engineering.txt",
+      "type": "whole",
+      "sha256": "71bc4d4fefd4ea74d5393aab280c5cceae6803c2657a6f38b6106117de662280"
+    },
+    {
+      "dest": "gigastructures/giga_04_repeatables.txt",
+      "source": "mods/gigastructures/common/technology/giga_04_repeatables.txt",
+      "type": "whole",
+      "sha256": "f842e5b4e5c862aa4059d3224565d11796ff4fefb8bb03a1003f943791547042"
+    },
+    {
+      "dest": "gigastructures/giga_06_special_project_tech.txt",
+      "source": "mods/gigastructures/common/technology/giga_06_special_project_tech.txt",
+      "type": "whole",
+      "sha256": "4fa3d243a1e33aeb21b662749c5ac1e4f2bd66893bae3e1053f3ef58785cd7b9"
+    },
+    {
+      "dest": "gigastructures/giga_09_ehof_other.txt",
+      "source": "mods/gigastructures/common/technology/giga_09_ehof_other.txt",
+      "type": "whole",
+      "sha256": "8ebe62f3183804631d07eee46529b21caf428eee85122ef0b566da82e76ab514"
+    },
+    {
+      "dest": "gigastructures/giga_10_katzen.txt",
+      "source": "mods/gigastructures/common/technology/giga_10_katzen.txt",
+      "type": "whole",
+      "sha256": "b4c1c654b5fc1e9aea785eb23e5abaf305e38ab89c5aa38baf08387f360ac980"
+    },
+    {
+      "dest": "gigastructures/giga_11_aeternum.txt",
+      "source": "mods/gigastructures/common/technology/giga_11_aeternum.txt",
+      "type": "whole",
+      "sha256": "d0b8b0df161510aa74f8a58b607daa20140029f6eaf1e5fdcc64078e1d347017"
+    },
+    {
+      "dest": "gigastructures/giga_12_asteroid_artillery.txt",
+      "source": "mods/gigastructures/common/technology/giga_12_asteroid_artillery.txt",
+      "type": "whole",
+      "sha256": "d562f0091fc5d961ca3d8287c9788aa585cf7c8932b33ef4c319484e88088785"
+    },
+    {
+      "dest": "gigastructures/giga_15_maginot.txt",
+      "source": "mods/gigastructures/common/technology/giga_15_maginot.txt",
+      "type": "whole",
+      "sha256": "6bdca7e854eaffa50601d9111fbac738584e5554aa79415aa1055d47bb9b81c5"
+    },
+    {
+      "dest": "gigastructures/giga_17_alternative_mega_build.txt",
+      "source": "mods/gigastructures/common/technology/giga_17_alternative_mega_build.txt",
+      "type": "whole",
+      "sha256": "166de6a5a76b500ea98eb431f7f194b0aabc5a38eddeae97642a44186f20ca5e"
+    },
+    {
+      "dest": "gigastructures/giga_19_nomad.txt",
+      "source": "mods/gigastructures/common/technology/giga_19_nomad.txt",
+      "type": "whole",
+      "sha256": "36b7baf65dcbf3d3c40c7fb7e7458e2a814bef33c8a0d61e42cb3674ef39dbf4"
+    },
+    {
+      "dest": "gigastructures/zz_giga_tech_overwrites.txt",
+      "source": "mods/gigastructures/common/technology/zz_giga_tech_overwrites.txt",
+      "type": "whole",
+      "sha256": "9036ff7bd319c4cc84077acbfe83987307152ca4b7bea72e1a4986853e8e6244"
+    },
+    {
+      "dest": "stellaris/000_documentation.txt",
+      "source": "stellaris/common/technology/000_documentation.txt",
+      "type": "whole",
+      "sha256": "5fbf4e99dfba5e4cc7a1bba614419970d047a71bbd99cca87ad03e6e76aeb5d3"
+    },
+    {
+      "dest": "stellaris/00_ancient_relics_tech.txt",
+      "source": "stellaris/common/technology/00_ancient_relics_tech.txt",
+      "type": "whole",
+      "sha256": "994629cdffce8825c0b30bc3c674cadeebc638d1fe08837188fd6c728c158c22"
+    },
+    {
+      "dest": "stellaris/00_apocalypse_tech.txt",
+      "source": "stellaris/common/technology/00_apocalypse_tech.txt",
+      "type": "whole",
+      "sha256": "cecc3d94af38fc1af26bd1c98e23126e498e41a83a736ba71408774d0bbd3285"
+    },
+    {
+      "dest": "stellaris/00_cosmic_storm_tech.txt",
+      "source": "stellaris/common/technology/00_cosmic_storm_tech.txt",
+      "type": "whole",
+      "sha256": "4e848ed0d3a1b9cd918cf3513af73f589eec6a9c6a19f8a917923cc5199a6e16"
+    },
+    {
+      "dest": "stellaris/00_machine_age_tech.txt",
+      "source": "stellaris/common/technology/00_machine_age_tech.txt",
+      "type": "whole",
+      "sha256": "0b22e080e28e833455b9f64ef9bac6a755d2e2e2d77852e048a960b484482f7b"
+    },
+    {
+      "dest": "stellaris/00_megastructures.txt",
+      "source": "stellaris/common/technology/00_megastructures.txt",
+      "type": "whole",
+      "sha256": "0d6ff678cf8bb87832a9bc828fbb60e7998ff09b24e617c936ca6be704349ab5"
+    },
+    {
+      "dest": "stellaris/00_nomads_dlc_tech.txt",
+      "source": "stellaris/common/technology/00_nomads_dlc_tech.txt",
+      "type": "whole",
+      "sha256": "f27d00eec40acd8a6238c4faab814f505ce3418dbc905d89aa0ce3f084c30cee"
+    },
+    {
+      "dest": "stellaris/00_overlord_tech.txt",
+      "source": "stellaris/common/technology/00_overlord_tech.txt",
+      "type": "whole",
+      "sha256": "1c2727907d20e1fd3e5a22487ce82162fa9e29842b4d32d62c7d9e59c1f808ac"
+    },
+    {
+      "dest": "stellaris/00_shroud_tech.txt",
+      "source": "stellaris/common/technology/00_shroud_tech.txt",
+      "type": "whole",
+      "sha256": "91abd12141483d46582e98dcbebe5a621815b764e62a6cbf91ad5dbb0e4a9d0f"
+    },
+    {
+      "dest": "stellaris/00_strategic_resources_tech.txt",
+      "source": "stellaris/common/technology/00_strategic_resources_tech.txt",
+      "type": "whole",
+      "sha256": "98ea4ca9468cd0ebff4b190de162f0f81cc5f0f2fe61db85c19c89bbed5cc95a"
+    },
+    {
+      "dest": "gigastructures/common/scripted_variables/giga_technology_scripted_variables.txt",
+      "source": "mods/gigastructures/common/scripted_variables/giga_technology_scripted_variables.txt",
+      "type": "whole",
+      "sha256": "8271455753f861f4a5d02d0718aab5a733a7413e3fb3d80c43322c4d4db019f0"
+    },
+    {
+      "dest": "gigastructures/common/scripted_variables/ehof_vars.txt",
+      "source": "mods/gigastructures/common/scripted_variables/ehof_vars.txt",
+      "type": "whole",
+      "sha256": "a154a9fd56f18166da7fb94444316060224f2ebc18e89452f7017f3d21344b93"
+    },
+    {
+      "dest": "gigastructures/common/scripted_variables/zz_giga_compat_overwrite_me.txt",
+      "source": "mods/gigastructures/common/scripted_variables/zz_giga_compat_overwrite_me.txt",
+      "type": "whole",
+      "sha256": "db50e15ce3c4f75e0986406129ae7704f15965454bafe2685310af682b0bb5ce"
+    },
+    {
+      "dest": "gigastructures/common/inline_scripts/technology/giga_ring_world_overwrite.txt",
+      "source": "mods/gigastructures/common/inline_scripts/technology/giga_ring_world_overwrite.txt",
+      "type": "whole",
+      "sha256": "cd5eb6bcebd84cb7048423a016be9a1b39c30ba3dc3fdacce95409c511526d4b"
+    },
+    {
+      "dest": "gigastructures/common/inline_scripts/technology/tech_weight_boni/defensive_tech_weight_bonus.txt",
+      "source": "mods/gigastructures/common/inline_scripts/technology/tech_weight_boni/defensive_tech_weight_bonus.txt",
+      "type": "whole",
+      "sha256": "6c7c2f66aa32aee453a0690d90f02274d2891b0487b81783f2e4fab3fd3c7e56"
+    },
+    {
+      "dest": "gigastructures/common/inline_scripts/technology/tech_weight_boni/ecofriendly_tech_weight_bonus.txt",
+      "source": "mods/gigastructures/common/inline_scripts/technology/tech_weight_boni/ecofriendly_tech_weight_bonus.txt",
+      "type": "whole",
+      "sha256": "549a307599812c5b3c2134bba0c5b6f0b4bc7dbd103893b78e9be836d557fd00"
+    },
+    {
+      "dest": "gigastructures/common/inline_scripts/technology/tech_weight_boni/expansionist_tech_weight_bonus.txt",
+      "source": "mods/gigastructures/common/inline_scripts/technology/tech_weight_boni/expansionist_tech_weight_bonus.txt",
+      "type": "whole",
+      "sha256": "9051a5806024287ba1b024440db815d4672ed3a56b7e316a416dd7813309ea39"
+    },
+    {
+      "dest": "gigastructures/common/inline_scripts/technology/tech_weight_boni/exploitative_tech_weight_bonus.txt",
+      "source": "mods/gigastructures/common/inline_scripts/technology/tech_weight_boni/exploitative_tech_weight_bonus.txt",
+      "type": "whole",
+      "sha256": "6e8eff397e7a92e65db61aead5b5b20e6c15d310646bd69d5cdff6691c07159d"
+    },
+    {
+      "dest": "gigastructures/common/inline_scripts/technology/tech_weight_boni/judgemental_tech_weight_bonus.txt",
+      "source": "mods/gigastructures/common/inline_scripts/technology/tech_weight_boni/judgemental_tech_weight_bonus.txt",
+      "type": "whole",
+      "sha256": "5da61a302497d90a9486939bf93416b185fa3aaf05e3189a1a5259bded738fdf"
+    },
+    {
+      "dest": "gigastructures/common/inline_scripts/technology/tech_weight_boni/maniacal_or_spark_tech_weight_bonus.txt",
+      "source": "mods/gigastructures/common/inline_scripts/technology/tech_weight_boni/maniacal_or_spark_tech_weight_bonus.txt",
+      "type": "whole",
+      "sha256": "7506cf032d3031130759afe5caf019c95c30577d229473115269b2d3a099f4bc"
+    },
+    {
+      "dest": "gigastructures/common/inline_scripts/technology/tech_weight_boni/megaoriented_tech_weight_bonus.txt",
+      "source": "mods/gigastructures/common/inline_scripts/technology/tech_weight_boni/megaoriented_tech_weight_bonus.txt",
+      "type": "whole",
+      "sha256": "4e128f629f7ce1591903ac74413de7a7c1c46fa1dcf64ee1490f5b77c8cd9e47"
+    },
+    {
+      "dest": "gigastructures/common/inline_scripts/technology/tech_weight_boni/militarist_tech_weight_bonus.txt",
+      "source": "mods/gigastructures/common/inline_scripts/technology/tech_weight_boni/militarist_tech_weight_bonus.txt",
+      "type": "whole",
+      "sha256": "e4d3f8173db47e5187880981eb7a23cee8782313e2c7f00e932c2843f2d41d18"
+    },
+    {
+      "dest": "gigastructures/common/inline_scripts/technology/tech_weight_boni/neighbor_spread_tech_weight_bonus.txt",
+      "source": "mods/gigastructures/common/inline_scripts/technology/tech_weight_boni/neighbor_spread_tech_weight_bonus.txt",
+      "type": "whole",
+      "sha256": "a5d960ef93333a39f5a5eda8b64eff23e250cf34f43c2b9f2cf95b7cb5dbbe2d"
+    },
+    {
+      "dest": "gigastructures/common/inline_scripts/technology/tech_weight_boni/scientist_tech_weight_bonus.txt",
+      "source": "mods/gigastructures/common/inline_scripts/technology/tech_weight_boni/scientist_tech_weight_bonus.txt",
+      "type": "whole",
+      "sha256": "049f44cdd3b94e0a0ce895d01c90c4971c4260959ffacb9836308012939b2245"
+    },
+    {
+      "dest": "gigastructures/common/inline_scripts/technology/tech_weight_boni/shipbuilding_tech_weight_bonus.txt",
+      "source": "mods/gigastructures/common/inline_scripts/technology/tech_weight_boni/shipbuilding_tech_weight_bonus.txt",
+      "type": "whole",
+      "sha256": "5e89f7158d6cfac46a5d9421404374870a2b73a5593aaa5fb184798421ba0d12"
+    },
+    {
+      "dest": "gigastructures/common/inline_scripts/technology/tech_weight_boni/spiritualist_tech_weight_bonus.txt",
+      "source": "mods/gigastructures/common/inline_scripts/technology/tech_weight_boni/spiritualist_tech_weight_bonus.txt",
+      "type": "whole",
+      "sha256": "368d61e07519bc3d3baf069119306f0de120321c523257062e31ca7e8dae752d"
+    },
+    {
+      "dest": "stellaris/common/scripted_variables/00_scripted_variables.txt",
+      "source": "stellaris/common/scripted_variables/00_scripted_variables.txt",
+      "type": "whole",
+      "sha256": "2cd43ee7ea6153dfeded4e2056c474bbddafc490fc8040171567df0598fd1403"
+    },
+    {
+      "dest": "stellaris/common/inline_scripts/technologies/cosmic_storms_technologies_cost_modifiers.txt",
+      "source": "stellaris/common/inline_scripts/technologies/cosmic_storms_technologies_cost_modifiers.txt",
+      "type": "whole",
+      "sha256": "5567d148800a2b0d4fd47c6dee991f635d337efac00cd6337420279c1052407a"
+    },
+    {
+      "dest": "stellaris/common/inline_scripts/technologies/cosmic_storms_technologies_weight_modifiers.txt",
+      "source": "stellaris/common/inline_scripts/technologies/cosmic_storms_technologies_weight_modifiers.txt",
+      "type": "whole",
+      "sha256": "94d7d3b38ac6b79b66e21b4d7a8e7ffb86f5dbc7265217e91bc45fe50029715a"
+    },
+    {
+      "dest": "stellaris/common/inline_scripts/technologies/rare_technologies_weight_modifiers.txt",
+      "source": "stellaris/common/inline_scripts/technologies/rare_technologies_weight_modifiers.txt",
+      "type": "whole",
+      "sha256": "9e36365be176623a29217586ebcaa674e59a1fbf3619b7aeabcae1bc495c1426"
+    },
+    {
+      "dest": "stellaris/common/inline_scripts/ai/weapon_preference_weight.txt",
+      "source": "stellaris/common/inline_scripts/ai/weapon_preference_weight.txt",
+      "type": "whole",
+      "sha256": "86649b8efcd3edd8aa99842b23903ae3a97b3121a0bd7f419b26d0847f60c24a"
+    },
+    {
+      "dest": "gigastructures/common/scripted_triggers/ehof_triggers.txt",
+      "source": "mods/gigastructures/common/scripted_triggers/ehof_triggers.txt",
+      "type": "excerpt",
+      "lines": [
+        1,
+        23
+      ],
+      "sha256": "5df0ee75881bc12c4fba01926b22052cd5bb71e3e6f9d63660d576f77b933289"
+    },
+    {
+      "dest": "gigastructures/common/scripted_triggers/giga_frameworld_triggers.txt",
+      "source": "mods/gigastructures/common/scripted_triggers/giga_frameworld_triggers.txt",
+      "type": "excerpt",
+      "lines": [
+        1,
+        6
+      ],
+      "sha256": "db7f5002ba244313aa12015940fa9ade137c92e6db1ca6c1221cca9fc45d8c2d"
+    },
+    {
+      "dest": "gigastructures/common/scripted_triggers/giga_megastructure_type_triggers.txt",
+      "source": "mods/gigastructures/common/scripted_triggers/giga_megastructure_type_triggers.txt",
+      "type": "excerpt",
+      "lines": [
+        964,
+        975
+      ],
+      "sha256": "ddababbe4d150b45721f60d5a89d4151c7c127501acaea353d073c6dbb798c8d"
+    },
+    {
+      "dest": "stellaris/common/scripted_triggers/00_scripted_triggers.txt",
+      "source": "stellaris/common/scripted_triggers/00_scripted_triggers.txt",
+      "type": "excerpt",
+      "lines": [
+        2532,
+        2539
+      ],
+      "sha256": "bdb456d3bd547c036474590022b94f4f35c958c44278bf3ee8e79fc8f05a0e6c"
+    },
+    {
+      "dest": "acot/acot_tech_dark_matter_power_core_dm.txt",
+      "source": "mods/acot/common/technology/acot_01_delta_components_tech.txt",
+      "type": "excerpt",
+      "lines": [
+        30,
+        64
+      ],
+      "sha256": "74009b83fab044b70e0de507c97ade2e4f4996d5506928320e796262f4296d11"
+    },
+    {
+      "dest": "acot/acot_tech_dark_matter_power_core_ae.txt",
+      "source": "mods/acot/common/technology/acot_02_alpha_components_tech.txt",
+      "type": "excerpt",
+      "lines": [
+        9,
+        79
+      ],
+      "sha256": "71a1c22006b675db464fdb5c5d998b2c2485a7ba53bd362f07fc25483ea1b9cb"
+    },
+    {
+      "dest": "acot/acot_tech_dark_matter_power_core_se.txt",
+      "source": "mods/acot/common/technology/acot_03_stellarite_components_tech.txt",
+      "type": "excerpt",
+      "lines": [
+        693,
+        744
+      ],
+      "sha256": "927af321c13bc006d9acc5cb4b0d9f7d4522cffb2497b3e06b28510885820653"
+    },
+    {
+      "dest": "acot/acot_tech_precursor_gateway.txt",
+      "source": "mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "type": "excerpt",
+      "lines": [
+        2285,
+        2314
+      ],
+      "sha256": "f378696f8cd4066c9713f8388d181654b329842771687e3a283780b9a3995dc8"
+    },
+    {
+      "dest": "acot/common/scripted_variables/acot_scripted_variables_tech_cost.txt",
+      "source": "mods/acot/common/scripted_variables/acot_scripted_variables_tech_cost.txt",
+      "type": "whole",
+      "sha256": "c6be330ae9ba8e30a6d835591128f3d6658a7c65ba0d426c78b158ad40641345"
+    },
+    {
+      "dest": "aot/aot_tech_civil_phanon_application.txt",
+      "source": "mods/aot/common/technology/z_aot_phanon_building_tech.txt",
+      "type": "excerpt",
+      "lines": [
+        1,
+        35
+      ],
+      "sha256": "212248bb6de75be9289ef542d8fc1a524d08993f43b9835d3f5a4c3bb235cac1"
+    },
+    {
+      "dest": "aot/z_aot_mega_tech_override.txt",
+      "source": "mods/aot/common/technology/z_aot_mega_tech_override.txt",
+      "type": "whole",
+      "sha256": "e7d64e02f235bcb8455756f9328ec5bf5894783c9584b424c0ef1e59403e615a"
+    },
+    {
+      "dest": "localisation/stellaris/technology_l_english.yml",
+      "source": "stellaris/localisation/english/technology_l_english.yml",
+      "type": "whole",
+      "sha256": "ed1088dc264f5b9c5a79c15f9d8dcc54cbf41d298eb5731cb08a6ccecc96a14c"
+    },
+    {
+      "dest": "localisation/gigastructures/giga_tech_overwrites_l_english.yml",
+      "source": "mods/gigastructures/localisation/english/giga_tech_overwrites_l_english.yml",
+      "type": "whole",
+      "sha256": "8a9d876868a1544b653acdd3fb8e69cec840fc1f5c5a4c7d623d02b6d5dcbbb6"
+    },
+    {
+      "dest": "localisation/gigastructures/giga_orbital_elysium_l_english.yml",
+      "source": "mods/gigastructures/localisation/english/giga_orbital_elysium_l_english.yml",
+      "type": "whole",
+      "sha256": "e58919745930edbb24c6ee8bd355acdb290c6da99ca2a15969b194a04de543fe"
+    },
+    {
+      "dest": "localisation/gigastructures/giga_l_english_excerpt.yml",
+      "source": "mods/gigastructures/localisation/english/giga_l_english.yml",
+      "type": "spliced-excerpt",
+      "segments": [
+        [
+          1,
+          1
+        ],
+        [
+          159,
+          160
+        ],
+        [
+          1556,
+          1556
+        ],
+        [
+          4130,
+          4131
+        ],
+        [
+          6179,
+          6180
+        ]
+      ],
+      "separator": "\r\n",
+      "sha256": "8a9ed7b14ae21295546643211ae53d5c3cd9a99cb7797bd4b5b00e42a19722ce"
+    }
+  ]
+}

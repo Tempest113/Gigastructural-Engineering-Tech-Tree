@@ -1,0 +1,23 @@
+tech_malformed_unclosed = {
+	area = physics
+	cost = @tier3cost1
+	tier = 3
+	category = { particles }
+	prerequisites = { "tech_lasers_1" }
+	weight = @tier3weight1
+
+	potential = {
+		OR = {
+			is_nomadic = yes
+			has_technology = tech_lasers_2
+		}
+		is_gestalt = no
+	}
+
+	weight_modifier = {
+		factor = 1
+		modifier = {
+			factor = 0.5
+			is_pacifist = yes
+		}
+	}

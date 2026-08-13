@@ -7,9 +7,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Interactive tech tree visualiser for the Stellaris mod *Gigastructural Engineering & More*.
 Static client-side site, deployed to GitHub Pages. No backend, ever.
 
-The normative requirements live in `spec/`. This file records decisions that are
-settled, so they are not re-litigated. If something here conflicts with `spec/`,
-this file is newer — flag the conflict and amend the spec.
+The normative requirements live in `spec/`. This file is a **summary** of `spec/`, kept here so
+settled decisions aren't re-litigated. `spec/` is authoritative — if this file conflicts with
+`spec/`, `spec/` wins; fix this file to match, don't amend the spec to match this file.
+
+**Whenever a decision in `spec/` changes, re-check and update this file in the same session.**
+A changed requirement, resolution, or renamed concept in `spec/` that has a summary here (empire
+model, ACOT/AoT scope, prerequisites, trigger evaluation, tiers, colour and pattern, repeatables,
+repository links, research weight/path, localisation, the rules below) is stale the moment
+`spec/` changes, and stale project memory is worse than no memory — don't defer the sync to a
+later session or a separate pass.
 
 ## Architecture
 
@@ -71,12 +78,24 @@ origin-gated techs turn up during extraction, add a fact, do not restructure.
 **Ascension perks are gates, not profile facts.** A perk-gated tech always displays its gate.
 The tree shows what you would need; it never assumes you have it.
 
-### Mods as a user-facing dimension
+### Scope of ACOT and AoT
 
-A mod-set selector sits beside the empire-type selector: checkboxes for ACOT and AoT, both on
-by default, URL-encoded. Unticking ACOT force-unticks and disables AoT. Mod requirement is a
-`requiresMods: string[]` field rendered as a card badge (`ACOT`, `AoT`) — distinct from gates
-and from prerequisites.
+The tree renders vanilla and Gigastructures technologies unconditionally. ACOT and AoT
+technologies are rendered only where they fall in the **rendering-scope closure** of a rendered
+technology — `prerequisite` edges only, pooled across all twelve profiles — so a rendered
+technology's prerequisite chain is never broken by an invisible gap. An ACOT/AoT technology with
+no rendered descendant is not emitted as a node. This is a build-time computation, not a
+user-facing filter — there is no checkbox and no mod-set URL state. Mod requirement is a
+`requiresMods: string[]` field rendered as a card badge (`ACOT`, `AoT`) — distinct from gates and
+from prerequisites — that communicates the requirement without toggling visibility.
+
+Rendering scope is a separate computation from **per-profile structural reachability**: because
+the closure above is profile-invariant, a node reachable via only one profile's tech-swap chain
+still renders for all twelve. For the other eleven, a second check — over *all three* edge kinds
+(`prerequisite`, `potential-gate`, `alternative`), never just `prerequisite` — decides whether the
+node is actually reachable for that profile; if not, it renders locked with a structure-derived
+reason. Conflating the two checks is a correctness bug: it wrongly locks a node that a
+`potential-gate` or `alternative` edge actually reaches for that profile. See P-16.
 
 ### Prerequisites
 
@@ -114,8 +133,13 @@ Background encodes research area. Outline encodes research area unless the tech 
 dangerous, in which case that takes priority. Dangerous outranks rare. A tech that is both gets
 a 45° split outline, dangerous red on the top-left half.
 
-Colour is never the sole carrier. Rare and dangerous each also get a card badge, shedding at
-the same LOD threshold as the gate label.
+Colour is never the sole carrier. Rare and dangerous each also get a card badge. The LOD shedding
+sequence is one shared table (spec/S-03): gate label and repeatable shed first (<60% zoom), then
+rare (<35%), then gate icon and tier badge (<20%), then dangerous last of the badges (<10%,
+deliberately kept longest since it's safety-critical), then crisis patterns go solid (<7%), then
+the node reduces to a flat coloured block (<5%). Rare and dangerous do **not** shed together, and
+neither sheds "at the same threshold as the gate label" — see spec/S-03 for the authoritative
+table rather than restating specific thresholds here.
 
 Crisis factions: Aeternum, Blokkats, Compound, Sirenalia, Katzenartig Imperium. Faction
 assignment is derived from tech ID, then from `potential`/prerequisites, then from a checked-in
@@ -124,7 +148,10 @@ manual override file for the remainder.
 Exact hex values live in `tokens/` as the single source of truth, consumed by node rendering
 and connector rendering alike. Do not hardcode colours in components.
 
-*(Palette values pending sign-off — see open items.)*
+Palette signed off: Aeternum `#823269`; Blokkats node fill `#2A6B2A` with pattern stroke
+`#63A85C` (`#1C451C`, the authentic flag colour, reserved for tier-band/lane backing, not node
+fill); Compound `#2F137F`; Sirenalia `#B0338C` with high-contrast sweeping bands; Katzenartig
+`#2E3F98` with `#CC9429`.
 
 ### Repeatables
 
@@ -132,9 +159,11 @@ Shown on the card and in the popup as `Repeatable: ×40`, or `Repeatable: ∞` w
 
 ### Repository links
 
-Gigastructures permalink pinned to the build commit, targeting file and line range, where an
-override exists. Otherwise a Stellaris wiki link. CI validates that wiki anchors resolve and
-falls back to a wiki search URL where they do not — the field is always populated, never dead.
+Three branches, always populated, never dead. Gigastructures permalink pinned to the build
+commit, targeting file and line range, where an override exists. ACOT/AoT-sourced technologies
+link to that mod's Steam Workshop item page (no commit-pinned permalink is possible for a
+Workshop item, and it isn't vanilla either). Otherwise a Stellaris wiki link. CI validates that
+wiki anchors resolve and falls back to a wiki search URL where they do not.
 
 ### Research weight
 
@@ -158,7 +187,7 @@ English only for v1. The pipeline is language-parameterised so more languages ar
 - The build fails rather than emitting a partial dataset. Fail on parse errors, graph cycles,
   dangling references, missing localisation for displayed strings, missing icons, schema
   violations, dead repository links.
-- All shareable state goes in the URL: empire type, mod set, filters, search, open popup.
+- All shareable state goes in the URL: empire type, filters, search, open popup.
 - No runtime re-layout. Filtering, search and isolation are visibility masks.
 - Every hover behaviour needs a tap or press equivalent. Pointer Events only — no separate
   mouse and touch code paths.
@@ -166,13 +195,19 @@ English only for v1. The pipeline is language-parameterised so more languages ar
 
 ## Commands
 
-*(To be filled in as the pipeline lands.)*
-
     python tools/collect_vanilla.py     # populate vendor/ from the local Steam install
+    python tools/regenerate_fixtures.py # reproduce tests/fixtures/ from vendor/ (needs vendor/ populated)
+    pip install -e ".[dev]"             # install the pipeline package + pytest
+    pytest                              # run the pipeline test suite
+
+*(Extract/Compute pipeline commands beyond the Clausewitz parser — dataset build, CI entry
+points — to be filled in as they land.)*
 
 ## Open items
 
-- Palette hex values not yet signed off. Blokkat `#1C451C` is too dark to survive the low-zoom
-  LOD; Compound `#2F137F` and Katzenartig `#2E3F98` collide at low zoom.
 - Pattern tile for Blokkats needs tracing to clean SVG from the supplied flag image.
-- Repo layout and package scaffolding not yet created.
+- Repo layout: `pipeline/clausewitz/` (tokeniser + recursive-descent parser, lossless AST) is
+  built and green against every fixture in `tests/fixtures/`. Not yet built: `@variable`
+  resolution, `inline_script` expansion, localisation YAML parsing, overwrite resolution, DAG
+  build, trigger evaluation, tier/column/edge computation, dataset emission — the rest of
+  Stage 1 and all of Stage 2.

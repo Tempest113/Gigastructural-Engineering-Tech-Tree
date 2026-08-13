@@ -1,3 +1,22 @@
 vendor/
 .idea
 .claude/settings.local.json
+
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+.venv/
+
+# tests/fixtures/ is reproduced from vendor/ (Stellaris + Steam Workshop mod source) by
+# tools/regenerate_fixtures.py, driven by the committed tests/fixtures/manifest.json. The
+# reproduced content itself is not committed, for the same redistribution reason as vendor/.
+# Hand-authored fixtures with no third-party content (malformed/, encoding/) are exceptions
+# and stay tracked.
+tests/fixtures/*
+!tests/fixtures/NOTES.md
+!tests/fixtures/manifest.json
+!tests/fixtures/malformed
+!tests/fixtures/malformed/*
+!tests/fixtures/encoding
+!tests/fixtures/encoding/*

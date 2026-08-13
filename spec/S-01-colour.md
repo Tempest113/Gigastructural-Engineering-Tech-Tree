@@ -22,10 +22,13 @@ outline, dangerous red occupying the top-left half so it reads first on a left-t
 | Society | green | flat |
 | Engineering | orange | flat |
 | Aeternum | `#823269` | honeycomb, regular hexagons |
-| Blokkats | `#1C451C` (see below) | Blokkat flag arrow, tiled, light green outline |
+| Blokkats | `#2A6B2A`, pattern stroke `#63A85C` | Blokkat flag arrow, tiled, light green outline |
 | Compound | `#2F137F` | fused overlapping cells |
-| Sirenalia | *unresolved, see below* | soft sweeping bands |
+| Sirenalia | `#B0338C` | soft sweeping bands, high-contrast |
 | Katzenartig Imperium | `#2E3F98` with `#CC9429` | gold saltire lattice |
+
+`#1C451C` — the authentic Blokkat flag green — is reserved for the tier-band or lane backing, not
+the node fill; see below.
 
 ## Acceptance criteria
 
@@ -46,21 +49,27 @@ outline, dangerous red occupying the top-left half so it reads first on a left-t
 ## Implied technical decisions
 
 - Patterns MUST degrade gracefully. Per-node pattern fills become prohibitively expensive at
-  low zoom, so below a defined threshold the renderer switches to a solid treatment. That
-  threshold lives in the shared LOD table with S-3 and the badge-shedding rules.
+  low zoom, so below 7% zoom the renderer switches to a solid fill of the same background
+  colour — S-3's level-of-detail table, "Pattern degradation" stage, is the single definition of
+  this threshold; it is not decided independently here.
 - **The degraded state is where the palette must still work.** Two identities that differ only
-  by pattern become indistinguishable the moment the pattern sheds. Every pair of background
-  colours MUST remain distinguishable as flat fills.
+  by pattern become indistinguishable the moment the pattern sheds. **Every pair of background
+  colours MUST differ by at least 15 CIEDE2000 units**, measured as flat fills (pattern removed).
+  This is a measurable, CI-checkable replacement for "distinguishable" — the build MUST compute
+  pairwise ΔE2000 across the full token set and fail if any pair is under threshold, the same way
+  the WCAG AA text-contrast rule above is checked mechanically rather than eyeballed.
+- Below S-3's coloured-block LOD threshold, colour is permitted to be the sole carrier — see
+  S-3's level-of-detail table for that explicit, narrow exception to the rule above.
 
-## UNRESOLVED — two palette conflicts
+## Resolved — two palette conflicts
 
-**Blokkat green is too dark.** `#1C451C` against a dark application background reads as a
-tinted hole rather than a green node once the pattern sheds at low zoom. Proposed resolution:
-lift the node fill to approximately `#2A6B2A` and retain `#1C451C` for the tier-band or lane
-backing, so the authentic flag colour still appears.
+**Blokkat green was too dark.** `#1C451C` against a dark application background read as a
+tinted hole rather than a green node once the pattern shed at low zoom. Resolved: the node fill
+is lifted to `#2A6B2A`, with pattern stroke `#63A85C` for legible detail on the flat fill.
+`#1C451C`, the authentic flag colour, is retained for the tier-band or lane backing rather than
+dropped.
 
-**Sirenalia and Aeternum collide.** The reference treatment uses a muted plum field on which
-the soft sweeping bands are visible; the bands disappear against a bright magenta. But muted
-plum is adjacent to Aeternum's `#823269`, and the two merge once patterns shed. Resolution
-requires choosing one of: bright magenta with harder-edged waves, or muted plum with Aeternum
-moved to a different hue.
+**Sirenalia and Aeternum collided.** The reference treatment's muted plum field sat adjacent to
+Aeternum's `#823269` and the two merged once patterns shed. Resolved: Sirenalia moves to
+`#B0338C`, a high-contrast magenta clear of Aeternum's hue, with the sweeping-band pattern
+redrawn harder-edged so it stays visible against the brighter field.

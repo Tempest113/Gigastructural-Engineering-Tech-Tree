@@ -1,0 +1,17 @@
+tech_malformed_stray_token = {
+	area = physics
+	cost = @tier2cost2
+	tier = 2
+	category = { particles }
+	weight = @tier2weight2
+}
+
+oops_forgot_to_delete_this_debug_line
+
+tech_malformed_stray_token_neighbour = {
+	area = society
+	cost = @tier1cost2
+	tier = 1
+	category = { statecraft }
+	weight = @tier1weight2
+}

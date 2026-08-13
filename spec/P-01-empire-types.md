@@ -15,6 +15,11 @@ Empire type is modelled as **three independent axes composed at build time** (se
 Twelve profiles. The axes are genuinely independent: any authority type can be nomadic, and
 nomadic empires use either shipset.
 
+**Default profile.** On a first visit with no empire-profile URL parameter, the tool MUST render
+immediately using **regular authority, mechanical shipset, non-nomadic** as the default profile.
+The user is never forced to choose a profile before seeing the tree; the default is simply
+whatever the URL encodes once they do.
+
 ## Acceptance criteria
 
 - A visible, persistent empire selector is present in the primary UI, exposing the axes rather

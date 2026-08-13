@@ -1,0 +1,11 @@
+﻿tech_encoding_utf8_bom = {
+	area = physics
+	cost = @tier2cost2
+	tier = 2
+	category = { particles }
+	weight = @tier2weight2
+
+	potential = {
+		is_nomadic = no
+	}
+}

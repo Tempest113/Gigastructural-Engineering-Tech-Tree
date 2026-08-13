@@ -1,0 +1,12 @@
+tech_encoding_windows1252 = {
+	area = society
+	cost = @tier2cost1
+	tier = 2
+	category = { statecraft }
+	weight = @tier2weight1
+
+	# The archivist’s notes — recovered from a café terminal, saved as ANSI by mistake
+	potential = {
+		is_nomadic = no
+	}
+}

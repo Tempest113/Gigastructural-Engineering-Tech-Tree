@@ -1,0 +1,11 @@
+tech_encoding_line_endings = {
+	area = engineering
+	cost = @tier2cost3
+	tier = 2
+	category = { industry }
+	weight = @tier2weight3
+
+	potential = {
+		is_nomadic = no
+	}
+}

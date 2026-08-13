@@ -1,0 +1,21 @@
+tech_malformed_extra_brace = {
+	area = engineering
+	cost = @tier2cost1
+	tier = 2
+	category = { industry }
+	prerequisites = { "tech_mining_1" }
+	weight = @tier2weight1
+
+	potential = {
+		is_nomadic = no
+	}
+}
+}
+
+tech_malformed_extra_brace_neighbour = {
+	area = society
+	cost = @tier1cost1
+	tier = 1
+	category = { statecraft }
+	weight = @tier1weight1
+}

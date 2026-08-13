@@ -36,9 +36,14 @@ and a confidently wrong number is worse than an honest base plus conditions.
 
 ## D-5 — Repository links (was OQ-5)
 
-The field is always rendered. Where Gigastructures overrides the technology, the link is a
-permalink pinned to the build's source commit, targeting the file and line range. Otherwise it
-links to the Stellaris wiki.
+The field is always rendered, with three branches:
+
+- Where Gigastructures overrides the technology: a permalink pinned to the build's source
+  commit, targeting the file and line range.
+- Where the technology is ACOT- or AoT-sourced (P-16): a link to that mod's Steam Workshop item
+  page. Workshop items have no commit-pinned line-range permalink, and the technology isn't
+  vanilla, so neither of the other two branches applies.
+- Otherwise (unmodified vanilla): a link to the Stellaris wiki.
 
 Wiki anchors derive from the localised technology name, so they are right most of the time and
 silently wrong occasionally. CI validates that each anchor resolves in the fetched page and
@@ -85,12 +90,22 @@ translations is worse than shipping one verified language.
 
 ## D-10 — Unknown availability tolerance (was OQ-10)
 
-- Hard ceiling: 10% of technologies may resolve to `unknown`. Above this the build fails.
-- Warn threshold: 3%.
-- Ratchet: CI fails if the `unknown` count rises against the previous dataset, even when the
-  absolute figure is under 10%.
+Thresholds are measured **per empire profile**, not pooled across all twelve. Each profile's
+build produces its own `unknown` percentage (unknown technologies for that profile ÷ total
+technologies).
 
-Without the ratchet, 10% becomes the resting state rather than the ceiling.
+- Hard ceiling: 10% for any single profile. If the **worst** profile exceeds 10%, the build
+  fails — one bad profile fails the build even if the other eleven are well under.
+- Warn threshold: 3%, per profile.
+- Ratchet: CI fails if any individual profile's `unknown` count rises against that same profile's
+  figure in the previous dataset, even when the absolute figure is under 10%.
+
+Pooling across profiles would let a bug that makes one specific profile (say, machine
+intelligence) resolve badly hide inside an average dominated by the other eleven — exactly the
+kind of profile-specific evaluator bug this threshold exists to catch. Measuring and ratcheting
+per profile is the only way the ceiling means what it says for every profile a user can select,
+not just the fleet average. Without the ratchet, 10% becomes the resting state rather than the
+ceiling.
 
 ## D-11 — Rendering stack
 

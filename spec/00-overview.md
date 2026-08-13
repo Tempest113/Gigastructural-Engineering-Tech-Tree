@@ -19,8 +19,10 @@ user documentation.
 Out of scope: editing mod content; save-game parsing; server-side components of any kind. The
 deliverable is a static site.
 
-Mods other than Gigastructures are out of scope **as rendered content**. They are in scope as
-*resolution sources* where Gigastructures depends on them — see `P-16-mod-requirements.md`.
+Mods other than Gigastructures are rendered only where necessary: an ACOT or AoT technology is
+emitted as a node only if it falls in the rendering-scope closure of a rendered vanilla or
+Gigastructures technology, so that no rendered technology's prerequisite chain has an invisible
+gap. There is no user-facing control over this — see `P-16-mod-requirements.md`.
 
 ## Sources and load order
 
@@ -58,6 +60,7 @@ logic actually warrants.
 | Tier | The technology's declared `tier` value. Drives column assignment. Range is unbounded |
 | Area | Vanilla research area: physics, society, engineering. Drives background colour |
 | Category | Sub-category such as Computing, Voidcraft, Psionics. Drives category filtering |
+| Rare | A technology flagged by the mod's own rarity marker in source data, mirroring how "dangerous" is derived from the mod's own dangerous flag (P-12.3). Drives the outline-priority and badge treatment in S-1 |
 | Gate | A non-prerequisite unlock condition displayed on the node, such as an ascension perk |
 | Mod requirement | A dependency on a mod other than Gigastructures. Distinct from a gate |
 | Empire profile | A composed point in the empire axis space, supplying trigger facts |

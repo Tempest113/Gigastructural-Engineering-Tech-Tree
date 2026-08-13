@@ -45,10 +45,8 @@ issues, commits and tests reference them directly. RFC 2119 language throughout.
 | Scheduled upstream sync limited to Gigastructures | P-10 | ACOT and AoT are Steam Workshop only, not pinnable |
 | Repository link falls back to the Stellaris wiki | P-12 | Unmodified vanilla techs are not in the Gigastructures repo |
 | English only for v1, pipeline language-parameterised | P-11, P-12 | Non-English localisation cannot be quality-checked |
+| Palette conflicts resolved: Blokkat fill lifted, Sirenalia rehued | S-01 | Blokkat green survived low-zoom LOD poorly; Sirenalia collided with Aeternum |
 
 ## Unresolved
 
-- **Scope of ACOT and AoT.** See `P-16-mod-requirements.md`. Does the tree render their
-  technologies, or vendor them only to resolve Gigastructures placeholder techs?
-- **Palette hex values.** See `S-01-colour.md`. Blokkat green is too dark to survive the
-  low-zoom LOD; Sirenalia and Aeternum collide if Sirenalia stays muted.
+None currently.

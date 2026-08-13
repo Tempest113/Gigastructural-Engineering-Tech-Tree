@@ -8,8 +8,24 @@ or in the same column as, any of its prerequisites.
 MUST be enumerated from the dataset at build time. No fixed upper bound may appear anywhere in
 layout, level-of-detail thresholds, band labelling, or the colour token set.
 
-Repeatable technologies occupy a dedicated terminal band labelled "Repeatables", positioned
+Repeatable technologies occupy a dedicated terminal column labelled "Repeatables", positioned
 after the highest numeric tier.
+
+Tier columns and crisis lanes (P-5) are **orthogonal**: columns run vertically and are assigned
+identically regardless of lane; lanes run horizontally and partition the standard-progression
+technologies from each crisis faction's. Every technology has exactly one column and one lane. A
+crisis-faction technology that is also repeatable occupies the Repeatables column within its own
+faction's lane — the two axes compose, neither one overrides the other.
+
+**The column grid is global and single.** Every lane spans the full grid, from T0 (or the lowest
+enumerated tier) through the Repeatables column, regardless of what that lane's own technologies
+actually use. A lane whose technologies stop at T5 still has T6-through-Repeatables columns; they
+render empty. This is required so the shared coordinate space (P-5) stays valid for cross-lane
+edge routing (P-8) — a column index means the same tier in every lane, with no per-lane
+renumbering — and it is also the honest representation: an empty column is a visible statement
+that the faction has no content at that tier, not a gap papered over by compression. Lanes are
+fitted **vertically** to their content only (a lane with five technologies is short; one with
+fifty is tall); they are never fitted or compressed horizontally.
 
 ## Acceptance criteria
 
@@ -31,6 +47,8 @@ after the highest numeric tier.
   an acceptable additional constraint.
 - Layout MUST be computed at build time and stored as coordinates in the dataset. Runtime
   layout of a graph this size is incompatible with P-9 and P-10.
-- The layout engine MUST support **multiple layout zones** with independent internal ordering
-  but a shared coordinate space, so crisis regions (P-5) and the repeatables band can be
-  positioned separately while cross-zone edges still route (P-8).
+- The layout engine MUST support **multiple horizontal lanes** (the standard-progression lane
+  plus one per crisis faction, P-5) sharing one column axis and one coordinate space, with
+  independent vertical ordering within each lane, so cross-lane edges still route (P-8). The
+  repeatables column is not a separate zone — it is an ordinary terminal column, present within
+  every lane that has repeatable technologies.
