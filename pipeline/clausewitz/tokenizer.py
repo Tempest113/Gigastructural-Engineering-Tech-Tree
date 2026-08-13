@@ -110,14 +110,20 @@ class Tokenizer:
         return Token(TokenType.COMMENT, "".join(chars), line, column)
 
     def _scan_string(self, line: int, column: int) -> Token:
+        # Strings CAN span multiple lines — confirmed in real content (e.g.
+        # `BUILDING_SETS = "\n    industrial\n    ...\n"` and the `code = "..."`
+        # embedded-script-as-string idiom in zzz_overwrites.txt; see
+        # tests/fixtures/NOTES.md). Scan to the next unescaped '"' or EOF, never stopping at
+        # '\n' — only EOF with no closing quote found is actually unterminated.
+        #
         # Token.text carries the RAW content between the quotes (escapes left un-resolved);
         # the parser resolves \" and \\ when building StringLiteral.value. Only the escaped
         # quote is treated specially here, and only to avoid ending the string on it.
         self._advance()  # consume opening '"'
         chars = []
         while True:
-            if self._at_end() or self._peek() == "\n":
-                raise self._error("unterminated string (no closing '\"' before end of line)", line, column)
+            if self._at_end():
+                raise self._error("unterminated string (no closing '\"' before end of file)", line, column)
             ch = self._advance()
             if ch == '"':
                 break

@@ -8,9 +8,9 @@ relative to `vendor/`, whether it's a whole file or which lines it excerpts, and
 exact bytes. Run `python tools/regenerate_fixtures.py` (with a populated `vendor/`, per
 `CLAUDE.md`'s "Source data") to reproduce the actual files locally; it fails loudly, rather than
 writing anything, if `vendor/` is missing or if a source file's content no longer matches the
-hash recorded when the fixture was captured. `malformed/` and `encoding/` are hand-authored, not
-vendor-derived, carry no third-party content, and are committed directly — the script doesn't
-touch them.
+hash recorded when the fixture was captured. `malformed/`, `encoding/` and `variables/` are
+hand-authored, not vendor-derived, carry no third-party content, and are committed directly —
+the script doesn't touch them.
 
 Real files copied from `vendor/`, selected to exercise the hard cases called out in `CLAUDE.md`
 and `spec/`: inline script expansion, scripted-variable references, duplicate keys, deeply nested
@@ -213,6 +213,11 @@ reference used above resolve. The top-level technology fixtures stay flat (not m
   whole-key-replacement resolution rule applied to scripted variables instead of technologies;
   pair these two files to test that the resolver doesn't special-case "variables" differently from
   "technologies."
+- **`gigastructures/common/scripted_variables/giga_amb_variables.txt`** (260 lines, whole file) —
+  line 5, `@giga_amb_flag = giga_buildcap_j`, is a scripted variable whose value is a **bare
+  identifier, not a number** — the resolver must not assume every resolved variable is numeric.
+  Pairs with `giga_17_alternative_mega_build.txt`'s `has_global_flag = @giga_amb_flag`, already a
+  fixture: that's the reference site, this is the definition site.
 - **`gigastructures/common/inline_scripts/technology/giga_ring_world_overwrite.txt`** (7 lines) —
   resolves the `inline_script` used three times in `zz_giga_tech_overwrites.txt`.
 - **`gigastructures/common/inline_scripts/technology/tech_weight_boni/*.txt`** (11 files,
@@ -265,6 +270,19 @@ line ranges from their source file (cited), not reformatted.
   wrapped in a scripted trigger rather than a bare `has_ascension_perk` check in the tech file
   itself, so gate-pattern matching that only looks at literal trigger tokens in the tech file
   (without expanding scripted triggers first) will miss it.
+- **`gigastructures/common/scripted_triggers/zzz_overwrites.txt`** (excerpt, source lines
+  2067–2091) — `has_research_building`'s `OR` contains an `inline_script` invocation whose
+  `code` parameter is a **multi-line double-quoted string**: the value opens with `"` at end of
+  line, runs four more lines of ordinary-looking script (`has_building = ...`), and closes with
+  a lone `"` on its own line. This is a real, shipped idiom — a whole nested
+  `inline_script = { ... }` invocation passed as opaque string *data* to
+  `generic_parts/giga_toggled_code`, which conditionally splices it back in — not something
+  Stage 1 should try to parse as script; it's one `StringLiteral` whose `.value` happens to
+  contain script-shaped text. Confirmed via `grep -rEln '="\s*$'` that 917 lines corpus-wide use
+  this multi-line-string shape (concentrated in `inline_scripts/` and a handful of other
+  non-technology directories — `common/technology/` and `common/scripted_variables/` are both
+  clean of it). The tokeniser used to error on the first `\n` inside a string; this fixture is
+  the regression test for scanning to the next unescaped `"` or EOF instead.
 
 **Two technology files exercise a `potential`-block call**, as required: `giga_02_society.txt`
 (flat, un-nested) and `giga_03_engineering.txt` (nested inside `OR`, twice). A third,
@@ -416,6 +434,24 @@ byte-for-byte against, not just "did it throw."
   localisation using). A parser that splits on `\n` alone will leave a trailing `\r` on every
   line's last token in `crlf.txt` — harmless for a `}` line, silently wrong for a value like
   `tier = 2\r` if that `\r` ends up inside a parsed field.
+
+## `variables/`
+
+Hand-written, not copied — same status as `malformed/` and `encoding/`: no third-party content,
+committed directly. Exist because the vendored corpus has zero live cases of either construct
+(verified across all 53 `scripted_variables/*.txt` files in `vendor/`, not just the fixture
+subset): no scripted variable's value is ever another `@variable` reference, so the resolver's
+recursive resolution and its DFS cycle detection would otherwise have nothing real to run
+against.
+
+- **`reference-chain.txt`** — `@chain_top = @chain_middle`, `@chain_middle = @chain_base`,
+  `@chain_base = 1000`, in that declaration order — deliberately the *reverse* of dependency
+  order, so a resolver that just walks the file top-to-bottom in one pass and resolves
+  eagerly (rather than recursing into each reference) gets this wrong on the first name it
+  looks up.
+- **`reference-cycle.txt`** — `@cycle_a = @cycle_b = @cycle_c = @cycle_a`. Three names, not
+  two, so the requirement that a cycle error name the *full* chain has a chain worth naming
+  rather than a trivial A↔B pair.
 
 ## Verification: excluded large files
 

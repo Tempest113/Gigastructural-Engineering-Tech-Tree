@@ -384,6 +384,16 @@ def test_quoted_and_bare_scalars_both_valid_as_bare_block_members():
 # ---------------------------------------------------------------------------
 
 
+def test_key_name_handles_a_variable_reference_key():
+    # Every scripted_variables statement's key is `@name = value` — a VariableReference key,
+    # not an Identifier. Assignment.key_name must handle this (regression: it used to fall
+    # through to `self.key.raw`, which VariableReference doesn't have).
+    doc = parse_file(FIXTURES_ROOT / "gigastructures" / "common" / "scripted_variables" / "giga_amb_variables.txt")
+    definition = _find_assignment(doc.items, "giga_amb_flag")
+    assert isinstance(definition.key, VariableReference)
+    assert definition.key_name == "giga_amb_flag"
+
+
 def test_variable_reference_is_preserved_unresolved():
     doc = parse_file(FIXTURES_ROOT / "gigastructures" / "giga_04_repeatables.txt")
     tech = _find_assignment(doc.items, "giga_tech_repeatable_dimensional_storage")
@@ -399,6 +409,93 @@ def test_variable_reference_usable_as_a_nested_value_not_just_top_level_cost():
     doc = parse_file(FIXTURES_ROOT / "gigastructures" / "giga_17_alternative_mega_build.txt")
     found = _find_assignment_anywhere(doc.items, key="has_global_flag", value_type=VariableReference)
     assert found is not None
+
+
+def test_scripted_variable_can_resolve_to_a_bare_identifier_not_just_a_number():
+    # giga_amb_variables.txt line 5: @giga_amb_flag = giga_buildcap_j — a bare, unquoted
+    # identifier value, not numeric. Confirms the AST already represents this correctly at the
+    # parser layer (Assignment.value is an Identifier); the resolver (not built yet) must not
+    # assume every resolved scripted-variable value is a NumberLiteral.
+    doc = parse_file(FIXTURES_ROOT / "gigastructures" / "common" / "scripted_variables" / "giga_amb_variables.txt")
+    definition = _find_assignment(doc.items, "giga_amb_flag")
+    assert isinstance(definition.value, Identifier)
+    assert definition.value.name == "giga_buildcap_j"
+
+
+def test_giga_amb_flag_reference_and_definition_agree_on_name():
+    # The reference site (giga_17_alternative_mega_build.txt's `has_global_flag =
+    # @giga_amb_flag`) and the definition site (giga_amb_variables.txt) are two independently
+    # parsed files; this is the parser-layer half of "resolves through it" — proving the two
+    # ASTs actually name the same variable — ahead of the resolver, which will do the lookup
+    # itself once built.
+    usage_doc = parse_file(FIXTURES_ROOT / "gigastructures" / "giga_17_alternative_mega_build.txt")
+    reference = _find_assignment_anywhere(usage_doc.items, key="has_global_flag", value_type=VariableReference)
+    assert reference is not None
+
+    definition_doc = parse_file(FIXTURES_ROOT / "gigastructures" / "common" / "scripted_variables" / "giga_amb_variables.txt")
+    definition = _find_assignment(definition_doc.items, "giga_amb_flag")
+
+    assert reference.value.name == definition.key.name == "giga_amb_flag"
+    assert isinstance(definition.value, Identifier)
+    assert definition.value.name == "giga_buildcap_j"
+
+
+# ---------------------------------------------------------------------------
+# Multi-line strings: real, confirmed corpus-wide (917 occurrences outside
+# common/technology/), not just an inline_script curiosity. Strings scan to the next
+# unescaped '"' or EOF, never stopping at '\n'.
+# ---------------------------------------------------------------------------
+
+
+def test_multiline_string_is_captured_as_one_opaque_string_literal():
+    # zzz_overwrites.txt: `code = "..."` embeds a whole nested inline_script invocation,
+    # spanning several lines, as string DATA — passed to generic_parts/giga_toggled_code,
+    # which conditionally splices it back in. Stage 1 must not try to parse the string's
+    # contents as script; it's opaque text until whatever consumes `code` decides otherwise.
+    doc = parse_file(FIXTURES_ROOT / "gigastructures" / "common" / "scripted_triggers" / "zzz_overwrites.txt")
+    tech = doc.items[0]
+    or_block = _find_assignment(tech.value.items, "OR")
+    inline = _find_assignment(or_block.value.items, "inline_script")
+    code = _find_assignment(inline.value.items, "code")
+    assert isinstance(code.value, StringLiteral)
+    assert "has_building = building_acot_dm_enigmatic_lab" in code.value.value
+    assert "has_building = building_acot_ae_institute" in code.value.value
+    # The string's own newlines are preserved, not collapsed or stripped.
+    assert code.value.value.count("\n") >= 4
+
+
+def test_multiline_string_without_a_closing_quote_still_fails_at_its_start_line():
+    # Regression guard: allowing strings to span lines must not turn a truly unterminated
+    # string into a silent multi-file scan-to-EOF with a useless error location. The existing
+    # malformed/unterminated-string.txt fixture already covers this — this just confirms the
+    # multi-line change didn't move the reported line.
+    with pytest.raises(ClausewitzError) as excinfo:
+        parse_file(FIXTURES_ROOT / "malformed" / "unterminated-string.txt")
+    assert excinfo.value.line == 6
+
+
+def test_multiline_string_bare_word_list_form():
+    # The other real shape (00_aot_vanilla_zones.txt): a parameter value that's a multi-line
+    # string containing a bare list of words, used as pseudo-list data — not code this time.
+    text = (
+        'tech_x = {\n'
+        '\tinline_script = {\n'
+        '\t\tscript = zones/example\n'
+        '\t\tBUILDING_SETS = "\n'
+        '\t\t\tindustrial\n'
+        '\t\t\turban_automation\n'
+        '\t\t\torigin\n'
+        '\t\t"\n'
+        '\t}\n'
+        '}\n'
+    )
+    doc = parse_text(text, path="<memory>")
+    tech = doc.items[0]
+    inline = _find_assignment(tech.value.items, "inline_script")
+    building_sets = _find_assignment(inline.value.items, "BUILDING_SETS")
+    assert isinstance(building_sets.value, StringLiteral)
+    for word in ("industrial", "urban_automation", "origin"):
+        assert word in building_sets.value.value
 
 
 # ---------------------------------------------------------------------------

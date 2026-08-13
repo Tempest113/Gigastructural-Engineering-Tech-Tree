@@ -1,0 +1,10 @@
+# Hand-authored, not vendor-derived — see tests/fixtures/NOTES.md. The vendored corpus has
+# zero live cases of one scripted variable's value being another @variable reference (verified
+# across all 53 scripted_variables/*.txt files in vendor/), so the resolver's recursive
+# resolution has nothing real to run against. This gives it a three-level chain, ending in a
+# genuine numeric literal, resolved in an order that doesn't match declaration order — the
+# resolver must not assume declaration order is dependency order.
+
+@chain_top = @chain_middle
+@chain_middle = @chain_base
+@chain_base = 1000

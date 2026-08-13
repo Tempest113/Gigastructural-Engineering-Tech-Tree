@@ -192,6 +192,14 @@ English only for v1. The pipeline is language-parameterised so more languages ar
 - Every hover behaviour needs a tap or press equivalent. Pointer Events only — no separate
   mouse and touch code paths.
 - Icon atlases must pack deterministically. Unchanged icons produce byte-identical output.
+- When surveying corpus content (vendor/, fixtures) to verify a syntax claim, inspect raw bytes
+  or raw text — `grep`/`sed`/`xxd`/direct file reads. Never conclude anything about source
+  syntax from output that passed through `repr()`, `pprint`, or any formatter that can add,
+  strip or transform delimiters (Python's `repr()` wraps plain strings in quotes; that is the
+  formatter's choice, not evidence the source had quotes). A single misread `repr()` output
+  once produced a false "single-quoted strings exist in scripted_variables/" finding that led
+  to a tokeniser change with zero actual evidentiary basis — caught only because the fixture
+  built to test it was checked against the raw file.
 
 ## Commands
 
