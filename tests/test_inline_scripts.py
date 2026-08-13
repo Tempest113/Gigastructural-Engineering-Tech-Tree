@@ -78,6 +78,78 @@ def test_bare_invocation_expands_and_splices():
 
 
 # ---------------------------------------------------------------------------
+# Real corpus: structured invocation whose `script = ...` value is quoted.
+# ---------------------------------------------------------------------------
+
+
+def test_quoted_structured_script_path_resolves_to_the_same_file_as_a_bare_path():
+    # stellaris/common/inline_scripts/buildings/regular_empire_capital_jobs.txt itself invokes
+    # `inline_script = { script = "jobs/politician_add" AMOUNT = $AMOUNT$ }` — a real, shipped
+    # quoted structured script path. Before the fix, the quotes were carried into the lookup
+    # key (`_raw_source_text` on a StringLiteral re-wraps it in quotes), so this always raised
+    # UnresolvedScriptError against a script that does exist under the unquoted path.
+    tech_doc = parse_text(
+        "tech_x = {\n\tinline_script = {\n\t\tscript = buildings/regular_empire_capital_jobs\n\t\tAMOUNT = 5\n\t}\n}\n",
+        path="usage.txt",
+    )
+    scripts = collect_scripts(
+        [
+            _script_from_fixture(
+                "stellaris/common/inline_scripts/buildings/regular_empire_capital_jobs.txt",
+                "buildings/regular_empire_capital_jobs",
+            ),
+            _script_from_fixture(
+                "stellaris/common/inline_scripts/jobs/politician_add.txt",
+                "jobs/politician_add",
+            ),
+        ]
+    )
+    expanded, report = expand_document(tech_doc, scripts)
+
+    tech = _find_assignment(expanded.items, "tech_x")
+    assert not _find_key_anywhere(tech.value.items, "inline_script")
+    # politician_add's own content (job_politician_add, substituted with the outer AMOUNT) is
+    # spliced in — proof the quoted path actually resolved rather than failing.
+    job = _find_assignment_anywhere(tech.value.items, "job_politician_add")
+    assert isinstance(job.value, NumberLiteral)
+    assert job.value.value == 5
+
+
+# ---------------------------------------------------------------------------
+# Real corpus: bare invocation whose path is quoted.
+# ---------------------------------------------------------------------------
+
+
+def test_quoted_bare_script_path_resolves_to_the_same_file_as_an_unquoted_path():
+    # stellaris/common/technology/00_leviathans_tech.txt's tech_dragon_armor has
+    # `ai_weight = { inline_script = "ai/armor_preference_weight" }` — the bare form, same as
+    # `inline_script = ai/armor_preference_weight`, except the path is quoted (a StringLiteral
+    # value rather than an Identifier). Confirmed real: 45 instances across 6 vanilla technology
+    # files, all in ai_weight blocks, all resolving to one of five trivial weight-modifier
+    # helper scripts the corpus elsewhere invokes unquoted. Before the fix this raised
+    # InlineScriptError ("inline_script value must be a path or a block, not StringLiteral")
+    # rather than resolving.
+    tech_doc = parse_file(FIXTURES_ROOT / "stellaris" / "00_leviathans_tech.txt")
+    scripts = collect_scripts(
+        [
+            _script_from_fixture(
+                "stellaris/common/inline_scripts/ai/armor_preference_weight.txt",
+                "ai/armor_preference_weight",
+            )
+        ]
+    )
+    expanded, report = expand_document(tech_doc, scripts)
+
+    tech = _find_assignment(expanded.items, "tech_dragon_armor")
+    ai_weight = _find_assignment(tech.value.items, "ai_weight")
+    assert not _find_key_anywhere(ai_weight.value.items, "inline_script")
+    # armor_preference_weight.txt's own content (two `modifier` blocks) is spliced in — proof
+    # the quoted path actually resolved rather than failing.
+    modifiers = [item for item in ai_weight.value.items if isinstance(item, Assignment) and item.key_name == "modifier"]
+    assert len(modifiers) == 2
+
+
+# ---------------------------------------------------------------------------
 # Real corpus: structured invocation with whole-token parameter substitution.
 # ---------------------------------------------------------------------------
 

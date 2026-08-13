@@ -369,6 +369,60 @@ def test_bare_path_like_value_with_slashes_tokenises_as_one_identifier():
     assert inline.value.name == "technology/tech_weight_boni/defensive_tech_weight_bonus"
 
 
+def test_scope_suffixed_flag_is_one_identifier_not_a_stray_variable_reference():
+    # `has_star_flag = ehof_megastructure_system@root` — the '@root' here is a scope suffix
+    # attached (no whitespace) to a flag name, not a scripted-variable reference. Before the
+    # fix, the tokeniser silently split this into an Identifier missing its suffix plus an
+    # unrelated top-level VariableReference('root') sibling — worse than an honest parse
+    # failure, since it corrupted the flag name and fabricated a bogus @variable usage.
+    doc = parse_file(FIXTURES_ROOT / "gigastructures" / "common" / "scripted_triggers" / "ehof_triggers.txt")
+    ehof_travel_conditions = _find_assignment(doc.items, "ehof_travel_conditions")
+    not_block = _find_assignment(ehof_travel_conditions.value.items, "NOT")
+    flag = _find_assignment(not_block.value.items, "has_star_flag")
+    assert isinstance(flag.value, Identifier)
+    assert flag.value.name == "ehof_megastructure_system@root"
+
+    empire_has_visited = _find_assignment(doc.items, "empire_has_visited")
+    flag2 = _find_assignment(empire_has_visited.value.items, "has_star_flag")
+    assert isinstance(flag2.value, Identifier)
+    assert flag2.value.name == "empire_has_visited@root"
+
+
+def test_event_id_namespace_dot_number_is_one_identifier():
+    # `country_event = { id = acot_precursor_databank.8 }` — a dotted event-id, common across
+    # scripted_triggers/ and ascension_perks/ (2,142 distinct namespace.number values in the
+    # rescoped corpus). Before the fix this was an outright parse failure ("unexpected
+    # character '.'"), not a mis-lex — every ascension_perks/ file in the corpus used this idiom
+    # and none of them could parse at all.
+    doc = parse_file(FIXTURES_ROOT / "acot" / "common" / "ascension_perks" / "acot_ascension_perks.txt")
+    perk = _find_assignment(doc.items, "ap_precursor_dream")
+    on_enabled = _find_assignment(perk.value.items, "on_enabled")
+    hidden_effect = _find_assignment(on_enabled.value.items, "hidden_effect")
+    country_event = _find_assignment(hidden_effect.value.items, "country_event")
+    event_id = _find_assignment(country_event.value.items, "id")
+    assert isinstance(event_id.value, Identifier)
+    assert event_id.value.name == "acot_precursor_databank.8"
+
+
+def test_chained_dotted_scope_reference_used_as_a_plain_value_is_one_identifier():
+    # `is_same_species = root.owner` — a scope-chain reference (not @-prefixed) used directly
+    # as a value. 129 occurrences across the rescoped corpus (dominated by `from.owner` and
+    # `root.owner`), and the specific thing blocking stellaris/common/ascension_perks/
+    # 00_ascension_perks.txt from parsing after the event-id fix alone.
+    doc = parse_file(FIXTURES_ROOT / "stellaris" / "common" / "ascension_perks" / "00_ascension_perks.txt")
+    perk = _find_assignment(doc.items, "ap_xeno_compatibility")
+    is_same_species = _find_assignment_anywhere(perk.value.items, "is_same_species")
+    assert isinstance(is_same_species.value, Identifier)
+    assert is_same_species.value.name == "root.owner"
+
+    # A leading '@' (not attached to a preceding identifier) is unaffected — still an ordinary
+    # scripted-variable reference.
+    variable_doc = parse_text("cost = @tier1cost1\n", path="usage.txt")
+    cost = _find_assignment(variable_doc.items, "cost")
+    assert isinstance(cost.value, VariableReference)
+    assert cost.value.name == "tier1cost1"
+
+
 def test_quoted_and_bare_scalars_both_valid_as_bare_block_members():
     # prerequisites = { "tech_mega_engineering" } (quoted) vs category = { voidcraft } (bare).
     doc = parse_file(FIXTURES_ROOT / "gigastructures" / "zz_giga_tech_overwrites.txt")

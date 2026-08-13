@@ -183,4 +183,35 @@ class Tokenizer:
         chars = []
         while not self._at_end() and self._peek() in _IDENTIFIER_CONT:
             chars.append(self._advance())
+        # A '.' immediately attached (no whitespace) to an identifier, followed by another
+        # identifier-start char or a digit, chains one more identifier-shaped segment onto this
+        # token — repeatable. Two confirmed real, common idioms share this exact shape:
+        #   - event-id namespace.number, e.g. `id = bio.1`, `id = timeline.69`, chainable as
+        #     `crisis.8060.1` (2,142 distinct namespace.number values across scripted_triggers/
+        #     and ascension_perks/ in all four sources — every `country_event = { id = ... }`).
+        #   - scope-chain references used as plain values, e.g. `is_same_species = root.owner`,
+        #     chainable as `root.owner.overlord` (129 occurrences across the rescoped corpus,
+        #     dominated by `from.owner`/`root.owner`; needed to parse ascension_perks/, which
+        #     feeds P-3's gate identities).
+        # Requiring an identifier-start char or digit immediately after the '.' (never
+        # whitespace/EOF/punctuation) avoids swallowing an unrelated trailing '.' — e.g.
+        # end-of-sentence punctuation that might otherwise leak out of a comment into a scan.
+        while self._peek() == "." and (self._peek(1) in _IDENTIFIER_START or self._peek(1) in _DIGITS):
+            chars.append(self._advance())  # '.'
+            while not self._at_end() and self._peek() in _IDENTIFIER_CONT:
+                chars.append(self._advance())
+        # A '@' immediately attached to the end of an identifier (no intervening whitespace) is
+        # a scope suffix, not a scripted-variable reference — e.g. `has_star_flag =
+        # ehof_system_created_by_@root`, `has_country_flag = marauder_tribute_6@event_target:x`.
+        # Confirmed in real corpus content (scripted_triggers/, several sources); the flag name
+        # and its scope are one inseparable token. A *leading* '@' (nothing consumed above) is
+        # unaffected — that's still `_scan_variable`'s ordinary scripted-variable case, since
+        # `_next_token` only reaches here when the first character was an identifier-start char.
+        # Without this, the tokeniser silently splits the flag name and misreads the scope as an
+        # unrelated top-level `@variable` reference instead of failing loudly — worse than an
+        # honest parse error.
+        if chars and self._peek() == "@" and self._peek(1) in _IDENTIFIER_START:
+            chars.append(self._advance())  # '@'
+            while not self._at_end() and self._peek() in _IDENTIFIER_CONT:
+                chars.append(self._advance())
         return Token(TokenType.IDENTIFIER, "".join(chars), line, column)

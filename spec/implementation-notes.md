@@ -11,6 +11,35 @@ inside another `inline_script`'s parameter (passed to a helper that conditionall
 back in) — the string's contents look like script but MUST be treated as opaque text at the
 parsing stage, not walked or interpreted as if it were live script.
 
+## Clausewitz identifier grammar: scope suffixes and dotted chains
+
+Two shapes attach directly to an identifier with no intervening whitespace, and both parse as
+one opaque identifier token rather than being split or requiring a new AST node:
+
+- **Scope suffix.** `flag_name@scope` (e.g. `has_star_flag = ehof_megastructure_system@root`)
+  attaches a scope reference to a flag name with `@`. This is unrelated to a scripted-variable
+  reference (`cost = @tier1cost1`) even though both use `@` — the distinguishing signal is
+  whether the `@` is attached to a preceding identifier character (scope suffix) or starts a
+  fresh token after whitespace/an operator/a brace (scripted variable). Getting this wrong is
+  worse than an honest parse failure: before the fix, the tokeniser silently split the flag name
+  and misread the scope as an unrelated top-level `@variable` reference, corrupting the flag
+  value and fabricating a bogus variable usage that would have shown up as a false "undefined
+  variable" finding.
+- **Dotted chains.** A `.` attached to an identifier, followed immediately by another
+  identifier-start character or a digit, chains on one more identifier-shaped segment —
+  repeatable, so `crisis.8060.1` and `root.owner.overlord` both parse as a single token. Two
+  idioms share this shape: the event-id idiom (`country_event = { id = bio.1 }`, namespace
+  followed by a number) and scope-chain references used as plain values (`is_same_species =
+  root.owner`). Both are required to parse `common/ascension_perks/` (P-3's gate identities) —
+  every file in it across all four sources uses at least one of the two. Requiring an
+  identifier-start character or digit immediately after the `.` (never whitespace, EOF, or other
+  punctuation) is deliberate: it's what lets the tokeniser consume `root.owner` as one token
+  without also swallowing an unrelated trailing `.` elsewhere in the grammar.
+
+These two rules compose: `flag_name@root.owner` (scope suffix whose scope is itself a dotted
+chain) parses correctly as one token as a consequence of applying both rules in sequence, without
+either rule needing to know about the other.
+
 ## Trigger evaluation
 
 This is the highest-risk component of the system and deserves explicit design attention.

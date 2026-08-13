@@ -207,6 +207,14 @@ def _extract_invocation(value) -> tuple[str, dict[str, object]]:
     (`inline_script = { script = path  PARAM = value ... }`) forms — they unify here."""
     if isinstance(value, Identifier):
         return value.name, {}
+    if isinstance(value, StringLiteral):
+        # `inline_script = "ai/shield_preference_weight"` — the bare form, same as
+        # `inline_script = ai/shield_preference_weight`, except the path is quoted. Confirmed
+        # real and shipped: 45 instances across 6 vanilla technology files, all in `ai_weight`
+        # blocks, all resolving to one of five trivial ai-preference/archaeotech-weight helper
+        # scripts — the same scripts other files invoke unquoted. Resolves against the
+        # StringLiteral's value (unquoted), matching the structured `script = "path"` fix above.
+        return value.value, {}
     if isinstance(value, Block):
         script_path = None
         params: dict[str, object] = {}
@@ -216,7 +224,18 @@ def _extract_invocation(value) -> tuple[str, dict[str, object]]:
             if not isinstance(item, Assignment):
                 continue
             if item.key_name == "script":
-                script_path = item.value.name if isinstance(item.value, Identifier) else _raw_source_text(item.value)
+                # A quoted path (`script = "jobs/politician_add"`, confirmed real — see
+                # buildings/regular_empire_capital_jobs.txt) resolves against the same
+                # unquoted relative-path namespace as a bare path. Using the StringLiteral's
+                # raw source text here (quotes included) would look up a path that can never
+                # match any entry in the script table — a self-inflicted UnresolvedScriptError
+                # on a script that does exist.
+                if isinstance(item.value, Identifier):
+                    script_path = item.value.name
+                elif isinstance(item.value, StringLiteral):
+                    script_path = item.value.value
+                else:
+                    script_path = _raw_source_text(item.value)
             else:
                 params[item.key_name] = item.value
         if script_path is None:

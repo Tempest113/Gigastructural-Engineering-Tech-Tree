@@ -164,6 +164,50 @@
       "sha256": "cd5eb6bcebd84cb7048423a016be9a1b39c30ba3dc3fdacce95409c511526d4b"
     },
     {
+      "dest": "stellaris/00_leviathans_tech.txt",
+      "source": "stellaris/common/technology/00_leviathans_tech.txt",
+      "type": "excerpt",
+      "lines": [
+        1,
+        30
+      ],
+      "sha256": "26cca48ab78ac062f29b86ec5a6878a827810b50dabf6153bf9c9e360dd1fa1a"
+    },
+    {
+      "dest": "stellaris/common/ascension_perks/00_ascension_perks.txt",
+      "source": "stellaris/common/ascension_perks/00_ascension_perks.txt",
+      "type": "excerpt",
+      "lines": [
+        2315,
+        2368
+      ],
+      "sha256": "0c39260fe29dda6309a5245082130b4c65e1d3d50a5f3d640f0e7fc7b06e8468"
+    },
+    {
+      "dest": "acot/common/ascension_perks/acot_ascension_perks.txt",
+      "source": "mods/acot/common/ascension_perks/acot_ascension_perks.txt",
+      "type": "whole",
+      "sha256": "3414dcd9f17a69ff0679729efd270edd4b83af6f370187c9e68bfd918ec601d8"
+    },
+    {
+      "dest": "stellaris/common/inline_scripts/ai/armor_preference_weight.txt",
+      "source": "stellaris/common/inline_scripts/ai/armor_preference_weight.txt",
+      "type": "whole",
+      "sha256": "c4894c259f5cb239a7e19821b60b68dd935095c739fba27bbc35c8da57ef17aa"
+    },
+    {
+      "dest": "stellaris/common/inline_scripts/buildings/regular_empire_capital_jobs.txt",
+      "source": "stellaris/common/inline_scripts/buildings/regular_empire_capital_jobs.txt",
+      "type": "whole",
+      "sha256": "9c69ca39c00dc7d7fa63aa04d654effc5fb5ef42465164e66bc3a3bee04eb6dd"
+    },
+    {
+      "dest": "stellaris/common/inline_scripts/jobs/politician_add.txt",
+      "source": "stellaris/common/inline_scripts/jobs/politician_add.txt",
+      "type": "whole",
+      "sha256": "061f4dc53ffd04f0385f0a02f4b7596bcea18caee16eeb6bc8cc1d9efa1ebe97"
+    },
+    {
       "dest": "gigastructures/common/inline_scripts/technology/tech_weight_boni/defensive_tech_weight_bonus.txt",
       "source": "mods/gigastructures/common/inline_scripts/technology/tech_weight_boni/defensive_tech_weight_bonus.txt",
       "type": "whole",
@@ -271,9 +315,9 @@
       "type": "excerpt",
       "lines": [
         1,
-        23
+        108
       ],
-      "sha256": "5df0ee75881bc12c4fba01926b22052cd5bb71e3e6f9d63660d576f77b933289"
+      "sha256": "04e87fd7ab3f59bb38a5c7a948ba8969a9152b4a6f19247434758bcd6376338c"
     },
     {
       "dest": "gigastructures/common/scripted_triggers/giga_frameworld_triggers.txt",

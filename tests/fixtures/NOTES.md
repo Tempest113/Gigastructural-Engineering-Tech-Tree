@@ -238,6 +238,31 @@ reference used above resolve. The top-level technology fixtures stay flat (not m
   same load-order resolution question as everything else).
 - **`stellaris/common/inline_scripts/ai/weapon_preference_weight.txt`** (10 lines) — resolves a
   reference in `giga_01_physics.txt`.
+- **`stellaris/common/inline_scripts/buildings/regular_empire_capital_jobs.txt`** (whole file) —
+  its own first statement is `inline_script = { script = "jobs/politician_add" AMOUNT =
+  $AMOUNT$ }` — a real, shipped example of a **quoted** structured `script = "..."` path. Before
+  the fix this resolved against the literal quoted string (including the `"` characters) as the
+  lookup key, which can never match any entry in the script table, so a script that genuinely
+  exists always raised `UnresolvedScriptError`. Not reachable from
+  technology/scripted_variables/scripted_triggers/ascension_perks in the current corpus (nothing
+  under those directories invokes `buildings/regular_empire_capital_jobs`), so it sits outside
+  the Stage 1 rescoping — kept as a fixture anyway because `_extract_invocation`'s quote-handling
+  is shared code, not specific to any one reachability slice, and this is the only confirmed real
+  instance of the quoted-structured-path shape found by raw-text survey.
+- **`stellaris/common/inline_scripts/jobs/politician_add.txt`** (whole file) — the target of the
+  above, referenced by its unquoted relative path `jobs/politician_add`.
+- **`stellaris/00_leviathans_tech.txt`** (excerpt, source lines 1–30) — `tech_dragon_armor`'s
+  `ai_weight = { inline_script = "ai/armor_preference_weight" }`: the **bare** form
+  (`inline_script = path`, no block) with the path quoted — a StringLiteral value rather than an
+  Identifier. Distinct from the structured-form quoting above. Confirmed real and common: 45
+  instances across 6 vanilla technology files (`00_ancient_relics_tech.txt` ×16,
+  `00_eng_tech.txt` ×18, `00_fallen_empire_tech.txt` ×1, `00_leviathans_tech.txt` ×1,
+  `00_phys_tech.txt` ×7, `00_soc_tech.txt` ×2), all inside `ai_weight` blocks, all resolving to
+  one of five trivial ai-preference/archaeotech-weight helper scripts that the corpus elsewhere
+  invokes unquoted with the ordinary bare form — quoting here looks like a stylistic choice by
+  whoever wrote these particular files, not a distinct feature.
+- **`stellaris/common/inline_scripts/ai/armor_preference_weight.txt`** (whole file) — the target
+  of the above, referenced by its unquoted relative path `ai/armor_preference_weight`.
 
 ## Scripted triggers (`*/common/scripted_triggers/`)
 
@@ -245,14 +270,27 @@ The highest-risk path for the D-10 `unknown` rate, per `00-overview.md`: unresol
 trigger calls are the main source of spurious `unknown`. All excerpts below are exact contiguous
 line ranges from their source file (cited), not reformatted.
 
-- **`gigastructures/common/scripted_triggers/ehof_triggers.txt`** (excerpt, source lines 1–23) —
+- **`gigastructures/common/scripted_triggers/ehof_triggers.txt`** (excerpt, source lines 1–108) —
   defines `ehof_default_country`, `is_giga_one_planet_origin` and `giga_can_use_habitables`.
   `giga_can_use_habitables` is a `nor` block whose second member is
   `is_giga_one_planet_origin = yes` — **a scripted trigger calling another scripted trigger**,
   nested inside a boolean block, inside a third scripted trigger's own definition. Called from
   `potential` in `giga_02_society.txt` (flat) and, nested inside `OR`, in
   `giga_03_engineering.txt`; called from a `technology_swap.trigger` block (not `potential`) in
-  `zz_giga_tech_overwrites.txt`.
+  `zz_giga_tech_overwrites.txt`. The excerpt was extended to line 108 to also cover
+  `has_star_flag = ehof_megastructure_system@root` and
+  `has_star_flag = empire_has_visited@root` — real instances of the `identifier@scope` flag
+  idiom (a flag name suffixed, with no space, by a scope reference such as `@root`, `@from`,
+  `@this`, `@owner`, `@prevprevprev`, or `@event_target:name`). Confirmed via raw grep across
+  the rescoped corpus (technology/scripted_variables/scripted_triggers/ascension_perks +
+  reachable inline_scripts/) that the no-dot form (`flag@root`, `flag@owner`, etc.) is real and
+  common; the dotted-chain form (`flag@root.owner`, `flag@from.owner`) initially still failed to
+  parse after this fix alone, since a bare `.` elsewhere in the grammar (e.g. the `id = bio.1`
+  event-id idiom) was a separate gap at the time. Both `.` idioms below were subsequently fixed
+  when `common/ascension_perks/` turned out to depend on them (see next two entries), and the
+  tokeniser change ended up covering `flag@root.owner` too, as a natural consequence of the two
+  fixes composing (the `@`-suffix scan appends `root`, then the general dotted-chain scan
+  extends it with `.owner`).
 - **`gigastructures/common/scripted_triggers/giga_frameworld_triggers.txt`** (excerpt, source
   lines 1–6) — defines `giga_is_frame_world` and `giga_has_frameworld_origin`, the second of
   which `is_giga_one_planet_origin` (above) calls — the second link in that two-level chain.
@@ -289,6 +327,31 @@ line ranges from their source file (cited), not reformatted.
 `zz_giga_tech_overwrites.txt`, calls the same trigger family from a `technology_swap.trigger`
 block for contrast — same trigger name, different block context, worth checking the extractor
 doesn't only look for scripted-trigger calls inside `potential`.
+
+## Ascension perks (`*/common/ascension_perks/`)
+
+`common/ascension_perks/` feeds P-3's gate identities, so every file in it across all four
+sources must parse — no tolerance for "mostly parses." Both fixtures below were added when the
+Stage 1 rescoped corpus run showed all four sources' `ascension_perks/` files failing on the
+same underlying grammar gap: a bare `.` in a value position, which the tokeniser had no rule
+for at all until this round.
+
+- **`acot/common/ascension_perks/acot_ascension_perks.txt`** (whole file, 48 lines) —
+  `ap_precursor_dream`'s `country_event = { id = acot_precursor_databank.8 }`: the
+  namespace.number event-id idiom. Confirmed common and required in every source's
+  `ascension_perks/` (2,142 distinct `namespace.number` values across `scripted_triggers/` and
+  `ascension_perks/` in all four sources combined), and chainable
+  (`crisis.8060.1`, `grand_archive.4105.3` — confirmed via raw grep, not just this fixture's
+  single-dot case).
+- **`stellaris/common/ascension_perks/00_ascension_perks.txt`** (excerpt, source lines
+  2315–2368) — `ap_xeno_compatibility`'s `is_same_species = root.owner`: a scope-chain reference
+  (no `@`) used directly as a plain value. This is the specific line that kept
+  `00_ascension_perks.txt` failing after the event-id fix landed — the namespace.number fix
+  alone (`.` followed only by a digit) doesn't cover `.owner`. 129 occurrences of this shape
+  across the rescoped corpus, dominated by `from.owner` (84) and `root.owner` (24), also
+  chainable (`root.owner.overlord`, 2 occurrences). One tokeniser change ended up covering both
+  idioms (and, as a side effect, the deferred `flag@root.owner` case noted above under
+  `ehof_triggers.txt`) — see `spec/implementation-notes.md` for the combined rule.
 
 ## `acot/`, `aot/`
 
