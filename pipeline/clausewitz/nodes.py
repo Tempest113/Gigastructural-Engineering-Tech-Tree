@@ -131,7 +131,7 @@ class Block:
         return grouped
 
 
-AssignmentKey = Union[Identifier, StringLiteral, NumberLiteral]
+AssignmentKey = Union[Identifier, StringLiteral, NumberLiteral, VariableReference, ParameterReference]
 AssignmentValue = Union[ScalarValue, Block]
 
 
@@ -140,7 +140,9 @@ class Assignment:
     """A `KEY OP VALUE` statement, e.g. `cost = @tier1cost1`, `count > 0`, `weight_modifier = { ... }`.
 
     `operator` is one of `=`, `<`, `>`, `<=`, `>=`, `!=`, preserved verbatim — this parser does
-    not interpret it.
+    not interpret it. `key` is most often an `Identifier`, but every scripted_variables
+    statement's key is a `VariableReference` (`@name = value`) — the parser accepts any scalar
+    token type as a key, so `key_name` below must too.
     """
 
     key: AssignmentKey
@@ -151,13 +153,18 @@ class Assignment:
 
     @property
     def key_name(self) -> str:
-        """The key's text, regardless of whether it was a bare Identifier, a quoted string or
-        a numeric literal key (all three are valid key tokens in Clausewitz script)."""
+        """The key's text, regardless of which scalar token type it was — a bare Identifier, a
+        quoted string, a numeric literal, an `@variable` or a `$parameter` are all valid key
+        tokens in Clausewitz script (the last two mainly seen as `@name = value` scripted
+        variable definitions)."""
         if isinstance(self.key, Identifier):
             return self.key.name
         if isinstance(self.key, StringLiteral):
             return self.key.value
-        return self.key.raw
+        if isinstance(self.key, NumberLiteral):
+            return self.key.raw
+        # VariableReference / ParameterReference both carry a bare `.name`.
+        return self.key.name
 
 
 @dataclass

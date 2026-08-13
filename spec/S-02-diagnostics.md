@@ -14,8 +14,11 @@ It MUST display page performance metrics and any runtime errors.
   with message and stack, rather than being visible only in the browser console.
 - Build-time warnings carried in the dataset — tier promotions (P-2), unrecognised gate patterns
   (P-3), missing lock reasons (P-13), unresolved triggers (P-14), the overwrite report (P-15),
-  and unresolved mod dependencies (P-16, a technology needing ACOT or AoT content that is not in
-  the rendering-scope closure of anything rendered) — are browsable in the overlay.
+  unresolved mod dependencies (P-16, a technology needing ACOT or AoT content that is not in
+  the rendering-scope closure of anything rendered), and missing `inline_script` parameters (an
+  invocation that doesn't supply a `$PARAM$` the target script body references — confirmed to
+  occur in real, shipped vanilla content, so this warns rather than fails the build; see
+  `implementation-notes.md`) — are browsable in the overlay.
 - Dataset metadata (mod commit, vanilla version, build timestamp, schema version) is displayed.
 - **Per-empire-profile `unknown` rates (D-10) are displayed as a table of all twelve figures**,
   with the worst-case profile highlighted (the one the 10% hard ceiling and 3% warn threshold are
@@ -23,6 +26,12 @@ It MUST display page performance metrics and any runtime errors.
   the exact number the D-10 ratchet fails on. This is the one place a developer can see whether a
   regression is isolated to a specific profile rather than reading it off an average that would
   hide one.
+- **The missing-`inline_script`-parameter count is displayed with the same build-over-build
+  ratchet shape as D-10's**, so a growing count doesn't quietly become normal: CI fails if the
+  count rises against the previous dataset. Unlike D-10 there is no hard ceiling — a missing
+  parameter has already been observed in working vanilla content (a code path the invocation
+  never reaches), so a nonzero count isn't itself a build-blocking condition, only an upward
+  trend is.
 - The overlay is inert unless explicitly enabled, and its code MUST NOT measurably affect the
   P-10 budgets when disabled.
 

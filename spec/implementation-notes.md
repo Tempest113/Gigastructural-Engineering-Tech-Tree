@@ -1,5 +1,16 @@
 # Implementation notes
 
+## Clausewitz string literals
+
+Double-quoted strings MAY span multiple lines. Confirmed in real, shipped content — e.g. a
+parameter value opening `"` at end of line, several lines of ordinary-looking text, then a lone
+`"` closing it several lines later. The parser MUST scan a string to its next unescaped `"` or
+end of file, never treating a bare newline as a terminator. This matters beyond cosmetics: one
+observed real shape is a whole `inline_script = { ... }` invocation embedded as string *data*
+inside another `inline_script`'s parameter (passed to a helper that conditionally splices it
+back in) — the string's contents look like script but MUST be treated as opaque text at the
+parsing stage, not walked or interpreted as if it were live script.
+
 ## Trigger evaluation
 
 This is the highest-risk component of the system and deserves explicit design attention.
@@ -63,6 +74,72 @@ references, and fails the build if any identifier isn't present in this file —
 content that documents a feature which was renamed or removed. Adding a feature to the
 application requires adding its entry here in the same change, so the registry cannot silently
 drift out of sync with what's actually built.
+
+## `inline_script` expansion
+
+A build-time pass, running after parsing and **before** `@variable` resolution (an invocation's
+parameter value, or a script body's own content, can itself be an `@variable` reference — that
+reference should reach the variable resolver as ordinary, already-expanded `@variable` syntax,
+not as something the expander has to understand). Both bare (`inline_script = path`) and
+structured (`inline_script = { script = path  PARAM = value ... }`) invocation forms unify
+naturally at the AST level: the bare form is the structured form with zero parameters.
+
+**Expansion is text substitution on the target file's raw source, before tokenising — not
+substitution of `ParameterReference` nodes in an already-parsed AST.** Roughly half of real
+`$PARAM$` usage is embedded mid-token (e.g. a target file's own top-level key built as
+`giga_tech_repeatable_$name$_cap`) rather than standing alone as a whole token, which an AST
+node cannot represent. The pass reads the target file's raw text, replaces every `$NAME$` span
+with the invoking parameter's raw source text, and only then tokenises and parses the result
+with the ordinary parser.
+
+**Expansion is a block splice, not a value substitution.** An `inline_script` invocation
+provides some or all of its surrounding block's own members (per the `giga_mega_repeatable`
+case, where the invocation's own wrapping technology supplies the tech's real key, and the
+target's content becomes that tech's fields). The `inline_script` assignment itself is removed
+from its parent block and replaced by the (parameter-substituted, re-parsed) target's items.
+This produces a new `Document`/`Block` with the splice applied; the originally parsed AST,
+`inline_script` assignment intact, is never mutated — same non-mutation principle as `@variable`
+resolution, in service of the same goal (P-15's repository-link and diff provenance stays
+meaningful; see P-12.6).
+
+**Parameters:**
+- A parameter supplied at the invocation but never referenced by the target body is not an
+  error — silently unused. Real, shipped content does this (a static target script invoked with
+  an ignored parameter, apparently copy-pasted from a parameterised sibling).
+- A parameter the target body references but the invocation never supplies warns, does not fail
+  the build — confirmed to occur in real vanilla content (a target script referencing a
+  parameter one specific invocation never supplies, on an apparently-unreached branch). Tracked
+  with a build-over-build ratchet in S-2, no hard ceiling (see S-2).
+- The two aren't reported in isolation from each other: a misspelled parameter name produces
+  both a missing parameter (the correctly-spelled name the body wants) and an unused one (the
+  misspelled name that was actually supplied) at the same invocation site. Surfacing both,
+  logging the unused case at debug level rather than discarding it, is what makes that pairing
+  visible enough to actually be diagnosable as a typo.
+
+**Nesting and cycles.** Inline scripts commonly invoke other inline scripts (confirmed to a
+depth of 6 in real content, with real parameter pass-through between levels). Cycle detection
+runs on the **parsed** AST, after string content has become opaque `StringLiteral` values that
+are never walked as script — a real recursive-looking idiom exists where a script passes its
+own name as *string data* to a generic helper that conditionally re-splices it; detecting cycles
+by scanning raw text for `script = path` occurrences (without excluding string content) produces
+false positives against this pattern. Structural DFS cycle detection, same shape as the variable
+resolver's, operating on real invocation edges: MUST NOT false-positive on it.
+
+**Depth and size limits.** No structural cycle exists in the corpus today (verified), but cycle
+detection alone doesn't bound a future upstream change that introduces runaway breadth without
+forming a cycle (e.g. a script that fans out to many large siblings without ever revisiting
+itself). Two named, hard-failing constants: a maximum expansion depth and a maximum total
+expanded size (bytes or node count). Exceeding either fails the build, naming the full
+invocation chain that hit the limit — not a warning, since either condition means the build
+cannot know it has produced a complete, correct result.
+
+**Load-order overwrites of the script files themselves.** A relative `script = path` can be
+defined in more than one source (confirmed: several vanilla-vs-ACOT and one
+vanilla-vs-Gigastructures collision on the same relative path). Resolving `path` to an actual
+file goes through its own load-order-ordered, last-source-wins lookup table, keyed by relative
+path — structurally the same shape as the `@variable` definition table, but a separate table:
+the two namespaces (`@name`, script path) don't share entries and gain nothing from being forced
+into one general mechanism.
 
 ## Interaction composition semantics
 

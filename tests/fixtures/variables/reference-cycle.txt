@@ -1,0 +1,8 @@
+# Hand-authored, not vendor-derived — see tests/fixtures/NOTES.md. The vendored corpus has no
+# live case of a variable reference cycle (nor of variable-to-variable references at all), so
+# DFS cycle detection has nothing real to fail on. Three names, not two, so the "name the full
+# chain" requirement has a chain worth naming rather than a trivial A<->B pair.
+
+@cycle_a = @cycle_b
+@cycle_b = @cycle_c
+@cycle_c = @cycle_a

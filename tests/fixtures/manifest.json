@@ -413,6 +413,38 @@
       ],
       "separator": "\r\n",
       "sha256": "8a9ed7b14ae21295546643211ae53d5c3cd9a99cb7797bd4b5b00e42a19722ce"
+    },
+    {
+      "dest": "gigastructures/common/scripted_variables/giga_amb_variables.txt",
+      "source": "mods/gigastructures/common/scripted_variables/giga_amb_variables.txt",
+      "type": "whole",
+      "sha256": "b9e36602c3406c51e223976830b0fdfa45d092eeedf8a9b90029d8769c3bab93"
+    },
+    {
+      "dest": "gigastructures/common/scripted_triggers/zzz_overwrites.txt",
+      "source": "mods/gigastructures/common/scripted_triggers/zzz_overwrites.txt",
+      "type": "excerpt",
+      "lines": [
+        2067,
+        2091
+      ],
+      "sha256": "be647ad5988bd6d9a08fdfa89185af8cf72e4a68a33f2ff790037bf42d63947d"
+    },
+    {
+      "dest": "gigastructures/common/inline_scripts/technology/giga_mega_repeatable.txt",
+      "source": "mods/gigastructures/common/inline_scripts/technology/giga_mega_repeatable.txt",
+      "type": "whole",
+      "sha256": "52005a31e529d8451016d626f9ce928889b059969eb12316ae39ce77d3a0d885"
+    },
+    {
+      "dest": "gigastructures/giga_07_repeatables_megastructures.txt",
+      "source": "mods/gigastructures/common/technology/giga_07_repeatables_megastructures.txt",
+      "type": "excerpt",
+      "lines": [
+        1,
+        14
+      ],
+      "sha256": "7a78f9966a9fc893fc7a7a3d35a1d739813f67299e61a8cbb1d35bddc1fc565e"
     }
   ]
 }

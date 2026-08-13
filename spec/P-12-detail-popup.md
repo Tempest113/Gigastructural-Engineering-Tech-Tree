@@ -41,3 +41,12 @@ distinguishable from a pipeline failure.
   where it does not, so the field is never dead and never omitted.
 - Description text, modifier lists and links are lazily fetched detail payloads (see
   `00-overview.md`), not part of the base dataset.
+- **P-12.6 deliberately points at unexpanded source.** Where a technology's fields are partly
+  contributed by an `inline_script` invocation, the link targets the technology's own file and
+  line range as written — the `inline_script = { script = ... }` line itself, not the target
+  script's file, and not a synthesised view of the post-expansion result. This is worth stating
+  explicitly because a reader who knows the field came from an expanded script may reasonably
+  wonder why the link doesn't point there: the field was already never showing a resolved
+  `@variable` value either, for the same reason — the link is to the technology's declared
+  source, not a flattened reconstruction of it. A curious reader can follow the `script = ...`
+  path into the vendored repository themselves.
