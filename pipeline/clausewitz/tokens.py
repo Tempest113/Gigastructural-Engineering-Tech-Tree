@@ -12,9 +12,11 @@ class TokenType(Enum):
     NUMBER = auto()  # 123, -1, 0.5
     VARIABLE = auto()  # @tier1cost1 (the '@' is not part of Token.text)
     PARAMETER = auto()  # $TECHNOLOGY$ (inline_script parameter; '$'s not part of Token.text)
-    OPERATOR = auto()  # one of = < > <= >= !=
+    OPERATOR = auto()  # one of = < > <= >= != , or bare '!' (only valid before a `[[!NAME]` guard)
     LBRACE = auto()  # {
     RBRACE = auto()  # }
+    LBRACKET = auto()  # [ (only meaningful doubled, as the `[[NAME]` conditional-block opener)
+    RBRACKET = auto()  # ]
     COMMENT = auto()  # # ... to end of line (text excludes the '#')
     EOF = auto()
 
@@ -25,3 +27,9 @@ class Token:
     text: str
     line: int
     column: int
+    # PARAMETER-only auxiliary fields (unused by every other token type — see
+    # Tokenizer._scan_parameter). Kept on the shared Token type rather than a PARAMETER-specific
+    # subclass since Token is otherwise a plain, uniform carrier the parser switches on by
+    # `.type` alone.
+    default: str | None = None  # the `|default` fallback text in `$NAME|default$`, if present
+    safe: bool = False  # a trailing `?` immediately after the closing `$`, e.g. `$SCOPE$?`

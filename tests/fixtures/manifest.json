@@ -190,6 +190,82 @@
       "sha256": "3414dcd9f17a69ff0679729efd270edd4b83af6f370187c9e68bfd918ec601d8"
     },
     {
+      "dest": "stellaris/common/scripted_triggers/01_scripted_triggers_refugees.txt",
+      "source": "stellaris/common/scripted_triggers/01_scripted_triggers_refugees.txt",
+      "type": "excerpt",
+      "lines": [
+        61,
+        72
+      ],
+      "sha256": "62ea61e9b767d165e95ae8f7cdab515d2debce4eb8fbd18068af2546fc23057f"
+    },
+    {
+      "dest": "stellaris/common/scripted_triggers/05_scripted_triggers_biogenesis.txt",
+      "source": "stellaris/common/scripted_triggers/05_scripted_triggers_biogenesis.txt",
+      "type": "excerpt",
+      "lines": [
+        661,
+        686
+      ],
+      "sha256": "acaf8cbda985bfb6e5fee22a047f4c58480821ceb4a5d1884cdede92d8340337"
+    },
+    {
+      "dest": "gigastructures/common/scripted_triggers/giga_birch_triggers.txt",
+      "source": "mods/gigastructures/common/scripted_triggers/giga_birch_triggers.txt",
+      "type": "excerpt",
+      "lines": [
+        16,
+        19
+      ],
+      "sha256": "b2224a18c056684a37d7ad504be6c62ab3f41e4e6e2c8f1ffba4f017f0f5f476"
+    },
+    {
+      "dest": "stellaris/common/scripted_triggers/02_scripted_triggers_first_contact_dlc.txt",
+      "source": "stellaris/common/scripted_triggers/02_scripted_triggers_first_contact_dlc.txt",
+      "type": "excerpt",
+      "lines": [
+        303,
+        342
+      ],
+      "sha256": "e2b41fb5d0b21acd9071a9467714d68bb40b27d69f47451ce7a522d7090f2926"
+    },
+    {
+      "dest": "stellaris/common/scripted_triggers/00_scripted_triggers_overlord.txt",
+      "source": "stellaris/common/scripted_triggers/00_scripted_triggers_overlord.txt",
+      "type": "excerpt",
+      "lines": [
+        184,
+        198
+      ],
+      "sha256": "cbaf8ee0d3b209d39b023ba2360f02fba231cb3a9310461d90fcb792ee84d5b3"
+    },
+    {
+      "dest": "stellaris/common/scripted_triggers/09_scripted_triggers_nomads.txt",
+      "source": "stellaris/common/scripted_triggers/09_scripted_triggers_nomads.txt",
+      "type": "excerpt",
+      "lines": [
+        36,
+        41
+      ],
+      "sha256": "bcf40b89a875e0325152ab397e99a2ee609e5af4e0a9f475f4c766d1385e3256"
+    },
+    {
+      "dest": "stellaris/common/scripted_triggers/00_scripted_triggers_has_crisis_stage.txt",
+      "source": "stellaris/common/scripted_triggers/00_scripted_triggers.txt",
+      "type": "excerpt",
+      "lines": [
+        1203,
+        1207
+      ],
+      "sha256": "847318e1bd737aeae529e90be200d8e5aca4abc744ab7ede17f0062d015fd35a"
+    },
+    {
+      "dest": "gigastructures/common/inline_scripts/generic_parts/giga_toggled_code.txt",
+      "source": "mods/gigastructures/common/inline_scripts/generic_parts/giga_toggled_code.txt",
+      "type": "whole",
+      "sha256": "9431dc905de00a1da0f81724de6d406bce59bb470a2b0f317b73375ae8fbb53f"
+    },
+    {
       "dest": "stellaris/common/inline_scripts/ai/armor_preference_weight.txt",
       "source": "stellaris/common/inline_scripts/ai/armor_preference_weight.txt",
       "type": "whole",
@@ -489,6 +565,181 @@
         14
       ],
       "sha256": "7a78f9966a9fc893fc7a7a3d35a1d739813f67299e61a8cbb1d35bddc1fc565e"
+    },
+    {
+      "dest": "localisation/acot/acot_00_army_unversioned_crlf_excerpt.yml",
+      "source": "mods/acot/localisation/english/replace/acot_00_army_l_english.yml",
+      "type": "excerpt",
+      "lines": [
+        1,
+        10
+      ],
+      "sha256": "b6595c75e3e10978c4eec1972bd79955b5448b2cd4869b7dd1706c887bdfabeb"
+    },
+    {
+      "dest": "localisation/acot/acot_omegan_blessed_unquoted_value_excerpt.yml",
+      "source": "mods/acot/localisation/english/replace/acot_05_the_shadow_events_l_english.yml",
+      "type": "excerpt",
+      "lines": [
+        38,
+        42
+      ],
+      "sha256": "78f6458d5f5871ae7c34ad12950a295d169c51ad098b1a001db3a22fa574b5b4"
+    },
+    {
+      "dest": "localisation/acot/acot_herculean_missing_close_quote_excerpt.yml",
+      "source": "mods/acot/localisation/english/replace/acot_00_herculean_events_l_english.yml",
+      "type": "excerpt",
+      "lines": [
+        210,
+        222
+      ],
+      "sha256": "85d604fec4994182d251befb46fb109769deac914f9fe352707eb3025fa79e1d"
+    },
+    {
+      "dest": "localisation/acot/acot_gunship_missing_open_quote_excerpt.yml",
+      "source": "mods/acot/localisation/english/replace/acot_00_components_weapons_l_english.yml",
+      "type": "excerpt",
+      "lines": [
+        1920,
+        1930
+      ],
+      "sha256": "236462ee2fc225baf0aeab1688acc8fb3e2c455cb85e37458adc66211ea58212"
+    },
+    {
+      "dest": "localisation/aot/aot_00_events_space_before_colon_excerpt.yml",
+      "source": "mods/aot/localisation/english/aot_00_events_l_english.yml",
+      "type": "excerpt",
+      "lines": [
+        400,
+        408
+      ],
+      "sha256": "757d8e0e883e3e8c406b5aaa933dba7caccd6b4162e9635d35f5f6f8098ab4ac"
+    },
+    {
+      "dest": "localisation/aot/z_aot_00_localisation_override_l_english.yml",
+      "source": "mods/aot/localisation/replace/z_aot_00_localisation_override_l_english.yml",
+      "type": "whole",
+      "sha256": "b3b0de99cf06d3457ea0f61b0e46797756fa24edacb9018060b14c6d010b890d"
+    },
+    {
+      "dest": "localisation/aot/aot_00_starbase_buildings_l_english.yml",
+      "source": "mods/aot/localisation/english/aot_00_starbase_buildings_l_english.yml",
+      "type": "whole",
+      "sha256": "8b4ddf89b64821a93abe0dce55f5ac421271e9da9ed3fdcf9d7076dd840ae001"
+    },
+    {
+      "dest": "localisation/gigastructures/giga_maginot_no_space_before_quote_excerpt.yml",
+      "source": "mods/gigastructures/localisation/english/giga_maginot_l_english.yml",
+      "type": "excerpt",
+      "lines": [
+        508,
+        514
+      ],
+      "sha256": "1093e12f9e7b2f16149a6583c69bb40694c504a01d066df14b5109a75bfa3ca5"
+    },
+    {
+      "dest": "localisation/gigastructures/giga_fe_planetcraft_buff_dup_spliced.yml",
+      "source": "mods/gigastructures/localisation/english/giga_l_english.yml",
+      "type": "spliced-excerpt",
+      "segments": [
+        [
+          13736,
+          13738
+        ],
+        [
+          13923,
+          13925
+        ]
+      ],
+      "separator": "\n",
+      "sha256": "d6a2074714d34ade22554f26fcc174740878999d545df1e8b7eb8b308df88a70"
+    },
+    {
+      "dest": "localisation/stellaris/civic_and_origin_concepts_nested_bracket_excerpt.yml",
+      "source": "stellaris/localisation/english/civic_and_origin_concepts_l_english.yml",
+      "type": "excerpt",
+      "lines": [
+        58,
+        62
+      ],
+      "sha256": "ed7a599f7e1530d9d4cac1f6c11edab90af40450ce090a34fa75e59a77c3f806"
+    },
+    {
+      "dest": "localisation/stellaris/apocalypse_pipe_icon_param_excerpt.yml",
+      "source": "stellaris/localisation/english/apocalypse_l_english.yml",
+      "type": "excerpt",
+      "lines": [
+        348,
+        352
+      ],
+      "sha256": "d55f6c7aae8263ab334b869ce17d7838f75ae84ea49b79e002b8b139d308230a"
+    },
+    {
+      "dest": "localisation/stellaris/main_3_pipe_format_excerpt.yml",
+      "source": "stellaris/localisation/english/main_3_l_english.yml",
+      "type": "excerpt",
+      "lines": [
+        1362,
+        1366
+      ],
+      "sha256": "4192158a82e6d1bff2b5af7b11e48d1730c135ac0cf9f4c5ee053f36df3d5265"
+    },
+    {
+      "dest": "localisation/stellaris/nemesis_content_internal_quotes_excerpt.yml",
+      "source": "stellaris/localisation/english/nemesis_content_l_english.yml",
+      "type": "excerpt",
+      "lines": [
+        1407,
+        1411
+      ],
+      "sha256": "3c381bc058204f0f3672953f2bc92e36197a623821b167211dd02f1aae130161"
+    },
+    {
+      "dest": "localisation/stellaris/grand_archive_mutations_scripted_variable_ref_excerpt.yml",
+      "source": "stellaris/localisation/english/grand_archive_mutations_l_english.yml",
+      "type": "excerpt",
+      "lines": [
+        687,
+        691
+      ],
+      "sha256": "90359cf6b687e36b84bc91e0b89d9f90bcdae6d5625b40a5ea957ebf56265872"
+    },
+    {
+      "dest": "icons/dxt1_sample.dds",
+      "source": "stellaris/gfx/interface/icons/technologies/tech_space_exploration.dds",
+      "type": "whole",
+      "sha256": "a60cf57fb10f2524ffb927226f0e1267b1ca5d8109e1f56c0ddcb3f7a6182761"
+    },
+    {
+      "dest": "icons/dxt3_sample.dds",
+      "source": "stellaris/gfx/interface/icons/technologies/tech_cybernetic_brain_implants_1.dds",
+      "type": "whole",
+      "sha256": "5c2fdb65697b24bec0b52c74e7e7925943b1a7557c46bbb1b3de077f685bf8a8"
+    },
+    {
+      "dest": "icons/dxt5_sample.dds",
+      "source": "stellaris/gfx/interface/icons/technologies/tech_executive_retreat.dds",
+      "type": "whole",
+      "sha256": "80fa79c020fca5196d7633b560093ae1bc89d5cb0f5d5eea52e4940c94856d82"
+    },
+    {
+      "dest": "icons/uncompressed32_sample.dds",
+      "source": "stellaris/gfx/interface/icons/technologies/null_void_beam.dds",
+      "type": "whole",
+      "sha256": "90c55dc3641cf0cc8fe51e2a8078568761982802c1030e3093065707c8df0bc2"
+    },
+    {
+      "dest": "icons/uncompressed24_sample.dds",
+      "source": "stellaris/gfx/interface/icons/technologies/tech_adaptive_bureaucracy.dds",
+      "type": "whole",
+      "sha256": "78e20d880b4dee1f13335dfeb5f2983c01dd29bd04e7774b27014dc805f375f5"
+    },
+    {
+      "dest": "icons/mipmapped_sample.dds",
+      "source": "mods/acot/gfx/interface/icons/technologies/tech_acot_army_hive_3.dds",
+      "type": "whole",
+      "sha256": "35abaead21b02d479d9bc4b805a7ae9b79f94752af48aeae0f94fedd18bb8585"
     }
   ]
 }

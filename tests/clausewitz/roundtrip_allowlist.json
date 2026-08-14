@@ -1,0 +1,5257 @@
+{
+  "_rationale": [
+    "This file is the standing exception list for pipeline/clausewitz/roundtrip.py's round-trip",
+    "corruption detector (see tests/clausewitz/test_roundtrip.py and",
+    "tests/clausewitz/test_roundtrip_full_corpus.py). Read this before adding an entry.",
+    "",
+    "Why the detector compares inter-token adjacency at all: the naive serialiser in",
+    "pipeline/clausewitz/serializer.py walks the AST back to text with no knowledge of the",
+    "source file's original whitespace, because the AST does not carry it and must not be made",
+    "to -- whitespace between tokens is not part of the lossless-AST contract",
+    "(spec/00-overview.md). But whether a separator was present at all -- not its quantity or",
+    "kind, just its presence -- is the one bit that distinguishes two adjacent tokens from one",
+    "glued token, which is exactly the shape of both historical bugs this detector exists to",
+    "catch (flag@root wrongly split into flag + @root; a $PARAM$ reference glued onto",
+    "preceding identifier text silently split into two items). A comparator that ignores",
+    "separator presence entirely -- or, worse, one that tries to reconstruct it by asking",
+    "\"would this pair still lex as two tokens if concatenated?\" -- consults the same tokeniser",
+    "that is under test, so a tokeniser bug that wrongly merges or splits a pair reproduces",
+    "identically in that question's answer and the corruption sails through undetected. See",
+    "pipeline/clausewitz/roundtrip.py's module docstring and",
+    "tests/clausewitz/test_roundtrip_detects_mutations.py for the worked proof.",
+    "",
+    "Why this file exists: the AST cannot carry original adjacency (recording it on nodes would",
+    "require the parser to track raw inter-token spans purely for round-trip cosmetics, and --",
+    "per the same tokeniser-consulted-twice problem above -- would not even be trustworthy if it",
+    "did, since the recording pass and the checking pass would still share one tokeniser).",
+    "So the naive serialiser is stuck making one fixed formatting choice per construct (e.g.",
+    "always emit \"{}\" for an empty block, always put a space around an operator), and real",
+    "source varies both ways in the wild. Every site below was individually reviewed and",
+    "confirmed to be exactly that: the source and serialised token at that index have identical",
+    "type and text -- nothing was lost, merged, or misattached -- and differ only in whether a",
+    "whitespace character preceded the token. Two shapes account for all of them: an empty",
+    "block where source has real whitespace between the braces and the serialiser emits \"{}\"",
+    "(the majority), and genuinely zero-width-adjacent source punctuation (\"={\", \"1}\", \"}}\",",
+    "a comment glued directly after a brace) where the serialiser inserts a separator the",
+    "source never had.",
+    "",
+    "What an entry means and does not mean: an entry says \"this exact (file, token_index,",
+    "source_token, serialized_token) site was reviewed and is adjacency-only noise, not a",
+    "parser bug.\" It does NOT silence anything else. is_adjacency_only_divergence() in",
+    "pipeline/clausewitz/roundtrip.py already refuses to let a check consult this file for a",
+    "divergence where type/text/default/safe differ -- only a same-token, presence-only",
+    "difference can ever match an entry, structurally, before the entry's own file/index/pair",
+    "match is even checked. An entry applies only while the source and serialised token pair at",
+    "that exact index still match what is recorded here; if a future tokeniser or serialiser",
+    "change makes the pair different (different text, different type, or the divergence",
+    "disappearing because the pair now matches), the entry silently stops applying and the site",
+    "is treated as a fresh, unreviewed divergence -- which will fail the check, as it should.",
+    "",
+    "Before adding an entry: confirm by hand that the pair genuinely cannot lex differently --",
+    "i.e. that no plausible tokeniser bug could produce this exact (type, text) pair on both",
+    "sides while corrupting something else about the parse. Do not add an entry just to make a",
+    "build green. If you are looking at a real corpus round-trip failure and are tempted to add",
+    "an entry so the suite passes: stop, and instead check whether the divergence is adjacency-",
+    "only via is_adjacency_only_divergence -- if it is not (a type/text mismatch, or a token",
+    "present on only one side), it is a parser bug, and belongs in pipeline/clausewitz/, not",
+    "here."
+  ],
+  "entries": [
+    {
+      "file": "tests/fixtures/aot/aot_tech_civil_phanon_application.txt",
+      "token_index": 20,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "tests/fixtures/gigastructures/giga_06_special_project_tech.txt",
+      "token_index": 304,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "tests/fixtures/gigastructures/giga_17_alternative_mega_build.txt",
+      "token_index": 92,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "tests/fixtures/gigastructures/giga_17_alternative_mega_build.txt",
+      "token_index": 249,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "tests/fixtures/gigastructures/giga_17_alternative_mega_build.txt",
+      "token_index": 353,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "tests/fixtures/gigastructures/giga_17_alternative_mega_build.txt",
+      "token_index": 641,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "tests/fixtures/gigastructures/giga_17_alternative_mega_build.txt",
+      "token_index": 713,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "tests/fixtures/gigastructures/giga_17_alternative_mega_build.txt",
+      "token_index": 788,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "tests/fixtures/gigastructures/giga_17_alternative_mega_build.txt",
+      "token_index": 863,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "tests/fixtures/stellaris/00_apocalypse_tech.txt",
+      "token_index": 837,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "tests/fixtures/stellaris/00_megastructures.txt",
+      "token_index": 814,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "tests/fixtures/stellaris/00_megastructures.txt",
+      "token_index": 984,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "tests/fixtures/stellaris/00_megastructures.txt",
+      "token_index": 1144,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "tests/fixtures/stellaris/00_megastructures.txt",
+      "token_index": 1314,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "tests/fixtures/stellaris/00_megastructures.txt",
+      "token_index": 1803,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "tests/fixtures/stellaris/00_megastructures.txt",
+      "token_index": 2029,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "tests/fixtures/stellaris/00_nomads_dlc_tech.txt",
+      "token_index": 676,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "tests/fixtures/stellaris/00_nomads_dlc_tech.txt",
+      "token_index": 798,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "tests/fixtures/stellaris/00_nomads_dlc_tech.txt",
+      "token_index": 951,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "tests/fixtures/stellaris/00_nomads_dlc_tech.txt",
+      "token_index": 1059,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "tests/fixtures/stellaris/00_nomads_dlc_tech.txt",
+      "token_index": 1637,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "tests/fixtures/stellaris/common/scripted_triggers/00_scripted_triggers_has_crisis_stage.txt",
+      "token_index": 4,
+      "source_token": {
+        "type": "LBRACE",
+        "text": "{"
+      },
+      "serialized_token": {
+        "type": "LBRACE",
+        "text": "{"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 402,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 406,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 462,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 466,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 511,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 515,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 584,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 1391,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 2296,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 2351,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 3048,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 3577,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 3581,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 3648,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 3652,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 3707,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 3711,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 3773,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 3777,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 3842,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 3846,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 4068,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 4213,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 4297,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 4379,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 4434,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 4506,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 4585,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 4643,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 4701,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 4773,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_army_tech.txt",
+      "token_index": 5724,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 138,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 173,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 191,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 228,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 249,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 286,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 310,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 348,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 372,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 409,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 433,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 468,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 486,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 523,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 544,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 581,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 605,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 640,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 661,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 698,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 722,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 759,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 786,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 821,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 842,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 879,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 903,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 940,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 967,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 1002,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 1023,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 1060,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 1084,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 1121,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 1148,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 1183,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 1204,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 1241,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 1262,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 1299,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 1326,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 1361,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 1382,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 1419,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 1443,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 1480,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 1507,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 1561,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 1691,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 1820,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_biofauna_tech.txt",
+      "token_index": 1881,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_building_tech.txt",
+      "token_index": 1284,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_building_tech.txt",
+      "token_index": 1392,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_building_tech.txt",
+      "token_index": 1427,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_building_tech.txt",
+      "token_index": 1473,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_building_tech.txt",
+      "token_index": 1556,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_building_tech.txt",
+      "token_index": 1632,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_building_tech.txt",
+      "token_index": 1708,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_building_tech.txt",
+      "token_index": 1778,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_building_tech.txt",
+      "token_index": 1847,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_building_tech.txt",
+      "token_index": 5794,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_building_tech.txt",
+      "token_index": 5914,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_building_tech.txt",
+      "token_index": 6000,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_building_tech.txt",
+      "token_index": 6110,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_building_tech.txt",
+      "token_index": 6196,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_building_tech.txt",
+      "token_index": 6282,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_building_tech.txt",
+      "token_index": 6365,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_building_tech.txt",
+      "token_index": 6462,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_building_tech.txt",
+      "token_index": 6979,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_enigmatic_components_tech.txt",
+      "token_index": 132,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_enigmatic_components_tech.txt",
+      "token_index": 2218,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_enigmatic_components_tech.txt",
+      "token_index": 2486,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_enigmatic_components_tech.txt",
+      "token_index": 2517,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_enigmatic_components_tech.txt",
+      "token_index": 2540,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_planets_tech.txt",
+      "token_index": 107,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_planets_tech.txt",
+      "token_index": 163,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_planets_tech.txt",
+      "token_index": 1183,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 987,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 5077,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 5131,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 5185,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 5239,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 5294,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 5348,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 5403,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 5457,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 5512,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 5566,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 5622,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 5675,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 5729,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 5782,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 5837,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 5890,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 5944,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 5997,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 6051,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 6104,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 6560,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_precursor_tech.txt",
+      "token_index": 6613,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_vanilla_starbase_tech.txt",
+      "token_index": 114,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_00_vanilla_starbase_tech.txt",
+      "token_index": 251,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_01_delta_components_tech.txt",
+      "token_index": 2277,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_01_delta_components_tech.txt",
+      "token_index": 2335,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_01_delta_components_tech.txt",
+      "token_index": 3417,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_01_delta_components_tech.txt",
+      "token_index": 3549,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_02_alpha_components_tech.txt",
+      "token_index": 1146,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_03_psionic_tech.txt",
+      "token_index": 380,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_03_stellarite_components_tech.txt",
+      "token_index": 426,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_03_stellarite_components_tech.txt",
+      "token_index": 1188,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_03_stellarite_components_tech.txt",
+      "token_index": 1249,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/acot/common/technology/acot_03_stellarite_components_tech.txt",
+      "token_index": 1310,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/aot/common/technology/z_aot_megastructures_tech.txt",
+      "token_index": 445,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/aot/common/technology/z_aot_megastructures_tech.txt",
+      "token_index": 2316,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/aot/common/technology/z_aot_phanon_building_tech.txt",
+      "token_index": 20,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_triggers/ehof_triggers.txt",
+      "token_index": 6372,
+      "source_token": {
+        "type": "COMMENT",
+        "text": " Secondary non flag dependant check to ensure mega non state transition stability"
+      },
+      "serialized_token": {
+        "type": "COMMENT",
+        "text": " Secondary non flag dependant check to ensure mega non state transition stability"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_triggers/giga_frameworld_triggers.txt",
+      "token_index": 1048,
+      "source_token": {
+        "type": "OPERATOR",
+        "text": "="
+      },
+      "serialized_token": {
+        "type": "OPERATOR",
+        "text": "="
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_triggers/giga_mega_categories.txt",
+      "token_index": 1109,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_triggers/giga_new_ehof_triggers.txt",
+      "token_index": 316,
+      "source_token": {
+        "type": "LBRACE",
+        "text": "{"
+      },
+      "serialized_token": {
+        "type": "LBRACE",
+        "text": "{"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_triggers/giga_qso_triggers.txt",
+      "token_index": 210,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_triggers/giga_qso_triggers.txt",
+      "token_index": 217,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_triggers/giga_qso_triggers.txt",
+      "token_index": 224,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_triggers/giga_qso_triggers.txt",
+      "token_index": 231,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_triggers/giga_qso_triggers.txt",
+      "token_index": 535,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_triggers/giga_qso_triggers.txt",
+      "token_index": 542,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_triggers/giga_qso_triggers.txt",
+      "token_index": 549,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_triggers/giga_qso_triggers.txt",
+      "token_index": 556,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_triggers/giga_qso_triggers.txt",
+      "token_index": 563,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_triggers/giga_qso_triggers.txt",
+      "token_index": 570,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_triggers/giga_qso_triggers.txt",
+      "token_index": 577,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_triggers/giga_qso_triggers.txt",
+      "token_index": 584,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_triggers/giga_qso_triggers.txt",
+      "token_index": 591,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_triggers/giga_qso_triggers.txt",
+      "token_index": 598,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_variables/giga_compound_variables.txt",
+      "token_index": 14,
+      "source_token": {
+        "type": "NUMBER",
+        "text": "0.4"
+      },
+      "serialized_token": {
+        "type": "NUMBER",
+        "text": "0.4"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_variables/giga_compound_variables.txt",
+      "token_index": 32,
+      "source_token": {
+        "type": "NUMBER",
+        "text": "0.4"
+      },
+      "serialized_token": {
+        "type": "NUMBER",
+        "text": "0.4"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_variables/giga_vat_variables.txt",
+      "token_index": 73,
+      "source_token": {
+        "type": "OPERATOR",
+        "text": "="
+      },
+      "serialized_token": {
+        "type": "OPERATOR",
+        "text": "="
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_variables/giga_vat_variables.txt",
+      "token_index": 76,
+      "source_token": {
+        "type": "OPERATOR",
+        "text": "="
+      },
+      "serialized_token": {
+        "type": "OPERATOR",
+        "text": "="
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/technology/giga_06_special_project_tech.txt",
+      "token_index": 304,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/technology/giga_16_frameworld.txt",
+      "token_index": 42,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/technology/giga_16_frameworld.txt",
+      "token_index": 94,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/technology/giga_16_frameworld.txt",
+      "token_index": 146,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/technology/giga_17_alternative_mega_build.txt",
+      "token_index": 92,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/technology/giga_17_alternative_mega_build.txt",
+      "token_index": 249,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/technology/giga_17_alternative_mega_build.txt",
+      "token_index": 353,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/technology/giga_17_alternative_mega_build.txt",
+      "token_index": 641,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/technology/giga_17_alternative_mega_build.txt",
+      "token_index": 713,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/technology/giga_17_alternative_mega_build.txt",
+      "token_index": 788,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/technology/giga_17_alternative_mega_build.txt",
+      "token_index": 863,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/ascension_perks/00_ascension_perks.txt",
+      "token_index": 2047,
+      "source_token": {
+        "type": "LBRACE",
+        "text": "{"
+      },
+      "serialized_token": {
+        "type": "LBRACE",
+        "text": "{"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/scripted_triggers/00_scripted_triggers.txt",
+      "token_index": 2917,
+      "source_token": {
+        "type": "LBRACE",
+        "text": "{"
+      },
+      "serialized_token": {
+        "type": "LBRACE",
+        "text": "{"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/scripted_triggers/00_scripted_triggers.txt",
+      "token_index": 2924,
+      "source_token": {
+        "type": "LBRACE",
+        "text": "{"
+      },
+      "serialized_token": {
+        "type": "LBRACE",
+        "text": "{"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/scripted_triggers/00_scripted_triggers.txt",
+      "token_index": 2931,
+      "source_token": {
+        "type": "LBRACE",
+        "text": "{"
+      },
+      "serialized_token": {
+        "type": "LBRACE",
+        "text": "{"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/scripted_triggers/00_scripted_triggers.txt",
+      "token_index": 2938,
+      "source_token": {
+        "type": "LBRACE",
+        "text": "{"
+      },
+      "serialized_token": {
+        "type": "LBRACE",
+        "text": "{"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/scripted_triggers/00_scripted_triggers.txt",
+      "token_index": 2945,
+      "source_token": {
+        "type": "LBRACE",
+        "text": "{"
+      },
+      "serialized_token": {
+        "type": "LBRACE",
+        "text": "{"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/scripted_triggers/00_scripted_triggers_ai.txt",
+      "token_index": 443,
+      "source_token": {
+        "type": "COMMENT",
+        "text": "If true makes the AI really value mining jobs and stops organics from working factory jobs."
+      },
+      "serialized_token": {
+        "type": "COMMENT",
+        "text": "If true makes the AI really value mining jobs and stops organics from working factory jobs."
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/scripted_triggers/00_scripted_triggers_ai.txt",
+      "token_index": 490,
+      "source_token": {
+        "type": "COMMENT",
+        "text": "Used in the buildings file to determine if the country has the needed Strategic Resource."
+      },
+      "serialized_token": {
+        "type": "COMMENT",
+        "text": "Used in the buildings file to determine if the country has the needed Strategic Resource."
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/scripted_triggers/00_scripted_triggers_ai.txt",
+      "token_index": 537,
+      "source_token": {
+        "type": "COMMENT",
+        "text": "Used in the buildings file to determine if the country has the needed Strategic Resource."
+      },
+      "serialized_token": {
+        "type": "COMMENT",
+        "text": "Used in the buildings file to determine if the country has the needed Strategic Resource."
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/scripted_triggers/00_scripted_triggers_ai.txt",
+      "token_index": 584,
+      "source_token": {
+        "type": "COMMENT",
+        "text": "Used in the buildings file to determine if the country has the needed Strategic Resource."
+      },
+      "serialized_token": {
+        "type": "COMMENT",
+        "text": "Used in the buildings file to determine if the country has the needed Strategic Resource."
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/scripted_triggers/00_scripted_triggers_pop.txt",
+      "token_index": 108,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/scripted_triggers/05_scripted_triggers_grand_archive.txt",
+      "token_index": 46,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/scripted_triggers/05_scripted_triggers_grand_archive.txt",
+      "token_index": 50,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/scripted_triggers/05_scripted_triggers_grand_archive.txt",
+      "token_index": 54,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/scripted_triggers/05_scripted_triggers_grand_archive.txt",
+      "token_index": 58,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/scripted_triggers/05_scripted_triggers_grand_archive.txt",
+      "token_index": 70,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/scripted_triggers/05_scripted_triggers_grand_archive.txt",
+      "token_index": 74,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/scripted_triggers/05_scripted_triggers_grand_archive.txt",
+      "token_index": 78,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/scripted_triggers/05_scripted_triggers_grand_archive.txt",
+      "token_index": 82,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/scripted_triggers/05_scripted_triggers_grand_archive.txt",
+      "token_index": 87,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/scripted_triggers/05_scripted_triggers_grand_archive.txt",
+      "token_index": 98,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/scripted_triggers/05_scripted_triggers_grand_archive.txt",
+      "token_index": 102,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/scripted_triggers/05_scripted_triggers_grand_archive.txt",
+      "token_index": 106,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_apocalypse_tech.txt",
+      "token_index": 837,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_biogenesis_tech.txt",
+      "token_index": 134,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_biogenesis_tech.txt",
+      "token_index": 138,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_biogenesis_tech.txt",
+      "token_index": 605,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_biogenesis_tech.txt",
+      "token_index": 609,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_biogenesis_tech.txt",
+      "token_index": 1069,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_biogenesis_tech.txt",
+      "token_index": 1073,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_biogenesis_tech.txt",
+      "token_index": 1526,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_biogenesis_tech.txt",
+      "token_index": 1530,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_biogenesis_tech.txt",
+      "token_index": 2385,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_biogenesis_tech.txt",
+      "token_index": 2480,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_biogenesis_tech.txt",
+      "token_index": 3025,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_biogenesis_tech.txt",
+      "token_index": 3120,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_biogenesis_tech.txt",
+      "token_index": 3654,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_biogenesis_tech.txt",
+      "token_index": 3749,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_biogenesis_tech.txt",
+      "token_index": 4284,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_biogenesis_tech.txt",
+      "token_index": 4379,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_biogenesis_tech.txt",
+      "token_index": 4924,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_biogenesis_tech.txt",
+      "token_index": 5019,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_biogenesis_tech.txt",
+      "token_index": 5553,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_biogenesis_tech.txt",
+      "token_index": 5648,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_distant_stars_tech.txt",
+      "token_index": 258,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 1009,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 1013,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 1096,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 1325,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 1329,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 1655,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 1659,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 1985,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 1989,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 3627,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 3738,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 3805,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 3888,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 3971,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 4013,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 4063,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 4659,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 4700,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 5014,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 5123,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 5464,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 5468,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 5532,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 5536,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 5600,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 5604,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 5668,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 5672,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 5736,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 5740,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 5781,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 5870,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 6046,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 6507,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 6553,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 8138,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 8203,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 8245,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 8324,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_eng_tech.txt",
+      "token_index": 8452,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_first_contact_tech.txt",
+      "token_index": 1543,
+      "source_token": {
+        "type": "COMMENT",
+        "text": "This is just a good tech"
+      },
+      "serialized_token": {
+        "type": "COMMENT",
+        "text": "This is just a good tech"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_first_contact_tech.txt",
+      "token_index": 1634,
+      "source_token": {
+        "type": "COMMENT",
+        "text": "This is just a good tech"
+      },
+      "serialized_token": {
+        "type": "COMMENT",
+        "text": "This is just a good tech"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_horizonsignal_tech.txt",
+      "token_index": 26,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_horizonsignal_tech.txt",
+      "token_index": 93,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_megacorp_tech.txt",
+      "token_index": 66,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_megacorp_tech.txt",
+      "token_index": 70,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_megacorp_tech.txt",
+      "token_index": 103,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_megacorp_tech.txt",
+      "token_index": 107,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_megastructures.txt",
+      "token_index": 814,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_megastructures.txt",
+      "token_index": 984,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_megastructures.txt",
+      "token_index": 1144,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_megastructures.txt",
+      "token_index": 1314,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_megastructures.txt",
+      "token_index": 1803,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_megastructures.txt",
+      "token_index": 2029,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_nomads_dlc_tech.txt",
+      "token_index": 676,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_nomads_dlc_tech.txt",
+      "token_index": 798,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_nomads_dlc_tech.txt",
+      "token_index": 951,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_nomads_dlc_tech.txt",
+      "token_index": 1059,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_nomads_dlc_tech.txt",
+      "token_index": 1637,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 434,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 722,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 726,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 790,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 794,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 858,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 862,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 926,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 930,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 994,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 998,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 1470,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 1516,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 1520,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 1593,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 1597,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 1708,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 1844,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 1959,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 2024,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 2130,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 2165,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 2186,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 2329,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 2453,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 2487,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 2491,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 2617,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 2669,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 2722,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 2829,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 2902,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 2974,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 3043,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 3115,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 3187,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 3256,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 3465,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 3583,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 3701,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 3899,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 3940,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 4401,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 4442,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 4483,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 4716,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 4959,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 5105,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 6261,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 6670,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_tech.txt",
+      "token_index": 6747,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_weapon_tech.txt",
+      "token_index": 2130,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_phys_weapon_tech.txt",
+      "token_index": 2206,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 148,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 223,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 318,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 1406,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 2593,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 2631,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 2635,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 2673,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 2677,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 2715,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 2719,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 2757,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 2761,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 2865,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 5323,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 6993,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 7306,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 11029,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 11100,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 11185,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 11273,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 11360,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 11444,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 11547,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 11662,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 11754,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 11855,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 12047,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 12099,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 12149,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 12194,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 12198,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 12243,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 12247,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 12340,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 12525,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 12620,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 12716,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 12761,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 12765,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 12840,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 12892,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 12896,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 12948,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 12952,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 12988,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 12992,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 13029,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 13033,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 13064,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 13068,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 13101,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 13105,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 13135,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 13139,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 13170,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 13174,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 13634,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 13692,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 13800,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 14332,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 14392,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 14452,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 14895,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 15026,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 15175,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 15392,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 15523,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 15672,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 15755,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_soc_tech.txt",
+      "token_index": 15835,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_synthetic_dawn_tech.txt",
+      "token_index": 60,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_synthetic_dawn_tech.txt",
+      "token_index": 597,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    },
+    {
+      "file": "vendor/stellaris/common/technology/00_synthetic_dawn_tech.txt",
+      "token_index": 925,
+      "source_token": {
+        "type": "RBRACE",
+        "text": "}"
+      },
+      "serialized_token": {
+        "type": "RBRACE",
+        "text": "}"
+      }
+    }
+  ]
+}

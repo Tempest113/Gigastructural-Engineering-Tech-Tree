@@ -3,6 +3,7 @@ name = "gigastructures-tech-tree-pipeline"
 version = "0.1.0"
 description = "Extract/Compute pipeline for the Gigastructural Engineering tech tree visualiser"
 requires-python = ">=3.10"
+dependencies = ["Pillow>=11"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]

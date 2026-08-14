@@ -96,25 +96,57 @@ class ParameterReference:
     mechanism, resolved by whatever caller supplies `NAME = value` when invoking the script —
     a different mechanism from `@variable` (resolved against scripted_variables/), and both are
     out of scope for this parser (expansion is a separate pass, same as inline_script itself).
+
+    `default` carries the fallback text of a `$NAME|default$` reference verbatim (unresolved,
+    not type-converted), or `None` if the reference had no `|default` suffix. `safe` is `True`
+    for a `$NAME$?` reference — the same trailing "safe scope" marker recognised on bare
+    identifiers (`space_owner? = { ... }`), just attached to a parameter reference instead; kept
+    off `name` (unlike the identifier case) because `name` is a lookup key into the invocation's
+    parameter table, and corrupting it would break that lookup. Both confirmed real — see
+    tests/fixtures/NOTES.md's scripted_triggers/ entries.
     """
 
     name: str
     line: int
     column: int
+    default: str | None = None
+    safe: bool = False
 
 
 ScalarValue = Union[Identifier, StringLiteral, NumberLiteral, VariableReference, ParameterReference]
 
 
 @dataclass
+class ConditionalBlock:
+    """A `[[GUARD] ... ]` (or negated `[[!GUARD] ... ]`) conditional-inclusion block: `items`
+    (same shapes a `Block` can hold — assignments, bare scalars, comments, nested
+    `ConditionalBlock`s) are only meant to be included when the invoking `inline_script`
+    invocation did (or, if `negated`, did not) supply a parameter named `guard`. Confirmed real
+    across `common/scripted_triggers/` in all four sources — e.g. `[[HABITABILITY]
+    HABITABILITY = $HABITABILITY$ ]`, `[[!SPECIES] ... ]`.
+
+    Resolving the condition (does this invocation supply `guard`?) is a later pass's job, same
+    as `$PARAM$` substitution generally — this parser only needs to not choke on the syntax and
+    preserve it losslessly. `guard` excludes the `!` and both `[`/`]` delimiters.
+    """
+
+    guard: str
+    negated: bool
+    items: list[Union["Assignment", "ScalarValue", Comment]] = field(default_factory=list)
+    line: int = 0
+    column: int = 0
+
+
+@dataclass
 class Block:
-    """A `{ ... }` block: an ordered list of assignments, bare scalar values and comments.
+    """A `{ ... }` block: an ordered list of assignments, bare scalar values, comments and
+    conditional-inclusion blocks.
 
     Bare scalar values (e.g. `category = { voidcraft }`, `prerequisites = { "tech_a" tech_b }`)
     are only valid *inside* a block — see `Document`.
     """
 
-    items: list[Union["Assignment", ScalarValue, Comment]] = field(default_factory=list)
+    items: list[Union["Assignment", ScalarValue, Comment, ConditionalBlock]] = field(default_factory=list)
     line: int = 0
     column: int = 0
 
@@ -122,7 +154,9 @@ class Block:
         """Derived view: key -> ordered list of Assignments with that key.
 
         Convenience only; `items` (in source order, duplicates and all) remains the source of
-        truth. See module docstring.
+        truth. See module docstring. `ConditionalBlock` items are opaque to this view — their
+        own nested assignments aren't flattened up into it, matching how a nested `Block`'s
+        assignments aren't either.
         """
         grouped: dict[str, list["Assignment"]] = {}
         for item in self.items:

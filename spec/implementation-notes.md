@@ -11,34 +11,74 @@ inside another `inline_script`'s parameter (passed to a helper that conditionall
 back in) — the string's contents look like script but MUST be treated as opaque text at the
 parsing stage, not walked or interpreted as if it were live script.
 
-## Clausewitz identifier grammar: scope suffixes and dotted chains
+## Clausewitz identifier grammar: attached continuations
 
-Two shapes attach directly to an identifier with no intervening whitespace, and both parse as
-one opaque identifier token rather than being split or requiring a new AST node:
+Several shapes attach directly to an identifier, a `$parameter$` reference, or an `@variable`
+reference with no intervening whitespace, and all of them parse as one opaque identifier token
+(never split, never decomposed into structured sub-nodes) rather than requiring new AST node
+types. They compose freely — e.g. `flag_name@root.owner` (a scope suffix whose scope is itself a
+dotted chain) or `planet_$JOB$_$RESOURCE$` (plain text and two separate embedded parameter
+references) both parse as one token as a consequence of applying the rules below repeatedly,
+without any one rule needing to know about the others. Flattening an embedded `$PARAM$` or
+`@variable` span into opaque text rather than preserving it as a distinct node is deliberate and
+safe: `inline_script`'s own `$PARAM$` substitution runs as text substitution on raw source before
+parsing, so it finds an embedded reference the same way regardless of how the parsed AST
+represents it, and no other current or near-term pass walks the AST looking for one.
 
-- **Scope suffix.** `flag_name@scope` (e.g. `has_star_flag = ehof_megastructure_system@root`)
-  attaches a scope reference to a flag name with `@`. This is unrelated to a scripted-variable
-  reference (`cost = @tier1cost1`) even though both use `@` — the distinguishing signal is
-  whether the `@` is attached to a preceding identifier character (scope suffix) or starts a
-  fresh token after whitespace/an operator/a brace (scripted variable). Getting this wrong is
-  worse than an honest parse failure: before the fix, the tokeniser silently split the flag name
-  and misread the scope as an unrelated top-level `@variable` reference, corrupting the flag
-  value and fabricating a bogus variable usage that would have shown up as a false "undefined
-  variable" finding.
-- **Dotted chains.** A `.` attached to an identifier, followed immediately by another
-  identifier-start character or a digit, chains on one more identifier-shaped segment —
-  repeatable, so `crisis.8060.1` and `root.owner.overlord` both parse as a single token. Two
-  idioms share this shape: the event-id idiom (`country_event = { id = bio.1 }`, namespace
-  followed by a number) and scope-chain references used as plain values (`is_same_species =
-  root.owner`). Both are required to parse `common/ascension_perks/` (P-3's gate identities) —
-  every file in it across all four sources uses at least one of the two. Requiring an
-  identifier-start character or digit immediately after the `.` (never whitespace, EOF, or other
-  punctuation) is deliberate: it's what lets the tokeniser consume `root.owner` as one token
-  without also swallowing an unrelated trailing `.` elsewhere in the grammar.
-
-These two rules compose: `flag_name@root.owner` (scope suffix whose scope is itself a dotted
-chain) parses correctly as one token as a consequence of applying both rules in sequence, without
-either rule needing to know about the other.
+- **Scope suffix.** `name@scope` (e.g. `has_star_flag = ehof_megastructure_system@root`, or
+  `broken_shackles_parent_of@$SCOPE$` where the scope is itself a parameter reference) attaches a
+  scope reference to a name with `@`. This is unrelated to a scripted-variable reference (`cost =
+  @tier1cost1`) even though both use `@` — the distinguishing signal is whether the `@` is
+  attached to preceding text (scope suffix) or starts a fresh token after whitespace/an
+  operator/a brace (scripted variable). Getting this wrong is worse than an honest parse
+  failure: before the fix, the tokeniser silently split the name and misread the scope as an
+  unrelated top-level `@variable` reference, corrupting the value and fabricating a bogus
+  variable usage that would have shown up as a false "undefined variable" finding.
+- **Dotted chains.** A `.` attached to a name, followed immediately by another identifier-start
+  character or a digit, chains on one more identifier-shaped segment — repeatable, so
+  `crisis.8060.1` and `root.owner.overlord` both parse as a single token, and it applies equally
+  to a `$parameter$` reference's own scope (`$TARGET$.trigger:empire_size`). Two idioms share
+  this shape: the event-id idiom (`country_event = { id = bio.1 }`, namespace followed by a
+  number) and scope-chain references used as plain values (`is_same_species = root.owner`). Both
+  are required to parse `common/ascension_perks/` (P-3's gate identities) — every file in it
+  across all four sources uses at least one of the two. Requiring an identifier-start character
+  or digit immediately after the `.` (never whitespace, EOF, or other punctuation) is deliberate:
+  it's what lets the tokeniser consume `root.owner` as one token without also swallowing an
+  unrelated trailing `.` elsewhere in the grammar.
+- **Pipe-delimited parameterised value calls.** `value:name|KEY|value|KEY2|value2|` (confirmed
+  real across `scripted_triggers/` in all four sources), where a value segment can itself be a
+  live `$PARAM$` reference (`value:x|OWNER|$OWNER$|`) rather than plain text.
+- **`$NAME|default$`.** A parameter reference with a `|`-delimited fallback value, used when the
+  invocation doesn't supply `NAME`. Confirmed real (`$STAGE|1$`, `$condition|always$`).
+  `ParameterReference.default` carries the fallback text (`None` if absent) when the reference
+  stands alone, unattached to anything else — see the next two points for when it doesn't stand
+  alone.
+- **`$NAME$?` safe-scope suffix on a parameter reference.** The same trailing `?` marker already
+  recognised on bare identifiers (`space_owner? = { ... }`), attached to a parameter reference
+  instead (`$SCOPE$? = { ... }`). Carried as `ParameterReference.safe` rather than folded into
+  `.name` (unlike the identifier case): `.name` is a lookup key into the invocation's parameter
+  table, and corrupting it with a trailing `?` would break that lookup.
+- **Bare mid-token substitution with no connecting sigil.** A `$PARAM$` reference embedded
+  directly in identifier text — `crisis_stage_$STAGE|1$`, `planet_$JOB$_$RESOURCE$` — with
+  nothing (`.`, `@`, `|`) marking the attachment. This is the same mid-token idiom already
+  documented for `inline_script` target files (`giga_tech_repeatable_$name$_cap`), just also
+  occurring directly in files parsed without going through `inline_script` substitution first.
+  Missing this rule doesn't produce a parse failure at all — it silently produces two
+  disconnected top-level items instead of one value, which is a data-corruption bug, not merely
+  a gap. Confirmed common across `scripted_triggers/` in all four sources.
+- **Inline arithmetic expressions.** `@[ expression ]` (e.g. `value = @[ (-1 * (($toggle$*
+  $toggle$) / (($toggle$*$toggle$)+1))) ]`), scanned bracket-depth-aware so a nested `[`/`]`
+  inside the expression, if one ever appears, doesn't close it early. Dispatched separately from
+  the ordinary `@name` case, since `[` is never a valid variable-name start character.
+- **Conditional-inclusion blocks.** `[[GUARD] ... ]` or, negated, `[[!GUARD] ... ]` — content
+  meant to be included only when the invocation does (or doesn't) supply a parameter named
+  `GUARD`. Unlike everything else in this section, this one gets a real AST node
+  (`ConditionalBlock`, with `guard`, `negated`, and `items`) rather than being flattened to
+  opaque text, since its content is itself a full nested statement sequence (assignments, bare
+  scalars, comments, even further nested conditional blocks) that needs to stay walkable —
+  flattening would lose that structure, not just a name. Resolving the guard (does this
+  invocation supply `GUARD`?) is a later pass's job, same deferred-resolution principle as
+  `$PARAM$` substitution generally.
 
 ## Trigger evaluation
 

@@ -7,6 +7,8 @@ preserved verbatim, and comments are preserved with their source position.
 Deliberately out of scope here (separate, later passes — do not add them to this module):
   - Resolving `@variable` references against scripted_variables/.
   - Expanding `inline_script` directives.
+  - Evaluating a `ConditionalBlock`'s guard (does the invocation supply that parameter?) —
+    same deferred-resolution principle as `$PARAM$` substitution generally.
   - Interpreting boolean structure (`OR`/`AND`/`NOT`/`NOR`) — that's Stage 2's trigger evaluator.
   - Localisation YAML — a different file format, parsed separately (see
     tests/clausewitz/test_fixtures.py's module docstring for why).
@@ -24,6 +26,7 @@ from .nodes import (
     Assignment,
     Block,
     Comment,
+    ConditionalBlock,
     Document,
     Identifier,
     NumberLiteral,
@@ -42,6 +45,7 @@ __all__ = [
     "Assignment",
     "Block",
     "Comment",
+    "ConditionalBlock",
     "Identifier",
     "StringLiteral",
     "NumberLiteral",

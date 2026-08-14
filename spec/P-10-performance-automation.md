@@ -33,8 +33,11 @@ parseable and updatable programmatically from mod source files.
 - Deployment to the production static host is fully automated from the default branch.
 - **Zero technology data is hand-authored.** The only hand-maintained files are configuration:
   empire profiles (P-1), gate patterns (P-3), crisis classification rules (P-5),
-  overwrite-resolution overrides (P-15), and ACOT/AoT version metadata (P-16), which cannot be
-  pinned by the scheduled sync above and so is recorded by hand.
+  overwrite-resolution overrides (P-15), icon overrides (P-3 — `config/icon_overrides.txt`, for
+  the rare case where an upstream source ships a technology/swap referencing an icon it never
+  shipped, with no local fix available; never a silent fallback, always a reviewed, justified
+  entry), and ACOT/AoT version metadata (P-16), which cannot be pinned by the scheduled sync
+  above and so is recorded by hand.
 
 ## Implied technical decisions
 

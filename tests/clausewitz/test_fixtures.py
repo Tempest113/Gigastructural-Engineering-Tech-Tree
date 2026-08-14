@@ -26,8 +26,10 @@ from pipeline.clausewitz.nodes import (
     Assignment,
     Block,
     Comment,
+    ConditionalBlock,
     Identifier,
     NumberLiteral,
+    ParameterReference,
     StringLiteral,
     VariableReference,
 )
@@ -421,6 +423,146 @@ def test_chained_dotted_scope_reference_used_as_a_plain_value_is_one_identifier(
     cost = _find_assignment(variable_doc.items, "cost")
     assert isinstance(cost.value, VariableReference)
     assert cost.value.name == "tier1cost1"
+
+
+# ---------------------------------------------------------------------------
+# Grammar gaps found rescoping the Stage 1 run to common/technology,
+# scripted_variables, scripted_triggers and ascension_perks (see tests/fixtures/NOTES.md's
+# "Conditional inclusion" and "Pipe-delimited" sections for the full evidence).
+# ---------------------------------------------------------------------------
+
+
+def test_conditional_block_guard_and_negated_guard():
+    # `[[HABITABILITY] ... ]` / `[[HOUSING] ... ]` — content only meant to be included when the
+    # invocation supplies that parameter. Real, from stellaris/common/scripted_triggers/
+    # 01_scripted_triggers_refugees.txt.
+    doc = parse_file(FIXTURES_ROOT / "stellaris" / "common" / "scripted_triggers" / "01_scripted_triggers_refugees.txt")
+    trigger = _find_assignment(doc.items, "planet_has_habitability_and_housing")
+    conditionals = [item for item in trigger.value.items if isinstance(item, ConditionalBlock)]
+    assert [c.guard for c in conditionals] == ["HABITABILITY", "HOUSING"]
+    assert all(not c.negated for c in conditionals)
+    habitability_body = conditionals[0].items
+    assert _find_assignment(habitability_body, "habitability")
+
+    # Negated form `[[!SPECIES] ... ]` — real, from 05_scripted_triggers_biogenesis.txt, right
+    # alongside the non-negated `[[SPECIES] ... ]` form for direct contrast.
+    doc2 = parse_file(FIXTURES_ROOT / "stellaris" / "common" / "scripted_triggers" / "05_scripted_triggers_biogenesis.txt")
+    trigger2 = _find_assignment(doc2.items, "any_available_random_trait_by_tag_evopred")
+    species_block = _find_assignment(trigger2.value.items, "species")
+    conditionals2 = [item for item in species_block.value.items if isinstance(item, ConditionalBlock)]
+    assert len(conditionals2) == 2
+    assert conditionals2[0].guard == "SPECIES" and conditionals2[0].negated is False
+    assert conditionals2[1].guard == "SPECIES" and conditionals2[1].negated is True
+
+
+def test_conditional_block_can_have_an_empty_body():
+    # `[[WHO]]` — real, from gigastructures/common/scripted_triggers/giga_birch_triggers.txt.
+    doc = parse_file(FIXTURES_ROOT / "gigastructures" / "common" / "scripted_triggers" / "giga_birch_triggers.txt")
+    trigger = _find_assignment(doc.items, "show_district_giga_birch_orykta_energy")
+    conditionals = [item for item in trigger.value.items if isinstance(item, ConditionalBlock)]
+    assert len(conditionals) == 1
+    assert conditionals[0].guard == "WHO"
+    assert conditionals[0].items == []
+    assert _find_assignment(trigger.value.items, "always")
+
+
+def test_pipe_delimited_parameterised_value_reference_is_one_identifier():
+    # `value:fotd_support_cost|RESOURCE|minerals|` — a parameterised scripted-value call. Real,
+    # from stellaris/common/scripted_triggers/02_scripted_triggers_first_contact_dlc.txt.
+    doc = parse_file(FIXTURES_ROOT / "stellaris" / "common" / "scripted_triggers" / "02_scripted_triggers_first_contact_dlc.txt")
+    switch = _find_assignment(doc.items, "support_seperatist_deficit_trigger").value.items
+    switch_block = _find_assignment(switch, "switch")
+    mineral = _find_assignment(switch_block.value.items, "mineral_seperatist_deficit")
+    compare = _find_assignment(mineral.value.items, "resource_stockpile_compare")
+    mult = _find_assignment(compare.value.items, "mult")
+    assert isinstance(mult.value, Identifier)
+    assert mult.value.name == "value:fotd_support_cost|RESOURCE|minerals|"
+
+
+def test_pipe_delimited_reference_with_an_embedded_parameter_reference():
+    # `value:giga_vat_grow_cost|VAT|$vat$|RESOURCE|primary|` — a pipe segment that is itself a
+    # live `$PARAM$` reference, not plain text. Real text, copied verbatim from
+    # gigastructures/common/scripted_triggers/giga_vat_triggers.txt line 57 (a ~90-line `switch`
+    # block not otherwise worth committing as a whole-file fixture just for this one line —
+    # same "real fragment via parse_text" approach already used elsewhere in this suite).
+    doc = parse_text(
+        "resource_stockpile_compare = { resource = food value >= $amount$ mult = value:giga_vat_grow_cost|VAT|$vat$|RESOURCE|primary| }\n",
+        path="giga_vat_triggers.txt",
+    )
+    found = _find_assignment_anywhere(doc.items, "mult")
+    assert found is not None
+    assert isinstance(found.value, Identifier)
+    assert found.value.name == "value:giga_vat_grow_cost|VAT|$vat$|RESOURCE|primary|"
+
+
+def test_parameter_reference_with_default_value():
+    # `$STAGE|1$` — a parameter reference with a `|default` fallback. Real, from
+    # stellaris/common/scripted_triggers/00_scripted_triggers.txt's has_crisis_stage.
+    doc = parse_file(FIXTURES_ROOT / "stellaris" / "common" / "scripted_triggers" / "00_scripted_triggers_has_crisis_stage.txt")
+    trigger = _find_assignment(doc.items, "has_crisis_stage")
+    flag = _find_assignment(trigger.value.items, "has_global_flag")
+    assert isinstance(flag.value, Identifier)
+    # STAGE isn't at the very start of the value, so it stays flattened text like the pipe-chain
+    # cases above, rather than surfacing as a distinct ParameterReference — same reasoning: it's
+    # embedded mid-token (`crisis_stage_$STAGE|1$`), not standing alone.
+    assert flag.value.name == "crisis_stage_$STAGE|1$"
+
+    # A parameter reference standing alone (nothing attached) keeps its default as a distinct,
+    # inspectable field rather than being flattened.
+    standalone = parse_text("field = $STAGE|1$\n", path="usage.txt")
+    field = _find_assignment(standalone.items, "field")
+    assert isinstance(field.value, ParameterReference)
+    assert field.value.name == "STAGE"
+    assert field.value.default == "1"
+
+
+def test_parameter_reference_safe_scope_suffix():
+    # `$SCOPE$? = { ... }` — the same trailing "safe scope" marker recognised on bare
+    # identifiers (`space_owner? = { ... }`), attached to a parameter reference instead. Real,
+    # from stellaris/common/scripted_triggers/09_scripted_triggers_nomads.txt.
+    doc = parse_file(FIXTURES_ROOT / "stellaris" / "common" / "scripted_triggers" / "09_scripted_triggers_nomads.txt")
+    tooltip = _find_assignment(doc.items, "custom_tooltip")
+    scope_key = tooltip.value.items[1]
+    assert isinstance(scope_key, Assignment)
+    assert isinstance(scope_key.key, ParameterReference)
+    assert scope_key.key.name == "SCOPE"
+    assert scope_key.key.safe is True
+    assert scope_key.key.default is None
+
+    # A parameter reference with no trailing '?' has safe=False (the default), unaffected.
+    plain = parse_text("field = $SCOPE$\n", path="usage.txt")
+    field = _find_assignment(plain.items, "field")
+    assert field.value.safe is False
+
+
+def test_dotted_chain_attached_to_a_parameter_reference_is_flattened():
+    # `$TARGET$.trigger:empire_size` — a dotted chain attached to a `$parameter$` reference
+    # rather than a plain identifier (the same idiom fix #3 covered, extended to a different
+    # anchor token type). Real, from stellaris/common/scripted_triggers/
+    # 00_scripted_triggers_overlord.txt.
+    doc = parse_file(FIXTURES_ROOT / "stellaris" / "common" / "scripted_triggers" / "00_scripted_triggers_overlord.txt")
+    trigger = _find_assignment(doc.items, "shroudwalker_insight_purchasing_trigger")
+    compares = [
+        item
+        for item in trigger.value.items
+        if isinstance(item, Assignment) and item.key_name == "resource_stockpile_compare"
+    ]
+    mult = _find_assignment(compares[1].value.items, "mult")
+    assert isinstance(mult.value, Identifier)
+    assert mult.value.name == "$TARGET$.trigger:empire_size"
+
+
+def test_arithmetic_expression_is_one_opaque_identifier():
+    # `@[ (-1 * (...)) ]` — an inline arithmetic expression. Real, from gigastructures/common/
+    # inline_scripts/generic_parts/giga_toggled_code.txt (the target of the `code = "..."`
+    # embedded-script-as-string idiom fixture from the previous round).
+    doc = parse_file(FIXTURES_ROOT / "gigastructures" / "common" / "inline_scripts" / "generic_parts" / "giga_toggled_code.txt")
+    invocation = _find_assignment(doc.items, "inline_script")
+    value_assignment = _find_assignment(invocation.value.items, "value")
+    assert isinstance(value_assignment.value, Identifier)
+    assert value_assignment.value.name.startswith("@[")
+    assert value_assignment.value.name.endswith("]")
+    assert "$toggle$" in value_assignment.value.name
 
 
 def test_quoted_and_bare_scalars_both_valid_as_bare_block_members():

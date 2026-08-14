@@ -353,6 +353,67 @@ for at all until this round.
   idioms (and, as a side effect, the deferred `flag@root.owner` case noted above under
   `ehof_triggers.txt`) — see `spec/implementation-notes.md` for the combined rule.
 
+## Scripted-triggers grammar gaps found rescoping the run to the four required directories
+
+The first rescoped run (see the Ascension perks section above) still had 17 parse failures
+confined to `scripted_triggers/` and one `inline_scripts/` file — `scripted_triggers/` is a
+required directory (unparseable triggers inflate D-10's `unknown` rate for reasons unrelated to
+genuine trigger-evaluation undecidability), so these had to be chased down too, not left as an
+accepted residue. All six constructs below compose with each other and with the two dotted-value
+idioms above — see `spec/implementation-notes.md`'s combined identifier-grammar rule.
+
+- **`stellaris/common/scripted_triggers/01_scripted_triggers_refugees.txt`** (excerpt, source
+  lines 61–72) — `planet_has_habitability_and_housing`'s `[[HABITABILITY] ... ]` and
+  `[[HOUSING] ... ]`: conditional-inclusion blocks, content meant to be included only when the
+  invocation supplies that parameter. ~12 occurrences across 6 scoped files.
+- **`stellaris/common/scripted_triggers/05_scripted_triggers_biogenesis.txt`** (excerpt, source
+  lines 661–686) — the negated form, `[[!SPECIES] ... ]`, directly alongside the non-negated
+  `[[SPECIES] ... ]` for contrast. Negation is real and appears in scoped content, not just the
+  wider corpus (confirmed via `grep -rn '\[\[!' vendor/`).
+- **`gigastructures/common/scripted_triggers/giga_birch_triggers.txt`** (excerpt, source lines
+  16–19) — `[[WHO]]`: a conditional block with an empty body (the guard header's closing `]`
+  immediately followed by the body's closing `]`, zero items between).
+- **`stellaris/common/scripted_triggers/02_scripted_triggers_first_contact_dlc.txt`** (excerpt,
+  source lines 303–342) — `value:fotd_support_cost|RESOURCE|minerals|`: a pipe-delimited
+  parameterised scripted-value call. Flattened into one opaque `Identifier`, same treatment as a
+  quoted string whose contents happen to look like script — nothing currently needs to walk into
+  it structurally.
+- **giga_vat_triggers.txt line 57** (real text, not a committed fixture — the enclosing `switch`
+  block is ~90 lines of near-identical repetition, not worth a whole-file fixture for one
+  construct; used via `parse_text` in `test_pipe_delimited_reference_with_an_embedded_parameter_
+  reference`) — `value:giga_vat_grow_cost|VAT|$vat$|RESOURCE|primary|`: a pipe chain whose value
+  segment is itself a live `$vat$` parameter reference, not plain text.
+- **`stellaris/common/scripted_triggers/00_scripted_triggers_has_crisis_stage.txt`** (excerpt,
+  source lines 1203–1207 of `00_scripted_triggers.txt`, separate `dest` from that file's other
+  excerpt since the two source ranges aren't contiguous) — `has_global_flag =
+  crisis_stage_$STAGE|1$`: a `$NAME|default$` parameter reference (fallback value used when the
+  invocation doesn't supply `STAGE`), embedded mid-token. `$condition|always$` is the same shape
+  (`giga_qso_triggers.txt`, `ndb_new_triggers.txt`, 6 occurrences).
+- **`stellaris/common/scripted_triggers/09_scripted_triggers_nomads.txt`** (excerpt, source
+  lines 36–41) — `$SCOPE$? = { ... }`: the trailing "safe scope" `?` marker (already handled on
+  bare identifiers, e.g. `space_owner? = { ... }`) attached to a parameter reference instead.
+  Kept off `ParameterReference.name` (unlike the identifier case) since `name` is a lookup key
+  into the invocation's parameter table — corrupting it would break that lookup, not just cosmetics.
+- **`stellaris/common/scripted_triggers/00_scripted_triggers_overlord.txt`** (excerpt, source
+  lines 184–198) — `mult = $TARGET$.trigger:empire_size`: the dotted-scope-chain idiom (already
+  fixed for plain identifiers, `root.owner`) attached to a `$parameter$` reference instead.
+  Discovered only after the plain-identifier fix landed — this file's earlier, different parse
+  failure was masking it.
+- **`gigastructures/common/inline_scripts/generic_parts/giga_toggled_code.txt`** (whole file) —
+  `value = @[ (-1 * (...)) ]`: an inline arithmetic expression (bracket-depth-aware scan, flattened
+  to one opaque `Identifier`, same as everything else in this section). Not one of the originally
+  five named grammar gaps for this round — found because it was still in the 17-failure list and
+  blocked this script (itself referenced by `zzz_overwrites.txt`'s `code = "..."` idiom, see
+  above) from parsing at all.
+- A related, broader bug found while adding these fixtures: a `$PARAM$` reference embedded
+  **directly** in identifier text with no connecting `.`/`@`/`|` at all (e.g. `crisis_stage_
+  $STAGE|1$`, `planet_$JOB$_$RESOURCE$`) was silently split into two disconnected top-level
+  items rather than failing or merging — a data-corrupting bug, not just a parse failure, caught
+  by `test_parameter_reference_with_default_value` when the `$STAGE|1$` fixture's expected value
+  came back truncated. Confirmed common across `scripted_triggers/` in all four sources (dozens
+  of distinct names via `grep -rnoE` for identifier-glued-to-`$PARAM$` shapes). Fixed as part of
+  the same general continuation mechanism, not a special case.
+
 ## `acot/`, `aot/`
 
 New source trees, added for the P-16 ancestor-closure and placeholder-resolution cases, which had

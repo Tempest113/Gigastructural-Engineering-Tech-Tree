@@ -89,7 +89,15 @@ class Tokenizer:
         if ch == "}":
             self._advance()
             return Token(TokenType.RBRACE, "}", start_line, start_column)
+        if ch == "[":
+            self._advance()
+            return Token(TokenType.LBRACKET, "[", start_line, start_column)
+        if ch == "]":
+            self._advance()
+            return Token(TokenType.RBRACKET, "]", start_line, start_column)
         if ch == "@":
+            if self._peek(1) == "[":
+                return self._scan_arithmetic_expression(start_line, start_column)
             return self._scan_variable(start_line, start_column)
         if ch == "$":
             return self._scan_parameter(start_line, start_column)
@@ -134,6 +142,137 @@ class Tokenizer:
                 chars.append(ch)
         return Token(TokenType.STRING, "".join(chars), line, column)
 
+    def _has_attached_continuation(self) -> bool:
+        """True if the character right under the cursor starts one of the "attached, no
+        whitespace" continuation shapes handled by `_consume_attached_continuations` — used by
+        `_scan_variable`/`_scan_parameter` to decide whether their token stays a distinct
+        VARIABLE/PARAMETER node (the ordinary, overwhelmingly common case) or gets flattened
+        into opaque identifier-shaped text together with the attached continuation (see
+        `_consume_attached_continuations`'s docstring for why flattening is safe there)."""
+        if self._peek() in _IDENTIFIER_CONT:
+            return True
+        if self._peek() == "." and (self._peek(1) in _IDENTIFIER_START or self._peek(1) in _DIGITS):
+            return True
+        if self._peek() == "@" and (self._peek(1) in _IDENTIFIER_START or self._peek(1) == "$"):
+            return True
+        if self._peek() in ("|", "$"):
+            return True
+        return False
+
+    def _consume_attached_continuations(self, chars: list[str]) -> None:
+        """Extends `chars` in place with every "attached, no intervening whitespace" suffix
+        following it — repeatable, since they compose (e.g. mid-token substitution like
+        `planet_$JOB$_$RESOURCE$` chains plain text and two separate `$PARAM$` spans; a
+        '@'-suffix whose scope is itself a dotted chain chains those two). Four shapes, all
+        confirmed real, all sharing one governing idea: a scope suffix, dotted chain,
+        pipe-parameterised call, or bare mid-token `$PARAM$` substitution can attach directly to
+        *any* reference-shaped token — a plain identifier, a `$parameter$` reference, or an
+        `@variable` reference — not just plain identifier text on both sides. The whole compound
+        is flattened into one opaque identifier-shaped token rather than decomposed into
+        structured sub-nodes: no current or near-term pass needs to walk into an attached
+        `$PARAM$`/`@variable` span to find it — inline_script's own `$PARAM$` substitution runs
+        as text substitution on raw source before parsing (see inline_scripts.py), so it finds
+        e.g. `$OWNER$` the same way regardless of how the parsed AST represents it, and an
+        attached `@name` is never a genuine scripted-variable reference in the first place (a
+        real one is always unattached — see the '@'-suffix case below). Same "opaque when
+        embedded" precedent as a quoted string whose contents happen to look like script.
+
+        - Plain identifier-continuation characters: resumes ordinary identifier text after any
+          of the special spans below (e.g. the `_cap` in `giga_tech_repeatable_$name$_cap`, or
+          the second `_$RESOURCE$` in `planet_$JOB$_$RESOURCE$`) — without this, a compound with
+          a `$PARAM$`/`.`/`@`/`|` span in the *middle* rather than at the end would stop short.
+        - Bare '$': a `$PARAM$` reference embedded directly in running identifier text, no
+          connecting sigil — e.g. `has_global_flag = crisis_stage_$STAGE|1$`,
+          `planet_$JOB$_$RESOURCE$`. Confirmed real and common across scripted_triggers/ in all
+          four sources — this is the same mid-token substitution idiom already documented for
+          `inline_script` target files (`giga_tech_repeatable_$name$_cap`), just occurring in a
+          file parsed directly rather than reached through inline_script's own text
+          substitution. Without this, `crisis_stage_` and the following `$STAGE|1$` silently
+          became two disconnected top-level items instead of one value — a real, previously
+          undetected data-corrupting bug, not merely a parse failure.
+        - '.' + (identifier-start char | digit): chains one more identifier-shaped segment,
+          repeatable. Two idioms share this shape: event-id namespace.number (`id = bio.1`,
+          chainable as `crisis.8060.1` — 2,142 distinct values across scripted_triggers/ and
+          ascension_perks/ in all four sources) and scope-chain values (`is_same_species =
+          root.owner`, chainable as `root.owner.overlord`, also as a `$parameter$` reference's
+          scope, e.g. `$TARGET$.trigger:empire_size` — needed to parse ascension_perks/, which
+          feeds P-3's gate identities).
+        - '@' + (identifier-start char | '$'): a scope suffix, not a scripted-variable
+          reference — e.g. `has_star_flag = ehof_system_created_by_@root`, or
+          `broken_shackles_parent_of@$SCOPE$` where the scope is itself a parameter. The flag
+          name and its scope are one inseparable token; splitting them (as a leading, unattached
+          '@' correctly does) previously misread the scope as an unrelated top-level `@variable`
+          reference instead of failing loudly.
+        - '|' + segment, repeatable, segment optionally a full `$PARAM$`/`@variable`-shaped span
+          rather than plain identifier text: the parameterised scripted-value call idiom,
+          `value:name|KEY|value|KEY2|value2|` (confirmed real, common/scripted_triggers/ in all
+          four sources), including cases where a value segment is itself a live parameter
+          reference (`value:x|OWNER|$OWNER$|`).
+        """
+        while True:
+            progressed = False
+            while not self._at_end() and self._peek() in _IDENTIFIER_CONT:
+                chars.append(self._advance())
+                progressed = True
+            if self._peek() == "." and (self._peek(1) in _IDENTIFIER_START or self._peek(1) in _DIGITS):
+                chars.append(self._advance())  # '.'
+                progressed = True
+                continue
+            if self._peek() == "@" and (self._peek(1) in _IDENTIFIER_START or self._peek(1) == "$"):
+                chars.append(self._advance())  # '@'
+                if self._peek() == "$":
+                    self._consume_dollar_span(chars)
+                progressed = True
+                continue
+            if self._peek() == "|":
+                chars.append(self._advance())  # '|'
+                if self._peek() == "$":
+                    self._consume_dollar_span(chars)
+                elif self._peek() == "@":
+                    chars.append(self._advance())
+                progressed = True
+                continue
+            if self._peek() == "$":
+                self._consume_dollar_span(chars)
+                progressed = True
+                continue
+            if not progressed:
+                break
+
+    def _consume_dollar_span(self, chars: list[str]) -> None:
+        """Appends a `$...$` span (delimiters included) verbatim to `chars`, for when a
+        `$PARAM$` reference is embedded mid-compound rather than standing alone."""
+        chars.append(self._advance())  # opening '$'
+        while not self._at_end() and self._peek() != "$":
+            chars.append(self._advance())
+        if self._peek() == "$":
+            chars.append(self._advance())  # closing '$'
+
+    def _scan_arithmetic_expression(self, line: int, column: int) -> Token:
+        """`@[ expression ]` — an inline arithmetic expression, evaluated (by the game engine,
+        or by whatever textually substitutes `$param$` references inside it first) to a number.
+        Confirmed real: `generic_parts/giga_toggled_code.txt`'s `value = @[ (-1 * (...)) ]`,
+        computing a 0/1 selector from a `$toggle$` parameter. Distinct from `_scan_variable`'s
+        ordinary `@name` case — dispatched separately in `_next_token` before reaching it, since
+        `[` is never a valid variable-name start character.
+
+        Scanned as one opaque token, bracket-depth-aware (so a nested `[`/`]` inside the
+        expression, if one ever appears, doesn't close it early) — same "opaque when embedded"
+        treatment as the other attached-continuation shapes: nothing currently needs to walk
+        into this expression structurally, only preserve it losslessly."""
+        chars = [self._advance(), self._advance()]  # '@', '['
+        depth = 1
+        while depth > 0:
+            if self._at_end():
+                raise self._error("unterminated arithmetic expression (no matching ']' for '@[')", line, column)
+            ch = self._advance()
+            chars.append(ch)
+            if ch == "[":
+                depth += 1
+            elif ch == "]":
+                depth -= 1
+        return Token(TokenType.IDENTIFIER, "".join(chars), line, column)
+
     def _scan_variable(self, line: int, column: int) -> Token:
         self._advance()  # consume '@'
         if self._peek() not in _IDENTIFIER_START:
@@ -141,6 +280,10 @@ class Tokenizer:
         chars = []
         while not self._at_end() and self._peek() in _IDENTIFIER_CONT:
             chars.append(self._advance())
+        if self._has_attached_continuation():
+            flattened = ["@", *chars]
+            self._consume_attached_continuations(flattened)
+            return Token(TokenType.IDENTIFIER, "".join(flattened), line, column)
         return Token(TokenType.VARIABLE, "".join(chars), line, column)
 
     def _scan_parameter(self, line: int, column: int) -> Token:
@@ -150,10 +293,41 @@ class Tokenizer:
         chars = []
         while not self._at_end() and self._peek() in _IDENTIFIER_CONT:
             chars.append(self._advance())
+        # `$NAME|default$` — a fallback value used when the invocation doesn't supply NAME.
+        # Confirmed real: `$STAGE|1$`, `$condition|always$` (scripted_triggers/, both sources).
+        # The default text isn't restricted to identifier characters — read up to the closing
+        # '$' verbatim, same "scan to the delimiter" approach as string literals, rather than
+        # guessing a charset from the handful of examples seen so far.
+        default = None
+        if self._peek() == "|":
+            self._advance()  # '|'
+            default_chars = []
+            while not self._at_end() and self._peek() != "$":
+                default_chars.append(self._advance())
+            default = "".join(default_chars)
         if self._peek() != "$":
             raise self._error(f"unterminated parameter reference '${''.join(chars)}' (expected closing '$')", line, column)
         self._advance()  # consume closing '$'
-        return Token(TokenType.PARAMETER, "".join(chars), line, column)
+        # A '?' immediately after the closing '$' is the same "safe scope" suffix already
+        # recognised on bare identifiers (`space_owner? = { ... }`) — confirmed real on a
+        # parameter reference too: `$SCOPE$? = { ... }`. Kept out of `.text` (the parameter
+        # *name* other passes look up by) since, unlike a literal identifier, corrupting the
+        # name would break parameter-table lookups; carried as a separate flag instead.
+        safe = False
+        if self._peek() == "?":
+            self._advance()
+            safe = True
+        if self._has_attached_continuation():
+            flattened = ["$", *chars]
+            if default is not None:
+                flattened.append("|")
+                flattened.extend(default)
+            flattened.append("$")
+            if safe:
+                flattened.append("?")
+            self._consume_attached_continuations(flattened)
+            return Token(TokenType.IDENTIFIER, "".join(flattened), line, column)
+        return Token(TokenType.PARAMETER, "".join(chars), line, column, default=default, safe=safe)
 
     def _scan_operator(self, line: int, column: int) -> Token:
         ch = self._advance()
@@ -161,6 +335,12 @@ class Tokenizer:
             if self._peek() == "=":
                 self._advance()
                 return Token(TokenType.OPERATOR, "!=", line, column)
+            if self._peek() in _IDENTIFIER_START:
+                # Bare '!' immediately before a name is only valid as the negation marker
+                # opening a `[[!NAME]` conditional-block guard (confirmed real:
+                # `[[!SPECIES]`, `[[!WHO]`, several others). The parser is what actually
+                # requires the `[[` context; the tokeniser just stops rejecting this shape.
+                return Token(TokenType.OPERATOR, "!", line, column)
             raise self._error("unexpected character '!' (did you mean '!='?)", line, column)
         if ch in ("<", ">") and self._peek() == "=":
             self._advance()
@@ -183,35 +363,5 @@ class Tokenizer:
         chars = []
         while not self._at_end() and self._peek() in _IDENTIFIER_CONT:
             chars.append(self._advance())
-        # A '.' immediately attached (no whitespace) to an identifier, followed by another
-        # identifier-start char or a digit, chains one more identifier-shaped segment onto this
-        # token — repeatable. Two confirmed real, common idioms share this exact shape:
-        #   - event-id namespace.number, e.g. `id = bio.1`, `id = timeline.69`, chainable as
-        #     `crisis.8060.1` (2,142 distinct namespace.number values across scripted_triggers/
-        #     and ascension_perks/ in all four sources — every `country_event = { id = ... }`).
-        #   - scope-chain references used as plain values, e.g. `is_same_species = root.owner`,
-        #     chainable as `root.owner.overlord` (129 occurrences across the rescoped corpus,
-        #     dominated by `from.owner`/`root.owner`; needed to parse ascension_perks/, which
-        #     feeds P-3's gate identities).
-        # Requiring an identifier-start char or digit immediately after the '.' (never
-        # whitespace/EOF/punctuation) avoids swallowing an unrelated trailing '.' — e.g.
-        # end-of-sentence punctuation that might otherwise leak out of a comment into a scan.
-        while self._peek() == "." and (self._peek(1) in _IDENTIFIER_START or self._peek(1) in _DIGITS):
-            chars.append(self._advance())  # '.'
-            while not self._at_end() and self._peek() in _IDENTIFIER_CONT:
-                chars.append(self._advance())
-        # A '@' immediately attached to the end of an identifier (no intervening whitespace) is
-        # a scope suffix, not a scripted-variable reference — e.g. `has_star_flag =
-        # ehof_system_created_by_@root`, `has_country_flag = marauder_tribute_6@event_target:x`.
-        # Confirmed in real corpus content (scripted_triggers/, several sources); the flag name
-        # and its scope are one inseparable token. A *leading* '@' (nothing consumed above) is
-        # unaffected — that's still `_scan_variable`'s ordinary scripted-variable case, since
-        # `_next_token` only reaches here when the first character was an identifier-start char.
-        # Without this, the tokeniser silently splits the flag name and misreads the scope as an
-        # unrelated top-level `@variable` reference instead of failing loudly — worse than an
-        # honest parse error.
-        if chars and self._peek() == "@" and self._peek(1) in _IDENTIFIER_START:
-            chars.append(self._advance())  # '@'
-            while not self._at_end() and self._peek() in _IDENTIFIER_CONT:
-                chars.append(self._advance())
+        self._consume_attached_continuations(chars)
         return Token(TokenType.IDENTIFIER, "".join(chars), line, column)

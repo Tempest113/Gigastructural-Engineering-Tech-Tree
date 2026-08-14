@@ -11,8 +11,8 @@ __pycache__/
 # tests/fixtures/ is reproduced from vendor/ (Stellaris + Steam Workshop mod source) by
 # tools/regenerate_fixtures.py, driven by the committed tests/fixtures/manifest.json. The
 # reproduced content itself is not committed, for the same redistribution reason as vendor/.
-# Hand-authored fixtures with no third-party content (malformed/, encoding/, variables/) are
-# exceptions and stay tracked.
+# Hand-authored fixtures with no third-party content (malformed/, encoding/, variables/,
+# tests/fixtures/localisation/malformed/) are exceptions and stay tracked.
 tests/fixtures/*
 !tests/fixtures/NOTES.md
 !tests/fixtures/manifest.json
@@ -22,3 +22,7 @@ tests/fixtures/*
 !tests/fixtures/encoding/*
 !tests/fixtures/variables
 !tests/fixtures/variables/*
+!tests/fixtures/localisation
+tests/fixtures/localisation/*
+!tests/fixtures/localisation/malformed
+!tests/fixtures/localisation/malformed/*

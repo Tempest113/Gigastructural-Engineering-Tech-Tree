@@ -1,0 +1,41 @@
+# Icon override config (P-3, P-10) — hand-maintained, checked in, loaded by
+# pipeline/icons/overrides.py.
+#
+# Zero technology data is hand-authored (CLAUDE.md / spec/P-10-performance-automation.md); this
+# file is configuration, not technology data, in the same category as empire profiles, gate
+# patterns, crisis classification rules and overwrite-resolution overrides — all hand-maintained
+# because they either encode an editorial decision or paper over an upstream content defect that
+# has no local fix.
+#
+# This file exists for the second case: a technology or technology_swap/tradition_swap
+# alternate whose icon cannot be resolved through any of the normal channels (explicit `icon =`
+# field, swap's own filename, inherit_icon) because the upstream source shipped the definition
+# without ever shipping the icon file it implies. The canonical example is Gigastructures'
+# `giga_tech_ring_world_swap_no_habitables`: it declares `inherit_icon = no` (an explicit,
+# deliberate refusal to share the base tech's icon) but never shipped its own
+# `giga_tech_ring_world_swap_no_habitables.dds` — confirmed by its near-identical sibling,
+# `giga_tech_ring_world_swap_no_habitables_bio`, which uses the exact same pattern and *does*
+# have its file.
+#
+# This is never a silent fallback. pipeline/icons/resolve.py will NOT substitute the base tech's
+# icon, or any other icon, for a candidate an author explicitly declined to inherit — doing so
+# would risk exactly the "silent wrong colour" this domain has to avoid. An entry here is a
+# human, reviewed decision, visible in a diff, not something the resolver invents on its own.
+#
+# Format: one entry per line, key/icon separated by ' = ', followed by a required '#'
+# justification (never optional -- a line without one is a config error, not a silent skip):
+#
+#   <candidate key> = <icon filename, without .dds>  # <justification>
+#
+# <candidate key> matches what pipeline/icons/resolve.py reports for an unresolved candidate --
+# either a bare technology/ascension-perk key, or "<owner key>/swap:<swap name>" for a
+# technology_swap or tradition_swap alternate.
+#
+# No entries yet. The five candidates found with no resolvable icon during the Step 1/2 survey
+# (giga_tech_planetary_matter_dumping, giga_tech_repeatable_observatory_cap,
+# giga_tech_repeatable_dyson_swarm_cap, tech_ring_world/swap:giga_tech_ring_world_swap_no_habitables,
+# tech_acot_bio_suppress_spore_dm) were deliberately left unresolved here: none of them has an
+# unambiguous "correct" target icon in the corpus, only plausible guesses, and this file is not
+# the place to guess on a shipped mod's behalf. They surface as unresolved-icon diagnostics from
+# pipeline/icons/resolve.py until a human reviews each one and either adds a justified entry here
+# or confirms the technology is out of rendering scope and doesn't need one.

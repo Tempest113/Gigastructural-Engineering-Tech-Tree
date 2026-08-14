@@ -46,11 +46,24 @@ never applied to the authoritative graph.
 
 Required base-game directories: `common/technology`, `common/scripted_variables`,
 `common/scripted_triggers`, `common/ascension_perks`, `common/inline_scripts`,
-`localisation/english`, `gfx/interface/icons/technologies`.
+`localisation/english`, `gfx/interface/icons/technologies`,
+`gfx/interface/icons/ascension_perks`.
 
 `common/scripted_triggers` is the single biggest lever on the unresolved-trigger rate. Without
 it the partial evaluator sees opaque tokens and returns `unknown` far more often than the
 logic actually warrants.
+
+`gfx/interface/icons/ascension_perks` was added after P-3 review found the original
+icon-directory entry named only technology icons, which cannot satisfy P-3's requirement that
+every gate — including the Cosmogenesis, Galactic Wonders and Gigastructural Constructs
+ascension-perk gates — render its icon as an image with the path never manually maintained.
+Ascension perk icons live in a directory of their own, not under `technologies/`: present in
+Stellaris (53 files), Gigastructures (9) and ACOT (1); absent from AoT, consistent with AoT
+defining no ascension perks at all. The Tetradimensional Engineering gate is an ordinary
+technology (`giga_tech_tetradimensional_engineering`) and its icon already lives under
+`gfx/interface/icons/technologies`, so it needed no new entry. P-3's gate list is stated as "at
+minimum" — a future gate kind outside ascension perks and technologies would need its own
+directory added the same way, as a configuration change here, not inferred.
 
 ## Glossary
 

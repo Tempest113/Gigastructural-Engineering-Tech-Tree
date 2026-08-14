@@ -62,6 +62,16 @@ Load order, lowest to highest: vanilla, Gigastructures, ACOT, AoT. Treat this as
 list of sources. Do not special-case "vanilla" and "mod" in resolution logic. Overwrite
 semantics are whole-key replacement, matching the engine — never a field-level merge.
 
+Required directories, per source (spec/00-overview.md is authoritative — this is a pointer, not
+a copy): `common/technology`, `common/scripted_variables`, `common/scripted_triggers`,
+`common/ascension_perks`, `common/inline_scripts`, `localisation/english`,
+`gfx/interface/icons/technologies`, `gfx/interface/icons/ascension_perks`. The two icon
+directories are separate because ascension perk icons (P-3's gates) are not filed under
+`technologies/` in any source — a directory list naming only `technologies/` cannot satisfy
+P-3's "every gate renders its icon as an image, path never manually maintained" requirement.
+Adding a gate kind outside ascension perks and technologies means adding its own directory here
+the same way, not inferring a location from a pattern.
+
 ## Locked decisions
 
 ### Empire model
@@ -183,7 +193,9 @@ English only for v1. The pipeline is language-parameterised so more languages ar
 ## Rules
 
 - Zero technology data is hand-authored. The only hand-maintained files are config: empire
-  profiles, gate patterns, crisis classification overrides, overwrite overrides, mod metadata.
+  profiles, gate patterns, crisis classification overrides, overwrite overrides,
+  `config/icon_overrides.txt` (a technology/swap referencing an icon its upstream source never
+  shipped — never a silent fallback, always a reviewed, justified entry), mod metadata.
 - The build fails rather than emitting a partial dataset. Fail on parse errors, graph cycles,
   dangling references, missing localisation for displayed strings, missing icons, schema
   violations, dead repository links.
@@ -200,6 +212,19 @@ English only for v1. The pipeline is language-parameterised so more languages ar
   once produced a false "single-quoted strings exist in scripted_variables/" finding that led
   to a tokeniser change with zero actual evidentiary basis — caught only because the fixture
   built to test it was checked against the raw file.
+- The Clausewitz AST has a standing round-trip check (`pipeline/clausewitz/roundtrip.py`,
+  wired in by `tests/clausewitz/test_roundtrip*.py`): a naive serialiser walks the AST back to
+  text and the result is compared against the source, catching parses that succeed but build the
+  wrong AST — a strictly stronger claim than "every fixture parses without raising." Inter-token
+  adjacency (whether any whitespace separated two tokens, not its quantity or kind) is
+  deliberately significant in that comparison, not normalised away — it is the one signal that
+  can catch a tokeniser silently merging or splitting a token, which is exactly the bug class two
+  real, previously-shipped corruptions belonged to. A comparator that reconstructs adjacency by
+  asking the tokeniser itself whether a pair could lex differently does not work, because it
+  consults the same tool that's under test. Round-trip mismatches are never silently normalised
+  away to make a build green: each is reviewed, and only a reviewed, adjacency-only,
+  cannot-lex-differently mismatch is added to the checked-in `tests/clausewitz/
+  roundtrip_allowlist.json` — read that file before touching it.
 
 ## Commands
 
@@ -214,8 +239,24 @@ points — to be filled in as they land.)*
 ## Open items
 
 - Pattern tile for Blokkats needs tracing to clean SVG from the supplied flag image.
-- Repo layout: `pipeline/clausewitz/` (tokeniser + recursive-descent parser, lossless AST) is
-  built and green against every fixture in `tests/fixtures/`. Not yet built: `@variable`
-  resolution, `inline_script` expansion, localisation YAML parsing, overwrite resolution, DAG
-  build, trigger evaluation, tier/column/edge computation, dataset emission — the rest of
-  Stage 1 and all of Stage 2.
+- **Stage 1 (Extract) is complete**, modulo the recorded Stage 2 handoffs below — see HANDOFF.md
+  for the full picture. `pipeline/clausewitz/` (tokeniser + recursive-descent parser, lossless
+  AST, plus a round-trip serialiser and corruption detector — see the Rules section) is built and
+  green against every fixture in `tests/fixtures/`. `pipeline/variables.py` (`@variable`
+  resolution), `pipeline/inline_scripts.py` (`inline_script` expansion), `pipeline/localisation/`
+  (hand-written parser for the YAML-*like* localisation format — not YAML, see the Rules section),
+  and `pipeline/icons/` (technology/ascension-perk icon resolution, DDS decode, deterministic,
+  size-capped atlas packing — see the Rules section) are all built, each with its own test module
+  (`tests/test_variables.py`, `tests/test_inline_scripts.py`, `tests/localisation/`,
+  `tests/icons/`). Two handoffs are deliberately left for Stage 2, both recorded as
+  `TODO(Stage 2)` comments in `pipeline/icons/resolve.py` rather than guessed at here:
+  (1) `pipeline/icons/resolve.py` has no notion of rendering scope and never fails the build on a
+  missing icon — 19 technology/swap and 6 ascension-perk candidates are recorded as unresolved
+  diagnostics, uninterpreted; deciding which are real build failures needs the partial trigger
+  evaluator, which isn't built yet; (2) the atlas currently packs every resolvable icon across
+  all four sources unconditionally, including ACOT/AoT content outside the prerequisite-edge
+  closure that P-16 actually renders — so its current byte size is measured over a superset, not
+  the real one, and P-10's ≤2 MB budget can't be evaluated against it yet (nor is it settled
+  whether atlases count toward that budget at all, given P-9's lazy-load requirement — see
+  HANDOFF.md). Not yet built: overwrite resolution, DAG build, trigger evaluation, tier/column/
+  edge computation, dataset emission — the rest of Stage 2.
