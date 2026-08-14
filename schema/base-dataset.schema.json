@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gigastructures-tech-tree/schema/base-dataset.schema.json",
+  "title": "Base dataset",
+  "description": "spec/00-overview.md's 'Dataset structure': technology records, layout coordinates, edge geometry, icon atlas references, the compact availabilityMatrix, labelPriority. Shared across all twelve empire profiles -- nothing in this artefact varies per profile. Search index, empire overlays and detail payloads are separate artefacts (their own schema files), fetched independently.",
+  "type": "object",
+  "properties": {
+    "schemaVersion": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+
+    "metadata": {
+      "type": "object",
+      "description": "P-10: upstream sources MUST be pinned and recorded, displayed as a 'data as of' marker.",
+      "properties": {
+        "gigastructuresCommit": { "type": "string" },
+        "vanillaVersion": { "type": "string" },
+        "acotVersion": { "type": "string" },
+        "aotVersion": { "type": "string" },
+        "buildTimestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["gigastructuresCommit", "vanillaVersion", "buildTimestamp"],
+      "additionalProperties": false
+    },
+
+    "tierBands": {
+      "type": "array",
+      "description": "P-2/S-3: tier range is unbounded and MUST be enumerated from the dataset at build time, never assumed. Ascending order; the last entry is always the Repeatables terminal column.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "oneOf": [
+              { "type": "integer", "minimum": 0 },
+              { "const": "repeatables" }
+            ]
+          },
+          "column": { "type": "integer", "minimum": 0 },
+          "label": { "type": "string" }
+        },
+        "required": ["tier", "column", "label"],
+        "additionalProperties": false
+      }
+    },
+
+    "lanes": {
+      "type": "array",
+      "description": "P-2/P-5: the standard-progression lane plus one per crisis faction, sharing one column axis.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "crisisFaction": {
+            "oneOf": [
+              { "type": "null" },
+              { "type": "string", "enum": ["Aeternum", "Blokkats", "Compound", "Sirenalia", "Katzenartig Imperium"] }
+            ]
+          },
+          "technologyCount": { "type": "integer", "minimum": 0 }
+        },
+        "required": ["id", "label", "crisisFaction", "technologyCount"],
+        "additionalProperties": false
+      }
+    },
+
+    "categories": {
+      "type": "array",
+      "description": "P-4: derived from the dataset at build time, never a hard-coded UI list.",
+      "items": { "type": "string" }
+    },
+
+    "iconAtlases": {
+      "type": "array",
+      "description": "Pointers to packed atlas sheets (pipeline/icons/pack.py). Atlas image bytes are fetched lazily and separately -- see pipeline/icons/resolve.py's Stage 2 note; this array carries references only, matching 00-overview.md's 'icon atlas references' base-dataset item.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "webp": { "type": "string", "description": "URL/path to the WebP sheet." },
+          "png": { "type": "string", "description": "URL/path to the PNG fallback sheet." },
+          "width": { "type": "integer", "minimum": 1, "maximum": 2048 },
+          "height": { "type": "integer", "minimum": 1, "maximum": 2048 }
+        },
+        "required": ["name", "webp", "png", "width", "height"],
+        "additionalProperties": false
+      }
+    },
+
+    "technologies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "$ref": "common.schema.json#/$defs/TechnologyId" },
+          "name": { "type": "string", "description": "Localised name (P-6, node card)." },
+          "icon": { "$ref": "common.schema.json#/$defs/IconRef" },
+          "tier": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Declared tier. P-2: unbounded, no fixed upper bound anywhere."
+          },
+          "column": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Computed layout column. May exceed 'tier' after promotion (P-2: if declared tier is at or below a prerequisite's, promoted to max(prereq columns)+1)."
+          },
+          "laneId": { "type": "string", "description": "References lanes[].id." },
+          "area": {
+            "type": "string",
+            "enum": ["physics", "society", "engineering"],
+            "description": "S-1: drives card background colour."
+          },
+          "category": { "type": "string" },
+          "crisisFaction": {
+            "oneOf": [
+              { "type": "null" },
+              { "type": "string", "enum": ["Aeternum", "Blokkats", "Compound", "Sirenalia", "Katzenartig Imperium"] }
+            ],
+            "description": "P-5: nullable. A technology that is both crisis-sourced and normally researchable is represented once, with this field set, never duplicated as two nodes."
+          },
+          "rare": { "type": "boolean", "description": "P-12.11/S-1: badge, not a warning treatment." },
+          "dangerous": { "type": "boolean", "description": "P-12.3/S-1: warning treatment, outranks rare in outline priority." },
+          "repeatable": {
+            "type": "object",
+            "description": "P-12.2: boolean-plus-count on the card and in the popup. Full per-level cost progression is a detail-payload field, not here.",
+            "properties": {
+              "levels": {
+                "oneOf": [
+                  { "type": "integer", "minimum": 1, "description": "Finite level count -- 'Repeatable: ×N'." },
+                  { "type": "null", "description": "Unbounded -- 'Repeatable: ∞'." }
+                ]
+              }
+            },
+            "required": ["levels"],
+            "additionalProperties": false
+          },
+          "requiresMods": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "P-16. Empty for the overwhelming majority. A list, not a boolean, so a second dependency costs no schema change."
+          },
+          "gates": {
+            "type": "array",
+            "items": { "$ref": "common.schema.json#/$defs/Gate" },
+            "description": "P-3: ordered, primary gate first. Displayed regardless of the selected empire profile -- lives here in the base dataset, not in a per-profile overlay, precisely because it must never vary by profile."
+          },
+          "availabilityMatrix": {
+            "type": "array",
+            "description": "P-13's twelve-profile expand-control matrix. Index i is this technology's ThreeState for EmpireProfileIndex i (see common.schema.json). Enum values only, no reason text -- the richer per-profile reason string lives in the empire-overlay artefact; this exists so the popup's matrix view doesn't require prefetching all twelve overlays just to render a summary widget.",
+            "items": { "$ref": "common.schema.json#/$defs/ThreeState" },
+            "minItems": 12,
+            "maxItems": 12
+          },
+          "labelPriority": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "S-3: far-zoom label-decluttering basis. Derived at build time from prerequisite out-degree (how many other technologies depend on this one) plus the rare and dangerous flags -- reproducible, never hand-maintained. Higher survives longer as zoom decreases. Exact derivation formula is Stage 2's to define at implementation time; this field's contract is only that it is build-time-derived and monotonic with 'importance', never authored."
+          }
+        },
+        "required": [
+          "id", "name", "icon", "tier", "column", "laneId", "area", "category",
+          "crisisFaction", "rare", "dangerous", "repeatable", "requiresMods", "gates",
+          "availabilityMatrix", "labelPriority"
+        ],
+        "additionalProperties": false
+      }
+    },
+
+    "edges": {
+      "type": "array",
+      "items": { "$ref": "common.schema.json#/$defs/Edge" }
+    },
+
+    "adjacency": {
+      "type": "object",
+      "description": "P-7: forward and reverse adjacency, per edge kind, precomputed -- O(1) lookup per node, never a full edge-set scan at interaction time. Values are indices into the 'edges' array.",
+      "properties": {
+        "forward": {
+          "type": "object",
+          "description": "technology id -> { edge kind -> [edge indices where this technology is \"to\"] }",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": { "type": "array", "items": { "type": "integer", "minimum": 0 } }
+          }
+        },
+        "reverse": {
+          "type": "object",
+          "description": "technology id -> { edge kind -> [edge indices where this technology is \"from\"] }",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": { "type": "array", "items": { "type": "integer", "minimum": 0 } }
+          }
+        }
+      },
+      "required": ["forward", "reverse"],
+      "additionalProperties": false
+    },
+
+    "geometry": {
+      "type": "object",
+      "description": "00-overview.md: typed-array side-files, JSON references them.",
+      "properties": {
+        "nodePositions": { "$ref": "common.schema.json#/$defs/GeometryRef" },
+        "edgePolylines": { "$ref": "common.schema.json#/$defs/GeometryRef" }
+      },
+      "required": ["nodePositions", "edgePolylines"],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schemaVersion", "metadata", "tierBands", "lanes", "categories", "iconAtlases",
+    "technologies", "edges", "adjacency", "geometry"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gigastructures-tech-tree/schema/empire-overlay.schema.json",
+  "title": "Empire overlay",
+  "description": "One artefact per empire profile, fetched on demand when the user selects that profile (spec/00-overview.md, spec/implementation-notes.md). Carries everything that varies by profile: availability with full reason text, active edge set, swap mappings, precomputed research path (P-12.9).",
+  "type": "object",
+  "properties": {
+    "schemaVersion": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "profile": { "$ref": "common.schema.json#/$defs/EmpireProfile" },
+
+    "availability": {
+      "type": "object",
+      "description": "P-13. Keyed by technology id. Full reason text lives here, not in the base dataset's compact availabilityMatrix.",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "state": { "$ref": "common.schema.json#/$defs/ThreeState" },
+          "reason": {
+            "oneOf": [
+              { "type": "null" },
+              { "type": "string" }
+            ],
+            "description": "Required (non-null) when state is 'locked' or 'uncertain'; null when 'available'. Two valid origins for a locked reason (P-13): trigger-derived (the specific failed condition) or structure-derived (no edge of any kind reaches this technology for this profile -- P-16). Both are ordinary strings in this one field; a structure-derived reason MUST be phrased in terms of reachability, never as though a trigger failed. An uncertain reason always carries the unresolved trigger's source text."
+          }
+        },
+        "required": ["state", "reason"],
+        "additionalProperties": false
+      }
+    },
+
+    "activeEdgeIds": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0 },
+      "description": "Indices into the base dataset's 'edges' array whose appliesToEmpireTypes constraint this profile satisfies. P-16: used by the per-profile structural-reachability check, which considers all three edge kinds -- never conflated with the profile-invariant rendering-scope closure (prerequisite edges only, computed once, lives in the base dataset's node set, not here)."
+    },
+
+    "swapMappings": {
+      "type": "array",
+      "description": "P-14/technology_swap: which swap alternative applies for this profile.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "baseTechnologyId": { "$ref": "common.schema.json#/$defs/TechnologyId" },
+          "activeVariantId": { "$ref": "common.schema.json#/$defs/TechnologyId" }
+        },
+        "required": ["baseTechnologyId", "activeVariantId"],
+        "additionalProperties": false
+      }
+    },
+
+    "researchPaths": {
+      "type": "object",
+      "description": "P-12.9: complete ancestor set in topological order by tier, with cumulative cost, computed per profile at build time -- never substituted from a canonical path in the browser, since swaps change the shape of the chain. Keyed by technology id.",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "ancestors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "technologyId": { "$ref": "common.schema.json#/$defs/TechnologyId" },
+                "tier": { "type": "integer", "minimum": 0 },
+                "cumulativeCost": { "type": "number", "minimum": 0 }
+              },
+              "required": ["technologyId", "tier", "cumulativeCost"],
+              "additionalProperties": false
+            }
+          },
+          "shortestChain": {
+            "type": "array",
+            "items": { "$ref": "common.schema.json#/$defs/TechnologyId" },
+            "description": "D-1's 'shortest chain' toggle: the cheapest single chain by cumulative cost, as an ordered list of technology ids."
+          }
+        },
+        "required": ["ancestors", "shortestChain"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["schemaVersion", "profile", "availability", "activeEdgeIds", "swapMappings", "researchPaths"],
+  "additionalProperties": false
+}

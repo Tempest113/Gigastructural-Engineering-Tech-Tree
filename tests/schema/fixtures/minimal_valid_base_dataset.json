@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "1.0.0",
+  "metadata": {
+    "gigastructuresCommit": "abc123",
+    "vanillaVersion": "4.5",
+    "buildTimestamp": "2026-08-14T00:00:00Z"
+  },
+  "tierBands": [
+    {"tier": 0, "column": 0, "label": "T0"},
+    {"tier": "repeatables", "column": 1, "label": "Repeatables"}
+  ],
+  "lanes": [
+    {"id": "standard", "label": "Standard Progression", "crisisFaction": null, "technologyCount": 1}
+  ],
+  "categories": ["Computing"],
+  "iconAtlases": [
+    {"name": "technologies_0", "webp": "technologies_0.webp", "png": "technologies_0.png", "width": 1008, "height": 2016}
+  ],
+  "technologies": [
+    {
+      "id": "tech_example",
+      "name": "Example Tech",
+      "icon": {"sheet": "technologies_0", "x": 0, "y": 0, "width": 52, "height": 52},
+      "tier": 0,
+      "column": 0,
+      "laneId": "standard",
+      "area": "physics",
+      "category": "Computing",
+      "crisisFaction": null,
+      "rare": false,
+      "dangerous": false,
+      "repeatable": {"levels": null},
+      "requiresMods": [],
+      "gates": [],
+      "availabilityMatrix": ["available","available","available","available","available","available","available","available","available","available","available","available"],
+      "labelPriority": 0
+    }
+  ],
+  "edges": [],
+  "adjacency": {"forward": {}, "reverse": {}},
+  "geometry": {
+    "nodePositions": {"file": "positions.f32", "byteOffset": 0, "length": 2, "dtype": "float32"},
+    "edgePolylines": {"file": "polylines.f32", "byteOffset": 0, "length": 0, "dtype": "float32"}
+  }
+}

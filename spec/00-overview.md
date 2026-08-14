@@ -106,12 +106,20 @@ generated from it, Python output validated against it in CI.
 
 ### Dataset structure
 
-- **Base dataset** — technology records, layout coordinates, edge geometry, search index, icon
-  atlas references. Shared across empire profiles.
-- **Empire overlays** — per-profile availability flags, lock reasons, active edge set, swap
-  mappings, precomputed research paths. Loaded on demand.
-- **Detail payloads** — descriptions, weight modifier lists, repository links. Chunked and
-  lazily fetched when a popup opens.
+Four separately-fetched artefacts, plus a fifth `/?dev`-only diagnostics artefact (S-2) outside
+this split — see `implementation-notes.md`'s "Stage 2 — Dataset emission" for the full field
+assignment and reasoning:
 
-The dataset MUST carry a `schemaVersion`. The client MUST refuse to render an unsupported
-version with a clear message rather than degrading silently.
+- **Base dataset** — technology records, layout coordinates, edge geometry (with precomputed
+  adjacency), icon atlas references, the compact `availabilityMatrix`, `labelPriority`. Shared
+  across empire profiles.
+- **Empire overlays** — per-profile availability state and reason, active edge set, swap
+  mappings, precomputed research paths. Loaded on demand.
+- **Detail payloads** — descriptions, weight modifier lists, repository links, P-15 source/diff
+  fields. Chunked and lazily fetched when a popup opens.
+- **Search index** — tokenised keywords derived from name/key/description at build time, not raw
+  description text. Its own schema and `schemaVersion`, fetched lazily on first search-box
+  focus.
+
+Every artefact carries its own `schemaVersion`. The client MUST refuse to render an artefact
+whose version it does not support, with a clear message, rather than degrading silently.

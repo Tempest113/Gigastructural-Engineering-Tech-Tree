@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1.0.0",
+  "profile": {
+    "authority": "regular",
+    "shipset": "mechanical",
+    "nomadic": "no"
+  },
+  "availability": {
+    "tech_example": {
+      "state": true,
+      "reason": null
+    }
+  },
+  "activeEdgeIds": [],
+  "swapMappings": [],
+  "researchPaths": {}
+}

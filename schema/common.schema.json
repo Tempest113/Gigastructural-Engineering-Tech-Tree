@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gigastructures-tech-tree/schema/common.schema.json",
+  "title": "Common definitions shared across every dataset artefact",
+  "$comment": "Referenced by $ref from base-dataset, empire-overlay, detail-payload, search-index and diagnostics schemas. A definition changed here changes every artefact that references it -- that's the point: these types are shared identity, not independently-drifting copies.",
+  "$defs": {
+    "SchemaVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Semantic version of THIS artefact's own schema, independent of the other three/four artefacts' versions. Every artefact (base dataset, empire overlay, detail payload, search index, diagnostics) carries its own -- see spec/00-overview.md's Dataset structure section and spec/implementation-notes.md's Stage 2 section. The client validates each fetch against the version it declares and MUST refuse to render an unsupported version with a clear message rather than degrading silently."
+    },
+
+    "TechnologyId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The technology's internal Clausewitz key, e.g. tech_adaptive_bureaucracy. Stable identity used to cross-reference between artefacts and within edges/adjacency."
+    },
+
+    "ThreeState": {
+      "type": "string",
+      "enum": ["available", "locked", "uncertain"],
+      "description": "P-13: availability MUST be a three-valued state, never a boolean. 'uncertain' means the partial trigger evaluator could not resolve the condition for this profile (D-10's 'unknown', propagated) -- it is not a variant of 'locked' and must never be presented as though it were either available or locked."
+    },
+
+    "GestaltAuthority": {
+      "type": "string",
+      "enum": ["regular", "hive_mind", "machine_intelligence"],
+      "description": "P-1 axis 1 of 3. Canonical order for index derivation (see EmpireProfileIndex below): regular=0, hive_mind=1, machine_intelligence=2."
+    },
+    "Shipset": {
+      "type": "string",
+      "enum": ["mechanical", "biological"],
+      "description": "P-1 axis 2 of 3. Canonical order: mechanical=0, biological=1."
+    },
+    "Nomadic": {
+      "type": "string",
+      "enum": ["no", "yes"],
+      "description": "P-1 axis 3 of 3. Canonical order: no=0, yes=1."
+    },
+
+    "EmpireProfile": {
+      "type": "object",
+      "description": "A single point in the composed 3-axis empire-type space (P-1, D-6). Twelve valid combinations -- NEVER modelled as a flat enumeration anywhere in this schema or its generated types.",
+      "properties": {
+        "authority": { "$ref": "#/$defs/GestaltAuthority" },
+        "shipset": { "$ref": "#/$defs/Shipset" },
+        "nomadic": { "$ref": "#/$defs/Nomadic" }
+      },
+      "required": ["authority", "shipset", "nomadic"],
+      "additionalProperties": false
+    },
+
+    "EmpireProfileIndex": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 11,
+      "$comment": "STORAGE ENCODING ONLY -- the composed axes (EmpireProfile) are the identity model; this integer is a pure, documented function of them, used solely to index fixed-size 12-slot arrays (e.g. availabilityMatrix) compactly. Do not reintroduce this as if it were a sanctioned flat enumeration of profiles -- it isn't one; it's a derived array index. Canonical derivation, fixed and never to be changed without a schema version bump: index = authorityIndex*4 + shipsetIndex*2 + nomadicIndex, where authorityIndex/shipsetIndex/nomadicIndex are each axis value's position in the canonical order stated on GestaltAuthority/Shipset/Nomadic above (regular=0/hive_mind=1/machine_intelligence=2; mechanical=0/biological=1; no=0/yes=1). E.g. {authority: hive_mind, shipset: biological, nomadic: yes} -> 1*4 + 1*2 + 1 = 7.",
+      "description": "Derived 0-11 index of an EmpireProfile under the canonical ordering documented in this schema's $comment. Never authored by hand; always computed from the three axes."
+    },
+
+    "EmpireTypeConstraint": {
+      "type": "object",
+      "description": "P-14: {from, to, kind, appliesToEmpireTypes}. This is the appliesToEmpireTypes shape -- axis constraints, each an array of allowed values on that axis; an omitted axis is unconstrained (all its values allowed). Confirmed against the full corpus (see the icon/edge survey) that every real edge's empire-type applicability factors as a product of independent axis constraints -- no real edge needs an irregular (non-rectangular) subset of the twelve profiles, so this shape is sufficient. NEVER a flat 12-profile enumeration and NEVER a bitmask in this JSON -- if a bitmask is needed for fast membership testing at runtime, it is derived at build time into the typed-array side-files, never authored or shipped here.",
+      "properties": {
+        "authority": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/GestaltAuthority" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "shipset": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Shipset" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "nomadic": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Nomadic" },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "EdgeKind": {
+      "type": "string",
+      "enum": ["prerequisite", "potential-gate", "alternative"],
+      "description": "P-14. The three edge kinds, kept distinct end to end -- rendering (P-8: solid/dashed/dotted, decreasing opacity), traversal (P-7: isolation follows all three; P-12.9's research path follows prerequisite only), and rendering-scope computation (P-16: prerequisite only, pooled across profiles) all depend on this distinction never being collapsed."
+    },
+
+    "Edge": {
+      "type": "object",
+      "description": "P-14's typed, conditional edge. Direction is fixed and uniform across all three kinds -- see the 'from'/'to' property descriptions below, which are the single normative statement of this convention (P-8); nothing else in this schema or CLAUDE.md redefines it.",
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/TechnologyId",
+          "description": "The technology DEPENDED UPON (the tail) -- for every edge kind uniformly. For a potential-gate edge, this is the technology named in the has_technology check, never the technology whose potential block contains the check. For an alternative edge, this is the alternative prerequisite. Connector colour follows this endpoint (P-8) -- the same endpoint used for direction, never a second attribution rule."
+        },
+        "to": {
+          "$ref": "#/$defs/TechnologyId",
+          "description": "The technology DECLARING the dependency (the head) -- for every edge kind uniformly. For a potential-gate edge, this is the technology whose potential block contains the has_technology check. Every connector renders from 'from' to 'to', the same direction a prerequisite edge reads, so all three kinds read consistently left-to-right regardless of kind (P-8)."
+        },
+        "kind": { "$ref": "#/$defs/EdgeKind" },
+        "appliesToEmpireTypes": { "$ref": "#/$defs/EmpireTypeConstraint" }
+      },
+      "required": ["from", "to", "kind", "appliesToEmpireTypes"],
+      "additionalProperties": false
+    },
+
+    "IconRef": {
+      "type": "object",
+      "description": "A pointer into a packed atlas sheet -- never a raw path. Paths into atlases are build-generated, per P-3's 'icon paths MUST NOT be manually maintained.'",
+      "properties": {
+        "sheet": { "type": "string", "description": "Sheet name, e.g. technologies_0 (pipeline/icons/pack.py's pack_sheets sheet-naming convention)." },
+        "x": { "type": "integer", "minimum": 0 },
+        "y": { "type": "integer", "minimum": 0 },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 }
+      },
+      "required": ["sheet", "x", "y", "width", "height"],
+      "additionalProperties": false
+    },
+
+    "GateKind": {
+      "type": "string",
+      "enum": ["ascension_perk", "technology"],
+      "description": "P-3: gate registry priority table ranks ascension-perk gates above technology gates (D-3) -- this field is what that priority table keys on."
+    },
+
+    "Gate": {
+      "type": "object",
+      "description": "P-3. A technology's gates are an ordered list; index 0 is the primary gate (P-12.7).",
+      "properties": {
+        "kind": { "$ref": "#/$defs/GateKind" },
+        "refId": { "type": "string", "description": "The ascension perk key or technology key this gate names." },
+        "icon": { "$ref": "#/$defs/IconRef" },
+        "label": { "type": "string", "description": "Localised gate label, e.g. 'Needs Cosmogenesis'. Sourced from the mod's own localisation, never hard-coded (P-3)." }
+      },
+      "required": ["kind", "refId", "icon", "label"],
+      "additionalProperties": false
+    },
+
+    "GeometryRef": {
+      "type": "object",
+      "description": "00-overview.md: geometry lives in typed-array side-files, JSON references them, never inlines coordinate arrays.",
+      "properties": {
+        "file": { "type": "string", "description": "Relative path/URL to the typed-array side-file." },
+        "byteOffset": { "type": "integer", "minimum": 0 },
+        "length": { "type": "integer", "minimum": 0, "description": "Element count (not byte count) in the referenced typed-array span." },
+        "dtype": { "type": "string", "enum": ["float32", "int32", "uint32", "uint16"] }
+      },
+      "required": ["file", "byteOffset", "length", "dtype"],
+      "additionalProperties": false
+    }
+  }
+}

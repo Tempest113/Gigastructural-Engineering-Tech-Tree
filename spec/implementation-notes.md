@@ -102,19 +102,33 @@ which is worse for the user than an honestly uncertain one.
 
 ## Stage 2 — Dataset emission
 
-To satisfy both P-1 (per-empire-type correctness) and P-10 (transfer budget), the recommended
-structure is:
+To satisfy both P-1 (per-empire-type correctness) and P-10 (transfer budget), the dataset is
+split into four separately-fetched artefacts — **base dataset, empire overlays, detail
+payloads, search index** — plus a fifth, `/?dev`-only diagnostics artefact (S-2) outside this
+split entirely:
 
-- **Base dataset** — technology records, layout coordinates, edge geometry, search index, icon
-  atlas references. Shared across empire types.
+- **Base dataset** — technology records, layout coordinates, edge geometry (with precomputed
+  adjacency, all three kinds), icon atlas references, the compact 12-slot
+  `availabilityMatrix` (P-13's expand-control matrix; enum values only, no reason strings —
+  the richer per-profile reason lives in the overlay), and `labelPriority` (S-3's far-zoom
+  decluttering basis). Shared across empire profiles.
 - **Empire overlays** — per-empire-profile availability state (available / locked / uncertain,
-  P-13), lock or uncertainty reasons, active edge set, swap mappings, and precomputed research
-  paths. Loaded on demand when the user selects a profile.
-- **Detail payloads** — descriptions, weight modifier lists, and repository links, chunked and
-  lazily fetched when a popup opens.
+  P-13) *with* reason text, active edge set, swap mappings, and precomputed research paths.
+  Loaded on demand when the user selects a profile.
+- **Detail payloads** — descriptions, weight modifier lists, repository links, and the P-15
+  source/overwrite-diff fields, chunked and lazily fetched when a popup opens.
+- **Search index** — tokenised/normalised keywords derived from name, key and description text
+  at build time, **not raw description text** (which stays in the lazy detail payload — P-6
+  requires search to match description content, but shipping every description in the base
+  dataset just to make that possible would defeat the point of lazy detail payloads; a
+  build-time-derived keyword index resolves the two without violating either). Its own JSON
+  Schema, its own `schemaVersion`, fetched lazily on first search-box focus rather than as part
+  of the initial load. If the fetch fails or hasn't completed, the search UI shows a loading
+  state, then a failure state, without blocking any other part of the application.
 
-The dataset MUST carry a `schemaVersion`. The client MUST refuse to render a dataset whose schema
-version it does not support, with a clear message, rather than degrading silently.
+Every one of the four artefacts — not just the base dataset — carries a `schemaVersion`, and the
+client validates it on each fetch, independently. The client MUST refuse to render an artefact
+whose schema version it does not support, with a clear message, rather than degrading silently.
 
 ## Rendering architecture
 

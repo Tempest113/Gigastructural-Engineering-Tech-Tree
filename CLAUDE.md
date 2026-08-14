@@ -195,7 +195,9 @@ English only for v1. The pipeline is language-parameterised so more languages ar
 - Zero technology data is hand-authored. The only hand-maintained files are config: empire
   profiles, gate patterns, crisis classification overrides, overwrite overrides,
   `config/icon_overrides.txt` (a technology/swap referencing an icon its upstream source never
-  shipped — never a silent fallback, always a reviewed, justified entry), mod metadata.
+  shipped — never a silent fallback, always a reviewed, justified entry), the P-13 lock-reason
+  override table (used when a locked technology's reason string can't be derived automatically
+  from its trigger; the build warns when an override is missing), mod metadata.
 - The build fails rather than emitting a partial dataset. Fail on parse errors, graph cycles,
   dangling references, missing localisation for displayed strings, missing icons, schema
   violations, dead repository links.
@@ -239,24 +241,49 @@ points — to be filled in as they land.)*
 ## Open items
 
 - Pattern tile for Blokkats needs tracing to clean SVG from the supplied flag image.
-- **Stage 1 (Extract) is complete**, modulo the recorded Stage 2 handoffs below — see HANDOFF.md
-  for the full picture. `pipeline/clausewitz/` (tokeniser + recursive-descent parser, lossless
-  AST, plus a round-trip serialiser and corruption detector — see the Rules section) is built and
-  green against every fixture in `tests/fixtures/`. `pipeline/variables.py` (`@variable`
-  resolution), `pipeline/inline_scripts.py` (`inline_script` expansion), `pipeline/localisation/`
-  (hand-written parser for the YAML-*like* localisation format — not YAML, see the Rules section),
-  and `pipeline/icons/` (technology/ascension-perk icon resolution, DDS decode, deterministic,
+- **Stage 1 (Extract) is complete**, and the dataset schema — the cross-language contract Stage 2
+  and Stage 3 both build against — is now written. See HANDOFF.md for the full picture.
+  `pipeline/clausewitz/` (tokeniser + recursive-descent parser, lossless AST, plus a round-trip
+  serialiser and corruption detector — see the Rules section) is built and green against every
+  fixture in `tests/fixtures/`. `pipeline/variables.py` (`@variable` resolution),
+  `pipeline/inline_scripts.py` (`inline_script` expansion), `pipeline/localisation/` (hand-written
+  parser for the YAML-*like* localisation format — not YAML, see the Rules section), and
+  `pipeline/icons/` (technology/ascension-perk icon resolution, DDS decode, deterministic,
   size-capped atlas packing — see the Rules section) are all built, each with its own test module
   (`tests/test_variables.py`, `tests/test_inline_scripts.py`, `tests/localisation/`,
-  `tests/icons/`). Two handoffs are deliberately left for Stage 2, both recorded as
-  `TODO(Stage 2)` comments in `pipeline/icons/resolve.py` rather than guessed at here:
-  (1) `pipeline/icons/resolve.py` has no notion of rendering scope and never fails the build on a
-  missing icon — 19 technology/swap and 6 ascension-perk candidates are recorded as unresolved
-  diagnostics, uninterpreted; deciding which are real build failures needs the partial trigger
-  evaluator, which isn't built yet; (2) the atlas currently packs every resolvable icon across
-  all four sources unconditionally, including ACOT/AoT content outside the prerequisite-edge
-  closure that P-16 actually renders — so its current byte size is measured over a superset, not
-  the real one, and P-10's ≤2 MB budget can't be evaluated against it yet (nor is it settled
-  whether atlases count toward that budget at all, given P-9's lazy-load requirement — see
-  HANDOFF.md). Not yet built: overwrite resolution, DAG build, trigger evaluation, tier/column/
-  edge computation, dataset emission — the rest of Stage 2.
+  `tests/icons/`).
+- **`schema/`** carries the JSON Schema for all five dataset artefacts (base dataset, empire
+  overlay, detail payload, search index, diagnostics — see "Dataset structure" above and
+  `spec/implementation-notes.md`'s Stage 2 section for the full field assignment).
+  `schema/generated/dataset-types.ts` is generated from it by
+  `tools/generate_typescript_types.py` (hand-written in Python — no Node/npm toolchain in this
+  environment, and D-12 already commits the pipeline to Python end to end) and checked in;
+  `tests/schema/test_typescript_drift.py` re-runs the generator and fails if the checked-in copy
+  doesn't match, so the two sides of the contract can't drift by hand-editing either end.
+  `pipeline/dataset_schema/` validates Python-side output against the schema (structural
+  validation, then a separate `schemaVersion`-support check — see
+  `UnsupportedSchemaVersionError`) and owns the canonical `EmpireProfileIndex` derivation
+  (`pipeline/dataset_schema/empire_profile.py`, strides derived from axis cardinalities at import
+  time, never hardcoded, with an import-time bijection assertion) plus the
+  `availabilityMatrix`/overlay consistency check. `tests/schema/` covers a minimal valid document
+  per artefact and the four required rejection shapes (unsupported version, missing required
+  field, invalid edge kind, boolean-where-three-state).
+  **TODO(Stage 3):** `schema/generated/dataset-types.ts` has never actually been typechecked —
+  there is no Node/npm in this environment, so `tests/schema/test_typescript_drift.py` only
+  proves the checked-in file matches a fresh generator run, not that the output compiles. Add a
+  `tsc --noEmit` CI step over it when the Node toolchain lands with the PixiJS renderer (see
+  `tools/generate_typescript_types.py`'s own `TODO(Stage 3)` for the same note).
+- One remaining Stage 2 handoff, recorded as a `TODO(Stage 2)` in `pipeline/icons/resolve.py`:
+  the atlas currently packs every resolvable icon across all four sources unconditionally,
+  including ACOT/AoT content outside the prerequisite-edge closure that P-16 actually renders —
+  so its current byte size is measured over a superset, not the real one. **Settled, not open:**
+  icon atlas bytes are excluded from P-10's ≤2 MB base-dataset budget (P-9/`implementation-notes`
+  require lazy icon loading; P-10's budget is defined as the base dataset's compressed transfer
+  size specifically) — atlases instead have their own proposed 12 MB combined-bytes cap
+  (`pipeline/icons/pack.py`'s `MAX_TOTAL_ATLAS_BYTES`, currently measuring ~8.65 MB unfiltered;
+  revisit once the P-16 closure exists and the real, smaller figure is known). The other
+  `TODO(Stage 2)` from the icon pipeline — 19 technology/swap and 6 ascension-perk candidates
+  recorded as unresolved diagnostics, uninterpreted, deferring the diagnostic-vs-failure decision
+  to the partial trigger evaluator — still stands. Not yet built: overwrite resolution, DAG
+  build, trigger evaluation, tier/column/edge computation, dataset emission — the rest of
+  Stage 2, now with a schema to emit into.

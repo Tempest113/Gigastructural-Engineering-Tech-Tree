@@ -16,6 +16,15 @@ parseable and updatable programmatically from mod source files.
 | Filter toggle → view updated | ≤ 100 ms |
 | Initial dataset transfer (compressed) | ≤ 2 MB |
 
+**"Initial dataset transfer" is the base dataset only — the JSON (technology records, edges,
+adjacency, layout/geometry references) plus its typed-array geometry side-files, measured
+compressed, over the wire.** It excludes empire overlays, detail payloads, the search index
+(all lazy, fetched after the initial load), and icon atlas image bytes (lazy per P-9 and
+`implementation-notes.md`; `00-overview.md` treats atlas *references* — not atlas images — as
+the base-dataset item). Icon atlas bytes have their own separate cap — see
+`pipeline/icons/resolve.py`'s Stage 2 TODO. All future budget measurements and the CI ratchet
+against this figure measure the compressed base-dataset transfer size as defined here.
+
 ## Acceptance criteria — automation
 
 - A single command (e.g. `npm run build:data`) regenerates the entire dataset from source with no
@@ -36,8 +45,10 @@ parseable and updatable programmatically from mod source files.
   overwrite-resolution overrides (P-15), icon overrides (P-3 — `config/icon_overrides.txt`, for
   the rare case where an upstream source ships a technology/swap referencing an icon it never
   shipped, with no local fix available; never a silent fallback, always a reviewed, justified
-  entry), and ACOT/AoT version metadata (P-16), which cannot be pinned by the scheduled sync
-  above and so is recorded by hand.
+  entry), the lock-reason override table (P-13 — used when a locked technology's reason string
+  cannot be derived automatically from its trigger; the build MUST warn when an override is
+  missing rather than rendering a blank or guessed reason), and ACOT/AoT version metadata (P-16),
+  which cannot be pinned by the scheduled sync above and so is recorded by hand.
 
 ## Implied technical decisions
 

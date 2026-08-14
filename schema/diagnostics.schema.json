@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gigastructures-tech-tree/schema/diagnostics.schema.json",
+  "title": "Diagnostics artefact",
+  "description": "S-2: the /?dev overlay's data. Outside the base/overlay/detail/search-index split entirely -- fetched only when ?dev is present, code-split, never affects the P-10 budgets when unused.",
+  "type": "object",
+  "properties": {
+    "schemaVersion": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+
+    "unknownRates": {
+      "type": "array",
+      "description": "D-10: per-profile unknown rate, all twelve, plus each profile's delta against the previous build (the exact figure the ratchet fails on).",
+      "items": {
+        "type": "object",
+        "properties": {
+          "profile": { "$ref": "common.schema.json#/$defs/EmpireProfile" },
+          "unknownRate": { "type": "number", "minimum": 0, "maximum": 1 },
+          "previousUnknownRate": { "type": "number", "minimum": 0, "maximum": 1 }
+        },
+        "required": ["profile", "unknownRate", "previousUnknownRate"],
+        "additionalProperties": false
+      },
+      "minItems": 12,
+      "maxItems": 12
+    },
+
+    "missingInlineScriptParameterCount": {
+      "type": "object",
+      "properties": {
+        "current": { "type": "integer", "minimum": 0 },
+        "previous": { "type": "integer", "minimum": 0 }
+      },
+      "required": ["current", "previous"],
+      "additionalProperties": false
+    },
+
+    "tierPromotions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "technologyId": { "$ref": "common.schema.json#/$defs/TechnologyId" },
+          "declaredTier": { "type": "integer" },
+          "promotedColumn": { "type": "integer" }
+        },
+        "required": ["technologyId", "declaredTier", "promotedColumn"],
+        "additionalProperties": false
+      }
+    },
+
+    "unrecognisedGatePatterns": { "type": "array", "items": { "type": "string" } },
+    "missingLockReasonOverrides": { "type": "array", "items": { "type": "string" } },
+    "unresolvedTriggers": { "type": "array", "items": { "type": "string" } },
+    "unresolvedModDependencies": { "type": "array", "items": { "type": "string" } },
+
+    "overwriteReport": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "technologyId": { "$ref": "common.schema.json#/$defs/TechnologyId" },
+          "changedFields": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["technologyId", "changedFields"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schemaVersion", "unknownRates", "missingInlineScriptParameterCount", "tierPromotions",
+    "unrecognisedGatePatterns", "missingLockReasonOverrides", "unresolvedTriggers",
+    "unresolvedModDependencies", "overwriteReport"
+  ],
+  "additionalProperties": false
+}

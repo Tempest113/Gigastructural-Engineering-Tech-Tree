@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gigastructures-tech-tree/schema/search-index.schema.json",
+  "title": "Search index",
+  "description": "P-6. A fourth, separately-fetched artefact -- NOT part of the base dataset (see spec/implementation-notes.md's Stage 2 section for why). Fetched lazily on first search-box focus, not during initial load. Carries build-time-tokenised keywords derived from name, key and description text -- never raw description text, which stays in the lazy detail payload. If the fetch fails or hasn't completed, the client shows a loading state, then a failure state, without blocking any other part of the application (search degrades; nothing else does).",
+  "type": "object",
+  "properties": {
+    "schemaVersion": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "technologyId": { "$ref": "common.schema.json#/$defs/TechnologyId" },
+          "tokens": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Lower-cased, diacritic-stripped tokens (P-6: search MUST be diacritic- and case-insensitive) derived at build time from name, key and description. Partial/prefix matching is a client-side concern over these tokens; fuzzy (edit-distance) matching is optional per P-6 and, if implemented, MUST rank exact/prefix matches above it."
+          }
+        },
+        "required": ["technologyId", "tokens"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["schemaVersion", "entries"],
+  "additionalProperties": false
+}

@@ -60,6 +60,20 @@ PADDING = 2  # pixels of edge-extruded border per tile, each side.
 
 MAX_SHEET_DIMENSION = 2048  # WebGL's guaranteed MAX_TEXTURE_SIZE floor -- see module docstring.
 
+# Combined WebP bytes across every sheet, both usage kinds -- excluded from P-10's ≤2 MB base
+# dataset budget (atlases load lazily), but not unbounded either.
+#
+# NOT a budget: it sits above today's measured ~8.65 MB *unfiltered* ceiling (every source
+# packed unconditionally, before the P-16 rendering-scope closure removes ACOT/AoT content
+# nothing rendered actually needs), so the real, filtered atlas set can essentially never trip
+# it. This is a tripwire against a pipeline bug that pulls in far more sprites than intended
+# (e.g. a resolution regression that stops deduplicating shared icons, or a source accidentally
+# included twice) — not a size target to design toward or feel good about staying under.
+# TODO(Stage 2): revisit this figure against the *filtered* atlas size once icon resolution
+# actually runs against the P-16 closure (pipeline/icons/resolve.py's other TODO(Stage 2)) --
+# that is the first point a meaningful budget, as opposed to a tripwire, can be set.
+MAX_TOTAL_ATLAS_BYTES = 12 * 1024 * 1024
+
 WEBP_SAVE_KWARGS = {"lossless": True, "method": 6, "exact": True}
 PNG_SAVE_KWARGS = {"optimize": False, "compress_level": 6}
 

@@ -19,7 +19,7 @@ from tests.conftest import REPO_ROOT
 
 from pipeline.icons.build import build_atlases, write_atlases
 from pipeline.icons.overrides import load_overrides
-from pipeline.icons.pack import MAX_SHEET_DIMENSION
+from pipeline.icons.pack import MAX_SHEET_DIMENSION, MAX_TOTAL_ATLAS_BYTES, encode_webp
 
 VENDOR_ROOT = REPO_ROOT / "vendor"
 _vendor_populated = VENDOR_ROOT.is_dir()
@@ -67,6 +67,15 @@ def test_full_icon_corpus_build_report():
 
     assert len(tech_result.unresolved) == 19
     assert len(perk_result.unresolved) == 6
+
+    total_atlas_bytes = sum(len(encode_webp(s)) for s in tech_sheets + perk_sheets)
+    print(f"total atlas bytes (WebP, all sheets): {total_atlas_bytes} (tripwire: {MAX_TOTAL_ATLAS_BYTES})")
+    assert total_atlas_bytes <= MAX_TOTAL_ATLAS_BYTES, (
+        f"total atlas bytes {total_atlas_bytes} exceeds MAX_TOTAL_ATLAS_BYTES "
+        f"({MAX_TOTAL_ATLAS_BYTES}) -- see pipeline/icons/pack.py's comment on this constant; "
+        f"this is a tripwire against unintended sprite growth, not a size budget, but tripping "
+        f"it is still worth a human looking at, not silently raising the number"
+    )
     assert len(fallback_tech) == 0 and len(fallback_perk) == 0, (
         "no icon in the current corpus should need the ImageMagick fallback -- if this fires, "
         "report it, don't silence it (see decode.py's module docstring)"

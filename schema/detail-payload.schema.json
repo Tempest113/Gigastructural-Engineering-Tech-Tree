@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gigastructures-tech-tree/schema/detail-payload.schema.json",
+  "title": "Detail payload",
+  "description": "spec/00-overview.md: descriptions, weight modifier lists, repository links, chunked and lazily fetched when a popup opens. One artefact per technology (or a small batch); fetched on demand, never part of the initial base-dataset load.",
+  "type": "object",
+  "properties": {
+    "schemaVersion": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "technologyId": { "$ref": "common.schema.json#/$defs/TechnologyId" },
+
+    "description": {
+      "type": "string",
+      "description": "P-12.1. Localised, with embedded formatting/variable tokens resolved or safely stripped (P-12.1). English only for v1 (D-9)."
+    },
+
+    "repeatableCostProgression": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0 },
+          "description": "P-12.2's 'per-level cost progression where defined'. Null when the technology isn't repeatable or no progression is defined."
+        }
+      ]
+    },
+
+    "source": {
+      "type": "string",
+      "enum": ["Vanilla", "Gigastructural Engineering", "Vanilla (modified by Gigastructural Engineering)"],
+      "description": "P-12.5."
+    },
+
+    "overwriteDiff": {
+      "description": "P-15: for a modified vanilla technology, which fields differ from vanilla. Null when 'source' is not the modified-vanilla case.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "properties": {
+            "changedFields": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["cost", "tier", "prerequisites", "weight", "category", "flags"] }
+            }
+          },
+          "required": ["changedFields"],
+          "additionalProperties": false
+        }
+      ]
+    },
+
+    "repositoryLink": {
+      "type": "object",
+      "description": "P-12.6/D-5: three branches. Never dead, never omitted.",
+      "properties": {
+        "kind": { "type": "string", "enum": ["gigastructures-permalink", "steam-workshop", "stellaris-wiki"] },
+        "url": { "type": "string", "format": "uri" },
+        "lineRange": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "properties": {
+                "file": { "type": "string" },
+                "startLine": { "type": "integer", "minimum": 1 },
+                "endLine": { "type": "integer", "minimum": 1 }
+              },
+              "required": ["file", "startLine", "endLine"],
+              "additionalProperties": false
+            }
+          ],
+          "description": "Set only for the gigastructures-permalink branch. P-12.6: targets the technology's own declared file/line range as written -- never a post-inline_script-expansion reconstruction."
+        }
+      },
+      "required": ["kind", "url", "lineRange"],
+      "additionalProperties": false
+    },
+
+    "weight": {
+      "type": "object",
+      "description": "P-12.8. No evaluated weight (D-4) -- base weight plus conditions only, never a computed final number.",
+      "properties": {
+        "base": { "type": "number" },
+        "modifiers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "factor": { "type": "number" },
+              "conditionText": {
+                "type": "string",
+                "description": "Human-readable rendering of the modifier's trigger condition. NOT YET BUILT as of this schema's authoring -- see HANDOFF.md's extraction-gap note on a trigger-to-text renderer; this field's presence in the schema does not imply the generator exists yet."
+              }
+            },
+            "required": ["factor", "conditionText"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["base", "modifiers"],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schemaVersion", "technologyId", "description", "repeatableCostProgression",
+    "source", "overwriteDiff", "repositoryLink", "weight"
+  ],
+  "additionalProperties": false
+}

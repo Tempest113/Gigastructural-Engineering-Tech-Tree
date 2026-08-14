@@ -29,13 +29,23 @@ an additional filter: only pack icons for candidates whose owning technology sur
 closure. Lossless WebP stays the default until then; switching to lossy is an available lever
 *after* the real, scope-filtered size is known, not a workaround for measuring the wrong set.
 
-**Also TODO(Stage 2/3, dataset schema) — whether atlases even count toward the ≤2 MB budget is
-still open.** spec/implementation-notes.md and P-9 both require icons to load lazily (not as
-part of the initial payload), while P-10's ≤2 MB figure is specifically the *initial* dataset
-transfer. If atlases are fetched lazily, they may be entirely outside that budget's accounting,
-in which case the 8.5 MB (superset) / eventual scope-filtered figure is not a P-10 violation at
-all. This isn't an icon-pipeline decision — it belongs to whoever defines the dataset schema and
-the initial-payload/lazy-payload split, and should be resolved there, not assumed here.
+**SETTLED (dataset schema work) — icon atlas bytes are excluded from P-10's ≤2 MB budget.** P-9
+and spec/implementation-notes.md both require icons to load lazily; spec/00-overview.md's
+"Dataset structure" section names atlas *references* (not atlas images) as the base-dataset
+item; P-10's ≤2 MB figure is defined as the base dataset's compressed transfer size specifically
+(spec/P-10-performance-automation.md), which never includes lazy artefacts. The 8.5 MB
+(superset, unfiltered) technologies-atlas figure measured this session is therefore not a P-10
+violation — it was never counted against that budget in the first place.
+
+**Atlas bytes get a separate tripwire instead, so total atlas size is measured rather than
+unbounded — see `pipeline/icons/pack.py`'s `MAX_TOTAL_ATLAS_BYTES` (12 MB) for the figure and
+its full reasoning.** It sits ~1.4x above the current *unfiltered* measured ceiling (~8.65 MB,
+before the P-16 rendering-scope closure removes ACOT/AoT content nothing rendered actually
+needs), so it is **not a budget** — the real, filtered atlas set can essentially never approach
+it. It exists to catch a pipeline bug that pulls in far more sprites than intended, not to
+express a target size. A meaningful *budget* (as opposed to a tripwire) can only be set once
+icon resolution actually runs against the P-16 closure and the real, filtered figure is known —
+tracked as a `TODO(Stage 2)` alongside `MAX_TOTAL_ATLAS_BYTES` itself.
 
 Resolution order — four channels, all confirmed against the real corpus (see the Step 1/2 icon
 survey):
