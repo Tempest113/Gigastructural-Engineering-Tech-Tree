@@ -66,14 +66,26 @@ present a menu of options.
   proven, separately**: `deploy-spike/` is a throwaway static page (no framework, no build step)
   deployed by `.github/workflows/deploy-spike-pages.yml`, proving base-path resolution under
   this repo's real GitHub Pages project subpath, the MIME type a typed-array side-file is
-  actually served with, and that the lazy-fetch pattern works against real static hosting rather
-  than a local dev server — the four things that are silent until they fail, verified now rather
-  than discovered while debugging the real renderer. See `deploy-spike/README.md`. **Manual
-  one-time setup needed in the GitHub UI** — Settings → Pages → Build and deployment → Source →
-  "GitHub Actions" (not "Deploy from a branch") — the workflow cannot enable Pages for the repo
-  by itself; until that's set, the workflow's `actions/deploy-pages` step fails with a clear
-  "Pages not enabled" error rather than silently no-opping. Delete `deploy-spike/` and its
-  workflow once Stage 3 has a real deploy pipeline of its own.
+  actually served with, that the lazy-fetch pattern works against real static hosting rather
+  than a local dev server, and (added after the first version of this spike) whether P-10's
+  "compressed, over-the-wire" budget assumption actually holds — it reads the
+  `Content-Encoding` header and the Resource Timing API's `encodedBodySize`/`decodedBodySize`
+  for a realistically-sized (~960 KB) synthetic JSON artefact, not just the tiny stub the first
+  version used, since a server can skip compressing small responses and a tiny file would have
+  produced a false negative. See `deploy-spike/README.md`. **What the page actually reports is
+  not yet known from this session** — it requires a real deployment to observe, which is the
+  next manual step. **Manual one-time setup needed in the GitHub UI** — Settings → Pages →
+  Build and deployment → Source → "GitHub Actions" (not "Deploy from a branch") — the workflow
+  cannot enable Pages for the repo by itself; until that's set, the workflow's
+  `actions/deploy-pages` step fails with a clear "Pages not enabled" error rather than silently
+  no-opping. Delete `deploy-spike/` and its workflow once Stage 3 has a real deploy pipeline of
+  its own.
+- **GitHub Pages cache headers are not configurable — a Stage 3 decision, not something to act
+  on now.** GitHub Pages sets its own cache-control headers on served files; there is no way to
+  override them per-file or per-repo. The mechanism for cache-busting a rebuilt dataset is
+  therefore **versioned artefact filenames (a content hash in the filename)**, not
+  header-based invalidation — decide this deliberately when Stage 3's deploy pipeline is built,
+  rather than discovering a stale dataset being served after a rebuild once it's already live.
 - **Blokkats SVG pattern tile.** Needs tracing from the supplied flag image. Unrelated to
   pipeline work, not blocking anything.
 

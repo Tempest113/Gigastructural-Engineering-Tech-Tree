@@ -16,10 +16,14 @@
   <p>
     Throwaway spike, not part of the tech tree app. See
     <a href="https://github.com/Tempest113/Gigastructural-Engineering-Tech-Tree/blob/master/deploy-spike/README.md">README.md</a>
-    in this directory for what it proves and why it exists.
+    in this directory for what it proves and why it exists — including whether GitHub Pages
+    actually serves these compressed, and at what ratio, since <code>fetch()</code>'s reported
+    byte length is always the <em>decoded</em> size and gzip is transparent to it.
   </p>
 
-  <h2>JSON artifact (<code>sample-dataset.json</code>)</h2>
+  <h2>JSON artifact (<code>sample-dataset.json</code>, ~1,878 synthetic technology records — a
+    meaningful compression test, not the earlier 137-byte stub a server might skip compressing
+    below a size threshold)</h2>
   <pre id="json-report">loading…</pre>
 
   <h2>Binary artifact (<code>geometry.f32</code>, a Float32Array side-file)</h2>

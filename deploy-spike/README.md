@@ -29,11 +29,26 @@ assumed:
    `actions/upload-pages-artifact` + `actions/deploy-pages` pattern, and whether Pages is even
    enabled and configured correctly for this repo (see the root `HANDOFF.md` for the manual
    one-time GitHub UI steps).
+5. **Whether P-10's "compressed, over-the-wire" budget assumption actually holds.**
+   `spec/P-10-performance-automation.md` specifies the ≤2 MB figure as compressed; the base
+   dataset size estimate assumed ~6x gzip on JSON and ~1.3x on typed arrays without ever
+   confirming GitHub Pages serves either compressed at all. `fetch()`'s reported byte length is
+   always the *decoded* size — gzip is transparent to it — so this spike also reads the
+   `Content-Encoding` response header and the Resource Timing API's `encodedBodySize` /
+   `decodedBodySize` (the actual wire bytes vs. the decoded bytes) for both artefacts, and
+   computes the real ratio. `sample-dataset.json` is ~960 KB of synthetic but
+   realistically-shaped technology records (not the placeholder few-hundred-byte file an earlier
+   version of this spike used) specifically so the test is large enough that a server-side
+   "don't bother compressing small responses" threshold can't produce a false negative.
 
 ## What it deliberately does NOT prove
 
 Nothing about PixiJS, rendering performance, the real dataset schema's actual size, or any
-application behaviour — this is delivery-path plumbing only.
+application behaviour — this is delivery-path plumbing only. It also doesn't prove anything
+about the *typed-array* artefact's compressibility beyond this one file: `geometry.f32` here is
+a short arithmetic sequence (`i * 0.5`), which compresses unrealistically well compared to real
+node-position/polyline data — read its ratio as "does compression happen at all," not as
+evidence for what ratio the real geometry side-files will get.
 
 ## Deleting this
 
