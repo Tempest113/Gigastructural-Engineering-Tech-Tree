@@ -63,16 +63,22 @@ MAX_SHEET_DIMENSION = 2048  # WebGL's guaranteed MAX_TEXTURE_SIZE floor -- see m
 # Combined WebP bytes across every sheet, both usage kinds -- excluded from P-10's ≤2 MB base
 # dataset budget (atlases load lazily), but not unbounded either.
 #
-# NOT a budget: it sits above today's measured ~8.65 MB *unfiltered* ceiling (every source
-# packed unconditionally, before the P-16 rendering-scope closure removes ACOT/AoT content
-# nothing rendered actually needs), so the real, filtered atlas set can essentially never trip
-# it. This is a tripwire against a pipeline bug that pulls in far more sprites than intended
-# (e.g. a resolution regression that stops deduplicating shared icons, or a source accidentally
-# included twice) — not a size target to design toward or feel good about staying under.
-# TODO(Stage 2): revisit this figure against the *filtered* atlas size once icon resolution
-# actually runs against the P-16 closure (pipeline/icons/resolve.py's other TODO(Stage 2)) --
-# that is the first point a meaningful budget, as opposed to a tripwire, can be set.
-MAX_TOTAL_ATLAS_BYTES = 12 * 1024 * 1024
+# NOT a budget: it's a tripwire against a pipeline bug that pulls in far more sprites than
+# intended (e.g. a resolution regression that stops deduplicating shared icons, a source
+# accidentally included twice, or -- now that filtering exists -- the P-16 filter silently
+# getting disabled) -- not a size target to design toward or feel good about staying under.
+#
+# RE-CALIBRATED (TODO(Stage 2) closed): the technology atlas is now filtered to P-16's 980-node
+# rendered set (pipeline/icons/build.py's filter_result_to_rendered_scope); ascension-perk icons
+# stay unfiltered on purpose (they're gate badges, not canvas nodes -- P-16's closure doesn't
+# apply to them; see that function's docstring). Measured real total, filtered tech + unfiltered
+# perk: ~4.83 MB (4,826,990 bytes: 2 technology sheets at 4,564,314 bytes + 1 perk sheet at
+# 262,676 bytes), down from the ~8.65 MB unfiltered figure this constant was previously sized
+# against. Set to 6 MB (~1.24x above the real measured total) -- deliberately kept BELOW the old
+# 8.65 MB unfiltered ceiling, unlike the previous 12 MB setting: that value sat above the
+# unfiltered figure too, so it could never have caught a regression that silently disabled
+# filtering entirely. This value can.
+MAX_TOTAL_ATLAS_BYTES = 6 * 1024 * 1024
 
 WEBP_SAVE_KWARGS = {"lossless": True, "method": 6, "exact": True}
 PNG_SAVE_KWARGS = {"optimize": False, "compress_level": 6}

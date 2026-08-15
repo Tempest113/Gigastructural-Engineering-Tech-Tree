@@ -22,8 +22,49 @@ compressed, over the wire.** It excludes empire overlays, detail payloads, the s
 (all lazy, fetched after the initial load), and icon atlas image bytes (lazy per P-9 and
 `implementation-notes.md`; `00-overview.md` treats atlas *references* — not atlas images — as
 the base-dataset item). Icon atlas bytes have their own separate cap — see
-`pipeline/icons/resolve.py`'s Stage 2 TODO. All future budget measurements and the CI ratchet
-against this figure measure the compressed base-dataset transfer size as defined here.
+`pipeline/icons/build.py`'s `filter_result_to_rendered_scope`/`pipeline/icons/pack.py`'s
+`MAX_TOTAL_ATLAS_BYTES`. All future budget measurements and the CI ratchet against this figure
+measure the compressed base-dataset transfer size as defined here.
+
+**MEASURED (Stage 2 dataset-emission session): the real compressed base-dataset transfer is
+~64 KB (65,585 bytes) against the ≤2 MB budget — roughly 30x headroom.** The budget itself is
+unchanged (still the acceptance criterion, still worth ratcheting against as the corpus grows),
+but **dataset size is no longer a binding constraint on Stage 3's loading design** the way it was
+when the only figure available was a ~275-305 KB pre-build projection (itself ~7x headroom, but
+close enough to be a real design input at the time). At 30x headroom, a corpus doubling in size
+would still land comfortably inside the budget — Stage 3 does not need to design around this
+number as a scarce resource.
+
+**The lazy-artefact split (separate empire overlays, detail payloads, search index) stays, but
+its justification is no longer "the base dataset must fit the budget."** With this much headroom,
+folding a modest amount of overlay/detail content into the base dataset would not itself breach
+≤2 MB. The split's real, still-live reasons: **responsiveness** (a 64 KB payload parses and
+renders before an all-profiles/all-details bundle would finish downloading, even though the
+latter might also technically clear 2 MB — time-to-interactive has its own ≤2.0 s/≤5.0 s budgets
+above, independent of the transfer-size budget); **memory** (holding twelve empire overlays' full
+per-technology reason text and research paths, plus 980 detail payloads' descriptions and weight
+modifiers, resident in the browser simultaneously costs real heap even after the network transfer
+is done); and **cache granularity** (a single profile switch or a single popup open should
+invalidate/refetch only what changed, not force a full-dataset re-fetch or re-parse). Record these
+as the operative reasons going forward — a future session must not re-derive "we split these out
+because of the size budget" from this file's history and treat a since-resolved constraint as
+still binding.
+
+**Real measured compression ratio: 14.29x, materially above the 6-9x range an earlier projection
+assumed — a divergence worth recording, not a coincidence to note in passing.** The deploy-spike
+(see HANDOFF.md) measured a 9.34x ratio on a synthetic ~1,878-record blob and explicitly caveated
+that real content, carrying more entropy than synthetic filler, should compress *worse* — hence
+the 6-9x projected range. The real build compresses *better* instead, and the reason is structural,
+not a fluke: the deploy-spike's synthetic blob was dominated by free-text name/description-shaped
+content, but the real base dataset's size is dominated by small, highly-repetitive structured JSON
+— 980 near-identically-shaped technology records, each carrying a 12-slot enum array
+(`availabilityMatrix`), mostly-empty arrays (`gates`, `requiresMods` for 95%+ of nodes), and
+frequent `null`s (`crisisFaction` for 925/980) — exactly the shape gzip compresses far better than
+prose. Real free-text description content isn't even in the base dataset; it lives in the lazy
+detail payloads, outside this budget entirely. **The lesson for future estimation work**: a
+compression ratio measured against synthetic content is not a reliable proxy for real structured-
+JSON compression, in either direction — measure against the real artefact shape once it exists,
+rather than extrapolating from a differently-shaped stand-in.
 
 ## Acceptance criteria — automation
 

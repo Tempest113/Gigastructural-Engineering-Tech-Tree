@@ -11,8 +11,11 @@ export type SchemaVersion = string;
 /** The technology's internal Clausewitz key, e.g. tech_adaptive_bureaucracy. Stable identity used to cross-reference between artefacts and within edges/adjacency. */
 export type TechnologyId = string;
 
-/** P-13: availability MUST be a three-valued state, never a boolean. 'uncertain' means the partial trigger evaluator could not resolve the condition for this profile (D-10's 'unknown', propagated) -- it is not a variant of 'locked' and must never be presented as though it were either available or locked. */
-export type ThreeState = "available" | "locked" | "uncertain";
+/** P-15/P-16: the four sources in load order (vanilla, Gigastructural Engineering, ACOT, AoT). Load order is lowest to highest -- a later source's technology-block definition replaces an earlier one's wholesale, matching engine overwrite semantics. */
+export type SourceMod = "Vanilla" | "Gigastructural Engineering" | "ACOT" | "AoT";
+
+/** P-13: availability MUST be an enumerated state, never a boolean. 'uncertain' means the partial trigger evaluator could not resolve the condition for this profile (D-10's 'unknown', propagated) -- it is not a variant of 'locked' and must never be presented as though it were either available or locked. 'config-gated' (added by D-10's giga_tech_repeatable_*_cap application, spec/decisions.md) means the technology's potential resolved DEFINITIVELY to false because of a mod-configuration toggle (a has_global_flag matching pipeline.trigger_text.MOD_CONFIG_TOGGLE_SUFFIXES), not because of anything about the empire being played -- distinct from 'locked', which elsewhere always means an empire-state property is what's blocking the technology. This $defs key was named 'ThreeState' before 'config-gated' was added; renamed to a value-count-independent name deliberately, so a fifth state added later doesn't leave a stale 'ThreeState'/'FourState' name behind again. */
+export type AvailabilityState = "available" | "locked" | "uncertain" | "config-gated";
 
 /** P-1 axis 1 of 3. Canonical order for index derivation (see EmpireProfileIndex below): regular=0, hive_mind=1, machine_intelligence=2. */
 export type GestaltAuthority = "regular" | "hive_mind" | "machine_intelligence";
@@ -51,7 +54,13 @@ export interface Edge {
   /** The technology DECLARING the dependency (the head) -- for every edge kind uniformly. For a potential-gate edge, this is the technology whose potential block contains the has_technology check. Every connector renders from 'from' to 'to', the same direction a prerequisite edge reads, so all three kinds read consistently left-to-right regardless of kind (P-8). */
   to: TechnologyId;
   kind: EdgeKind;
+  /** P-14: only set (non-null) for kind == 'alternative'. Identifies which nested OR group inside the 'to' technology's prerequisites this edge's member belongs to -- without it, two independent 2-member OR groups on the same technology are indistinguishable from one 4-member group (the real corpus has 35 OR groups across 32 technologies; 3 technologies carry two groups each, e.g. tech_mega_engineering). Null for 'prerequisite' and 'potential-gate' edges, which have no group structure. */
+  groupId: null | string;
   appliesToEmpireTypes: EmpireTypeConstraint;
+  /** D-13 (spec/decisions.md): true when 'from' (the prerequisite) sits in a later declared-tier band than 'to' (the dependent) -- a real, expected consequence of bands reflecting declared tier rather than computed depth. Measured over the full P-14 three-kind edge set (989 real rendered edges): 34 backward, decomposed as 25 prerequisite + 2 alternative + 7 potential-gate -- record this as a per-kind breakdown, never a single number; it has moved three times purely through re-scoping (see CLAUDE.md's P-14 edge-typing section). P-8 MUST render these visually distinguishably from forward edges rather than as if the graph were acyclic in band order. prerequisite/alternative stay within 1-2 bands back; potential-gate reaches up to 5 (a has_technology gate can reference any technology anywhere, with no reason to sit near its owner's declared tier) -- P-8's long-range routing treatment for potential-gate is TODO(Stage 3), deliberately deferred to a real rendered canvas rather than designed blind. */
+  backward: boolean;
+  /** P-8/TODO(Stage 3): from_bandIndex - to_bandIndex. Positive iff backward is true; emitted on every edge (not just backward ones) so a consumer never needs to recompute it from band indices it may not have handy. Exists specifically so potential-gate's long-range backward routing (up to 5 bands, vs. 1-2 for prerequisite/alternative) can be decided against real data at Stage 3 rather than guessed at now. */
+  bandSpan: number;
 }
 
 /** A pointer into a packed atlas sheet -- never a raw path. Paths into atlases are build-generated, per P-3's 'icon paths MUST NOT be manually maintained.' */
@@ -98,13 +107,14 @@ export interface BaseDataset {
     aotVersion?: string;
     buildTimestamp: string;
   };
-  /** P-2/S-3: tier range is unbounded and MUST be enumerated from the dataset at build time, never assumed. Ascending order; the last entry is always the Repeatables terminal column. */
+  /** P-2/S-3/D-13: tier range is unbounded and MUST be enumerated from the dataset at build time, never assumed. A band is a distinct DECLARED tier value actually present among rendered technologies -- never adjusted by graph depth (D-13, spec/decisions.md). Ascending order by declared tier; the last entry is always the Repeatables terminal band. */
   tierBands: ({
     tier: number | "repeatables";
-    column: number;
+    /** This band's ordinal position (0-based, ascending by declared tier, Repeatables always last). Internal layout geometry only -- never rendered as a number; the band header shows 'tier' (or 'Repeatables'). */
+    bandIndex: number;
     label: string;
   })[];
-  /** P-2/P-5: the standard-progression lane plus one per crisis faction, sharing one column axis. */
+  /** P-2/P-5: the standard-progression lane plus one per crisis faction, sharing one band axis. All six always present, including a faction at zero population (e.g. Compound -- confirmed real in the current corpus, not a classifier gap; see pipeline/crisis_faction.py) -- a lane is never omitted for being empty. */
   lanes: ({
     id: string;
     label: string;
@@ -128,10 +138,10 @@ export interface BaseDataset {
     /** Localised name (P-6, node card). */
     name: string;
     icon: IconRef;
-    /** Declared tier. P-2: unbounded, no fixed upper bound anywhere. */
+    /** Declared tier. P-2: unbounded, no fixed upper bound anywhere. D-13: this IS the technology's band -- never adjusted by graph depth or promoted. Its exact pixel position (including horizontal placement within the band's sub-grid) lives in geometry.nodePositions, not as a separate displayed field here. */
     tier: number;
-    /** Computed layout column. May exceed 'tier' after promotion (P-2: if declared tier is at or below a prerequisite's, promoted to max(prereq columns)+1). */
-    column: number;
+    /** P-12.2/S-1 card field: research cost, first-level/base figure. Per D-4's 'no evaluated weight' precedent, this is a stated field value, not a computed-final number -- in-game costs shift with empire size and other live modifiers the static build can't see, so this is the base/declared cost, approximate by nature, not a promise of what research will actually cost. */
+    cost: null | number;
     /** References lanes[].id. */
     laneId: string;
     /** S-1: drives card background colour. */
@@ -143,16 +153,18 @@ export interface BaseDataset {
     rare: boolean;
     /** P-12.3/S-1: warning treatment, outranks rare in outline priority. */
     dangerous: boolean;
-    /** P-12.2: boolean-plus-count on the card and in the popup. Full per-level cost progression is a detail-payload field, not here. */
-    repeatable: {
+    /** P-12.2/D-13: boolean-plus-count on the card and in the popup. Full per-level cost progression (the detail popup's fuller breakdown) is a detail-payload field (`repeatableCostProgression`), not here -- `costPerLevel` here is the single scaling-rate number, not the expanded series. Membership is 'source declares a levels field at all' -- both the unbounded (-1) and positive-finite-cap shapes in the corpus are repeatable; sign alone is not the signal (see pipeline.layout.is_repeatable's docstring for the corpus finding behind this). */
+    repeatable: null | {
       levels: number | null;
+      /** The per-level cost increment (source's own `cost_per_level` field) -- a SECONDARY card indicator alongside the primary `cost` field above, not a replacement for it. Decision (spec/P-02-layout.md): `cost` (this technology's base/first-level cost, from the top-level `cost` field) is the primary displayed figure; `costPerLevel` is secondary. Rationale: in-game research cost shifts heavily with empire size and other live modifiers, so any absolute number is approximate regardless of which one is shown -- the scaling RATE (`costPerLevel`) is the one thing the card can state truthfully about a repeatable technology's cost trajectory, where the absolute total at level N cannot be. Exact visual treatment (badge text, iconography) is a Stage 3 rendering decision; this field is the semantic data only. Real corpus: exactly the 88-node repeatable set carries this field (0 non-repeatable technologies do -- confirmed, not assumed). */
+      costPerLevel: null | number;
     };
     /** P-16. Empty for the overwhelming majority. A list, not a boolean, so a second dependency costs no schema change. */
     requiresMods: (string)[];
     /** P-3: ordered, primary gate first. Displayed regardless of the selected empire profile -- lives here in the base dataset, not in a per-profile overlay, precisely because it must never vary by profile. */
     gates: (Gate)[];
-    /** P-13's twelve-profile expand-control matrix. Index i is this technology's ThreeState for EmpireProfileIndex i (see common.schema.json). Enum values only, no reason text -- the richer per-profile reason string lives in the empire-overlay artefact; this exists so the popup's matrix view doesn't require prefetching all twelve overlays just to render a summary widget. */
-    availabilityMatrix: (ThreeState)[];
+    /** P-13's twelve-profile expand-control matrix. Index i is this technology's AvailabilityState for EmpireProfileIndex i (see common.schema.json). Enum values only, no reason text -- the richer per-profile reason string lives in the empire-overlay artefact; this exists so the popup's matrix view doesn't require prefetching all twelve overlays just to render a summary widget. */
+    availabilityMatrix: (AvailabilityState)[];
     /** S-3: far-zoom label-decluttering basis. Derived at build time from prerequisite out-degree (how many other technologies depend on this one) plus the rare and dangerous flags -- reproducible, never hand-maintained. Higher survives longer as zoom decreases. Exact derivation formula is Stage 2's to define at implementation time; this field's contract is only that it is build-time-derived and monotonic with 'importance', never authored. */
     labelPriority: number;
   })[];
@@ -177,16 +189,22 @@ export interface EmpireOverlay {
   profile: EmpireProfile;
   /** P-13. Keyed by technology id. Full reason text lives here, not in the base dataset's compact availabilityMatrix. */
   availability: { [key: string]: {
-    state: ThreeState;
-    /** Required (non-null) when state is 'locked' or 'uncertain'; null when 'available'. Two valid origins for a locked reason (P-13): trigger-derived (the specific failed condition) or structure-derived (no edge of any kind reaches this technology for this profile -- P-16). Both are ordinary strings in this one field; a structure-derived reason MUST be phrased in terms of reachability, never as though a trigger failed. An uncertain reason always carries the unresolved trigger's source text. */
+    state: AvailabilityState;
+    /** Required (non-null) when state is 'locked', 'uncertain' or 'config-gated'; null when 'available'. Two valid origins for a locked reason (P-13): trigger-derived (the specific failed condition) or structure-derived (no edge of any kind reaches this technology for this profile -- P-16). Both are ordinary strings in this one field; a structure-derived reason MUST be phrased in terms of reachability, never as though a trigger failed. An uncertain reason always carries the unresolved trigger's source text. A config-gated reason carries the mod-configuration flag's trigger text (e.g. 'has_global_flag = giga_tech_repeatable_dyson_swarm_capped_r') -- phrased around the game OPTION responsible, never as though the empire itself were the obstacle. */
     reason: null | string;
+    /** P-13's config-gated reason template (spec/P-13-empire-locking.md): the semantic subject only -- e.g. 'Alderson Disk' -- for Stage 3 to substitute into the user-supplied, fixed template 'Requires {subject} cap: 1 + Repeatables'. Deliberately NOT a pre-composed display string: Stage 2 emits the semantic part, Stage 3 composes the final text (the template itself is not data and is never emitted here). Present (non-null) only when 'state' is 'config-gated' AND the subject's own localised name is statically resolvable -- sourced from the technology's own display name, never the raw '$name$' runtime token, which Stellaris resolves per-playthrough from a name pool this static pipeline cannot see. Null both when 'state' isn't 'config-gated' and when it is but the name embeds an unresolved '$...$' token (8/50 in the real giga_tech_repeatable_*_cap corpus, including 'Alderson Disk' itself) -- an honest gap, not a guess. */
+    configGatedSubject?: null | string;
   } };
   /** Indices into the base dataset's 'edges' array whose appliesToEmpireTypes constraint this profile satisfies. P-16: used by the per-profile structural-reachability check, which considers all three edge kinds -- never conflated with the profile-invariant rendering-scope closure (prerequisite edges only, computed once, lives in the base dataset's node set, not here). */
   activeEdgeIds: (number)[];
-  /** P-14/technology_swap: which swap alternative applies for this profile. */
+  /** D-14 (spec/decisions.md): per-profile display substitution for the subset of a technology's `technology_swap` alternates whose trigger is fully expressible on the 3-axis empire model (authority/shipset/nomadic -- `pipeline.availability.AXIS_FACTS`). One entry per rendered technology that has an axis-expressible swap ACTIVE for this profile; a technology with no matching swap (no swaps at all, or none of its swaps' triggers hold for this profile) has no entry here at all, and a renderer falls back to the base dataset's own name/icon/area/category. Swap alternates NEVER become separate rendered nodes (D-1) -- this is presentation substitution on the one node, never a second node reference, which is why this shape carries the substituted fields directly rather than an id pointing at something else. */
   swapMappings: ({
-    baseTechnologyId: TechnologyId;
-    activeVariantId: TechnologyId;
+    technologyId: TechnologyId;
+    /** The swap's own localised display name, replacing the base technology's name for this profile. */
+    name: string;
+    icon: IconRef;
+    area: null | "physics" | "society" | "engineering";
+    category: null | string;
   })[];
   /** P-12.9: complete ancestor set in topological order by tier, with cumulative cost, computed per profile at build time -- never substituted from a canonical path in the browser, since swaps change the shape of the chain. Keyed by technology id. */
   researchPaths: { [key: string]: {
@@ -207,10 +225,15 @@ export interface DetailPayload {
   /** P-12.1. Localised, with embedded formatting/variable tokens resolved or safely stripped (P-12.1). English only for v1 (D-9). */
   description: string;
   repeatableCostProgression: null | (number)[];
-  /** P-12.5. */
-  source: "Vanilla" | "Gigastructural Engineering" | "Vanilla (modified by Gigastructural Engineering)";
-  /** P-15: for a modified vanilla technology, which fields differ from vanilla. Null when 'source' is not the modified-vanilla case. */
+  /** P-12.5/P-15. Overwriting is not vanilla-only -- ACOT redefines vanilla technologies directly, and AoT redefines ACOT technologies, so a vanilla baseline does not exist for most overwrites in the corpus. 'definedBy' is who defined the winning block; 'overwrites' is the source of the block it replaced (null if this technology was never redefined -- distinct from 'was redefined but the winner IS vanilla', which cannot happen since vanilla loads first). 'label' is the precomputed presentation string for the popup (P-12.5), e.g. 'Vanilla', 'ACOT', 'Vanilla (modified by ACOT)', 'ACOT (modified by AoT)' -- computed at build time per Stage 3's 'no runtime derivation of presentation logic from raw fields' rule. */
+  source: {
+    definedBy: SourceMod;
+    overwrites: null | SourceMod;
+    label: string;
+  };
+  /** P-15: for a redefined technology, which fields differ from the source it replaced (the immediately-preceding definition in load order, whatever its source -- NOT always vanilla; see 'source' above). Null when 'source.overwrites' is null. */
   overwriteDiff: null | {
+    /** A field absent after overwrite but present before is a change, distinguishable in the underlying resolution report from a field that was never present on either side -- this list carries only the field name, so consult the S-2 overwrite report for which direction a field was added/removed/changed. 'prerequisites' is diffed as a set (reordering alone is not a change); the technology's own prerequisites list elsewhere in this payload preserves declaration order from the winning definition for display. */
     changedFields: ("cost" | "tier" | "prerequisites" | "weight" | "category" | "flags")[];
   };
   /** P-12.6/D-5: three branches. Never dead, never omitted. */
@@ -224,6 +247,13 @@ export interface DetailPayload {
       endLine: number;
     };
   };
+  /** D-14 (spec/decisions.md): `technology_swap` alternates whose trigger is NOT fully expressible on the 3-axis empire model (origin, civic, species-trait, ascension-perk, or galaxy-situation leaves -- anything outside `pipeline.availability.AXIS_FACTS`). Never substituted onto the card face or into the empire overlay (that would assert an empire fact this tool cannot verify) -- listed here instead, in the popup only, same precedent as ascension-perk gates: the tree shows what exists and what you would need, never assumes it. A technology with only axis-expressible swaps (or no swaps at all) has an empty array here, not an omitted field. */
+  variants: ({
+    name: string;
+    icon: IconRef;
+    /** Human-readable rendering of the swap's trigger (pipeline.trigger_text.describe_condition), same renderer as weight.modifiers[].conditionText below. Falls back to raw trigger source text when no dedicated phrasing exists for a leaf -- never fabricated prose. */
+    conditionText: string;
+  })[];
   /** P-12.8. No evaluated weight (D-4) -- base weight plus conditions only, never a computed final number. */
   weight: {
     base: number;
@@ -248,12 +278,24 @@ export interface SearchIndex {
 /** S-2: the /?dev overlay's data. Outside the base/overlay/detail/search-index split entirely -- fetched only when ?dev is present, code-split, never affects the P-10 budgets when unused. */
 export interface Diagnostics {
   schemaVersion: SchemaVersion;
-  /** D-10: per-profile unknown rate, all twelve, plus each profile's delta against the previous build (the exact figure the ratchet fails on). */
-  unknownRates: ({
+  /** D-10's profile-dependent metric only (spec/decisions.md's D-10, amended when the metric split landed): a technology whose resolved state varies by profile. Per-profile rate, all twelve, plus each profile's delta against the previous build -- the exact figure the 3% warn / 10% ceiling / ratchet are evaluated against. Deliberately excludes unconditional uncertainty (see `unconditionalUncertainty` below) -- pooling the two into one rate would let the ceiling fire on, or hide behind, a figure it was never meant to govern. */
+  profileDependentUncertainty: ({
     profile: EmpireProfile;
-    unknownRate: number;
-    previousUnknownRate: number;
+    rate: number;
+    previousRate: number;
+    status: "ok" | "warn" | "fail";
   })[];
+  /** D-10's unconditional metric (spec/decisions.md's D-10): technologies uncertain under all twelve profiles identically. A data-completeness figure with its own regression ratchet -- NOT subject to the 10% ceiling or 3% warn threshold that govern profileDependentUncertainty, because it measures a different thing (see D-10's reasoning). categoryDistribution classifies every unconditionally-uncertain rendered node by the reason category its undecidable leaf falls into (pipeline/trigger_text.py's ReasonCategory) -- the deliverable that determines whether this is a presentation problem (most nodes explainable) or a data problem (most nodes opaque). */
+  unconditionalUncertainty: {
+    count: number;
+    previousCount: number;
+    rate: number;
+    previousRate: number;
+    categoryDistribution: ({
+      category: string;
+      count: number;
+    })[];
+  };
   missingInlineScriptParameterCount: {
     current: number;
     previous: number;
@@ -263,12 +305,53 @@ export interface Diagnostics {
     declaredTier: number;
     promotedColumn: number;
   })[];
+  /** D-14 (spec/decisions.md): technology_swap alternates with `inherit_icon = no` (an explicit request for their own icon) whose own icon file does not exist in the vendored corpus -- `pipeline/icons/resolve.py` correctly and deliberately leaves these as an unresolved icon-atlas candidate (never silently redirected there, per that module's own docstring: redirecting would override an explicit authorial refusal). This is a SEPARATE, presentation-layer diagnostic: when EMITTING the dataset, `pipeline.dataset_emit` falls back to the owning technology's own icon for display purposes only, so the card shows something rather than nothing -- this list makes that fallback visible rather than silent. Never fires for a swap that simply never asked for its own icon (inherit_icon omitted or 'yes', the default/legitimate base-icon-reuse case) -- only for the `inherit_icon = no`-and-nothing-found case. If this list shrinks on a future re-vendor, upstream shipped a real icon and the fallback is no longer needed for that entry; if it grows, a swap lost icon coverage. */
+  swapsRenderingOnInheritedIcon: ({
+    technologyId: TechnologyId;
+    swapKey: string;
+  })[];
   unrecognisedGatePatterns: (string)[];
   missingLockReasonOverrides: (string)[];
   unresolvedTriggers: (string)[];
   unresolvedModDependencies: (string)[];
-  overwriteReport: ({
+  /** Vendoring-automation investigation (spec/decisions.md): which of the four sources (in load order) this build actually had `vendor/` content for. Vanilla and Gigastructural Engineering are always present in a valid build (their absence is a hard build failure elsewhere, not something this array softly reports); ACOT and/or AoT absent is a real, SUPPORTED reduced-corpus build mode -- Stellaris (Vanilla) cannot be fetched in CI at all (requires a Steam account that owns the game), which is why the dataset is built locally and deployed via workflow_dispatch rather than built in CI. `placeholderTechnologiesAbsent`/`vanillaTechnologiesRevertedFromAcotOverwrite` below are the loud, specific consequences of ACOT/AoT specifically being missing from this list. */
+  vendorSourcesLoaded: (SourceMod)[];
+  /** Empty unless ACOT and/or AoT is missing from `vendorSourcesLoaded`. The real technologies whose `requiresMods` names the missing source in a full build -- Gigastructures' own 'supertensile alternate' content (`giga_17_alternative_mega_build.txt`), the actual reason ACOT/AoT are vendored at all: they show the TRUE prerequisites of those alternates. A build missing these is plausible and self-consistent (no dangling edges, no alternative-only gaps) precisely because nothing else looks broken -- this field exists so the gap is stated, not discovered. */
+  placeholderTechnologiesAbsent: ({
     technologyId: TechnologyId;
-    changedFields: (string)[];
+    requiresMod: SourceMod;
   })[];
+  /** Empty unless ACOT is missing from `vendorSourcesLoaded`. Vanilla technology keys ACOT redefines (P-15) in a full build -- without ACOT, these revert to their vanilla content and REAPPEAR in the rendered set, having been excluded from the rendering-scope closure in their ACOT-overwritten form. This is exactly why the reduced-corpus node count is NOT a simple subtraction (980 - 7 = 973 is wrong; the real figure is 977 -- 7 fewer for the missing placeholders, 4 more for these reversions). `contentDiffersFromOverwrite` distinguishes the two real cases so the diagnostic doesn't imply all entries differ equally: most of ACOT's overwrites here only add modifiers, invisible to this tool's display regardless of which version renders -- `false`. The titan hull technologies are the documented exception, where ACOT's content materially differs from vanilla's -- `true`. */
+  vanillaTechnologiesRevertedFromAcotOverwrite: ({
+    technologyId: TechnologyId;
+    contentDiffersFromOverwrite: boolean;
+  })[];
+  /** P-15/spec/P-15-overwrites.md. Two distinct sections -- different causes, different repairs, never collapsed into one list. See pipeline/overwrites.py's build_overwrite_report. */
+  overwriteReport: {
+    /** A technology key redefined outright by a later source. The diff baseline is the immediately-preceding definition in load order, whatever its source -- NOT always vanilla; most of the corpus's overwrites have no vanilla baseline at all (see spec/P-15-overwrites.md). */
+    technologyBlockOverwrites: ({
+      technology: TechnologyId;
+      definedBy: SourceMod;
+      overwrites: SourceMod;
+      label: string;
+      changedFields: (string)[];
+      /** Full per-field diagnostic detail: presence before/after (distinguishing a field that was removed from one that was never present), and both the raw pre-resolution form and the @variable-resolved value -- a literal-to-variable-reference change is a mechanism change, not just a value change. */
+      fieldChanges: ({
+        field: string;
+        beforePresent: boolean;
+        afterPresent: boolean;
+        beforeRaw: unknown;
+        afterRaw: unknown;
+        beforeResolved?: unknown;
+        afterResolved?: unknown;
+      })[];
+    })[];
+    /** A `@name` scripted variable redefined by a later source, changing the effective cost/weight of every technology that references it without touching those technologies' own blocks -- a distinct overwrite mechanism from a technology-block redefinition. */
+    scriptedVariableOverwrites: ({
+      variable: string;
+      definedBy: SourceMod;
+      overwrites: SourceMod;
+      affectedTechnologies: (TechnologyId)[];
+    })[];
+  };
 }

@@ -82,7 +82,17 @@ locked, and sees why — the same treatment any other profile-gated technology g
 - The rendering-scope closure runs once, at build time, over the fully resolved graph's
   `prerequisite` edges (vanilla, Gigastructures, ACOT and AoT together), pooled across all twelve
   empire profiles, before layout. It determines the final rendered node set; nothing about it
-  happens at runtime, and it does not re-run per profile.
+  happens at runtime, and it does not re-run per profile. **`prerequisite`-only was checked
+  against `alternative` (P-14's nested-`OR`-inside-`prerequisites` edges), not assumed**:
+  recomputing the closure with `alternative` treated as traversable makes zero difference on the
+  real corpus — same 7-technology closure, same 980 rendered nodes, all four of the
+  "supertensile" trigger technologies reach ACOT/AoT via a true prerequisite chain, never an `OR`
+  branch. Admitting `alternative` would be scope creep against this rule's own rationale for zero
+  measured benefit. The forward-looking risk (a future re-vendor adding an ACOT/AoT technology
+  reachable ONLY via an alternative branch, silently excluded by this rule) is mitigated by a
+  standing diagnostic, not a closure change: `pipeline.rendering_scope.compute_alternative_only_gaps`
+  — see `spec/P-14-unconventional-prereqs.md`'s "Implied technical decisions" for the full
+  reasoning. Empty on the real corpus today; never a build failure.
 - The per-profile structural-reachability check runs once per `(ACOT/AoT node, empire profile)`
   pair, over that profile's active edge set across all three edge kinds. It feeds P-13's
   availability state (locked, with a structure-derived reason, when no edge kind reaches the

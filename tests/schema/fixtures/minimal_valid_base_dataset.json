@@ -6,8 +6,8 @@
     "buildTimestamp": "2026-08-14T00:00:00Z"
   },
   "tierBands": [
-    {"tier": 0, "column": 0, "label": "T0"},
-    {"tier": "repeatables", "column": 1, "label": "Repeatables"}
+    {"tier": 0, "bandIndex": 0, "label": "T0"},
+    {"tier": "repeatables", "bandIndex": 1, "label": "Repeatables"}
   ],
   "lanes": [
     {"id": "standard", "label": "Standard Progression", "crisisFaction": null, "technologyCount": 1}
@@ -21,15 +21,15 @@
       "id": "tech_example",
       "name": "Example Tech",
       "icon": {"sheet": "technologies_0", "x": 0, "y": 0, "width": 52, "height": 52},
+      "cost": 50,
       "tier": 0,
-      "column": 0,
       "laneId": "standard",
       "area": "physics",
       "category": "Computing",
       "crisisFaction": null,
       "rare": false,
       "dangerous": false,
-      "repeatable": {"levels": null},
+      "repeatable": null,
       "requiresMods": [],
       "gates": [],
       "availabilityMatrix": ["available","available","available","available","available","available","available","available","available","available","available","available"],

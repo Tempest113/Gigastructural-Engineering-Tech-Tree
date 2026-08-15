@@ -72,8 +72,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from pipeline.clausewitz import parse_file
-from pipeline.clausewitz.nodes import Assignment, Block, Identifier, StringLiteral
+from pipeline.clausewitz.nodes import Assignment, Block, Document, Identifier, StringLiteral
 
 from .overrides import IconOverride, IconOverrideConfigError
 from .sources import IconSourceConfig
@@ -103,14 +102,22 @@ def _scalar_text(node) -> str | None:
     return None
 
 
-def collect_candidates(files: list[tuple[str, Path]], kind: str) -> list[IconCandidate]:
-    """`files` is `(source_name, path)` pairs for every technology/ascension-perk definition
-    file, in any order (candidate order is stable-sorted by the caller once collected across all
-    sources — see `resolve.py`'s docstring on determinism concerns living in `pack.py`)."""
+def collect_candidates(documents: list[tuple[str, Document]], kind: str) -> list[IconCandidate]:
+    """`documents` is `(source_name, Document)` pairs for every technology/ascension-perk
+    definition file, already parsed AND `inline_script`-expanded by the caller, in any order
+    (candidate order is stable-sorted by the caller once collected across all sources — see
+    `resolve.py`'s docstring on determinism concerns living in `pack.py`).
+
+    **Must receive expanded documents, not raw ones** (closed, later session — previously took
+    raw `Path`s and parsed them here with no expansion step at all, the same shape of gap the
+    defect-class note in CLAUDE.md's "Availability evaluator" section describes for two other
+    components). Verified currently zero-impact on the real corpus regardless (no candidate's
+    `key` or `icon` field is itself `inline_script`-templated — see
+    `tests/icons/test_resolve.py`'s regression test — but a future template gaining an `icon =`
+    field would have silently produced a wrong `resolved_name` under the old raw-parse path)."""
     swap_keyword = SWAP_KEYWORD_BY_KIND[kind]
     candidates: list[IconCandidate] = []
-    for source_name, path in files:
-        doc = parse_file(path)  # a file-level parse failure is a hard stop, same as elsewhere.
+    for source_name, doc in documents:
         for item in doc.items:
             if not isinstance(item, Assignment) or not isinstance(item.value, Block):
                 continue
@@ -130,7 +137,7 @@ def collect_candidates(files: list[tuple[str, Path]], kind: str) -> list[IconCan
                     resolved_name=owner_resolved,
                     channel=owner_channel,
                     definition_source=source_name,
-                    file=str(path),
+                    file=doc.path,
                     line=item.line,
                 )
             )
@@ -160,7 +167,7 @@ def collect_candidates(files: list[tuple[str, Path]], kind: str) -> list[IconCan
                             resolved_name=swap_resolved,
                             channel=swap_channel,
                             definition_source=source_name,
-                            file=str(path),
+                            file=doc.path,
                             line=item.line,
                         )
                     )

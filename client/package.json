@@ -1,0 +1,23 @@
+{
+  "name": "gigastructures-tech-tree-client",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Stage 3 (Render) client -- TypeScript + PixiJS. Foundation only: no rendering logic yet (see spec/00-overview.md).",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "pixi.js": "^8.6.6"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "vite": "^6.0.11"
+  }
+}

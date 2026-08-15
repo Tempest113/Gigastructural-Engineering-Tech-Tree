@@ -1,21 +1,27 @@
 #!/usr/bin/env python3
 """Generates TypeScript types from schema/*.json into schema/generated/dataset-types.ts.
 
-**TODO(Stage 3) — this output is unverified as TypeScript.** `tests/schema/test_typescript_drift.py`
-proves the checked-in file matches what this generator currently produces — it catches hand-editing,
-which is what it was built for. It CANNOT catch this generator emitting TypeScript that fails to
-compile: there is no Node in this environment, so no `tsc`, so nothing has ever actually
-typechecked `schema/generated/dataset-types.ts`. Add a `tsc --noEmit` CI step over this file when
-the Node toolchain lands with the PixiJS renderer (Stage 3) — do not treat the drift test as
-sufficient proof the generator is correct, only that it's self-consistent.
+**TODO(Stage 3) resolved, later session.** `tests/schema/test_typescript_drift.py` proves the
+checked-in file matches what this generator currently produces — it catches hand-editing, which
+is what it was built for — but could never catch this generator emitting TypeScript that fails to
+compile, since there was no Node toolchain anywhere in this project to run `tsc` against it. There
+is now: `client/` (the Stage 3 PixiJS+Vite foundation) pins a user-level Node via `client/.nvmrc`,
+and `.github/workflows/typecheck.yml` runs `tsc --noEmit` over the whole client project — which
+includes this file via `client/tsconfig.json`'s `include` — on every change to either side of the
+contract. **Result: zero errors**, checked three ways (as part of the client compile, in isolation
+under maximal `tsc` strictness, and by actually importing/using several of the generated types in
+real client code) — the generator produces valid, well-typed TypeScript. The drift test remains
+what it always was (self-consistency, not correctness); actual TypeScript validity is now a
+separate, real, passing check, not an open question.
 
-Why hand-written in Python rather than running an off-the-shelf `json-schema-to-typescript`
-generator: this environment has no Node/npm toolchain, and D-12 already commits the pipeline to
-Python end to end — adding a Node-only codegen dependency just for this one step would be the
-first thing in the entire pipeline to require it. The schemas in schema/ are also written in a
-deliberately narrow subset of JSON Schema (object/array/string/integer/number/boolean, enum,
-const, $ref, oneOf, additionalProperties: false) specifically so this generator doesn't need to
-handle the full spec — see each schema file's own restraint on constructs used.
+Why still hand-written in Python rather than running an off-the-shelf `json-schema-to-typescript`
+generator, even though a Node toolchain exists now: D-12 already commits the PIPELINE (Extract/
+Compute) to Python end to end, and this generator has zero problem to solve that swapping it for a
+Node dependency would fix — it already produces clean, verified TypeScript. The schemas in
+schema/ are also written in a deliberately narrow subset of JSON Schema (object/array/string/
+integer/number/boolean, enum, const, $ref, oneOf, additionalProperties: false) specifically so
+this generator doesn't need to handle the full spec — see each schema file's own restraint on
+constructs used.
 
 This is the *only* thing allowed to hand-edit schema/generated/dataset-types.ts. The file is
 checked in (spec/00-overview.md: "TypeScript types generated from it"), and

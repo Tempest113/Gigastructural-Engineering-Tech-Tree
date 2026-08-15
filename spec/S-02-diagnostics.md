@@ -20,12 +20,16 @@ It MUST display page performance metrics and any runtime errors.
   occur in real, shipped vanilla content, so this warns rather than fails the build; see
   `implementation-notes.md`) — are browsable in the overlay.
 - Dataset metadata (mod commit, vanilla version, build timestamp, schema version) is displayed.
-- **Per-empire-profile `unknown` rates (D-10) are displayed as a table of all twelve figures**,
-  with the worst-case profile highlighted (the one the 10% hard ceiling and 3% warn threshold are
-  evaluated against), plus each profile's delta against its own figure in the previous dataset —
-  the exact number the D-10 ratchet fails on. This is the one place a developer can see whether a
-  regression is isolated to a specific profile rather than reading it off an average that would
-  hide one.
+- **Per-empire-profile profile-dependent-uncertain rates (D-10) are displayed as a table of all
+  twelve figures**, with the worst-case profile highlighted (the one the 10% hard ceiling and 3%
+  warn threshold are evaluated against), plus each profile's delta against its own figure in the
+  previous dataset — the exact number the D-10 ratchet fails on. This is the one place a
+  developer can see whether a regression is isolated to a specific profile rather than reading it
+  off an average that would hide one. **Unconditional-uncertain count is shown as a separate,
+  single figure alongside the table, not a thirteenth column of it** — it is not evaluated
+  against the 10%/3% thresholds and has its own ratchet delta, and rendering it inside the same
+  table would visually imply it is profile-scoped when it is, by construction, identical for
+  every profile. See D-10 in `spec/decisions.md` for why the two are split.
 - **The missing-`inline_script`-parameter count is displayed with the same build-over-build
   ratchet shape as D-10's**, so a growing count doesn't quietly become normal: CI fails if the
   count rises against the previous dataset. Unlike D-10 there is no hard ceiling — a missing

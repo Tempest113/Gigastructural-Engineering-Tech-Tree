@@ -13,19 +13,14 @@ from pipeline.icons.resolve import collect_candidates, resolve_all
 
 
 def _candidates_from_text(text: str, kind: str, tmp_path: Path):
-    path = tmp_path / "tech.txt"
-    path.write_text(text, encoding="utf-8")
-    return collect_candidates([("stellaris", path)], kind)
+    doc = parse_text(text, path=str(tmp_path / "tech.txt"))
+    return collect_candidates([("stellaris", doc)], kind)
 
 
 def test_filename_convention_is_the_default():
     def_text = 'tech_foo = {\n\tarea = physics\n}\n'
-    import tempfile
-
-    with tempfile.TemporaryDirectory() as tmp:
-        p = Path(tmp) / "t.txt"
-        p.write_text(def_text)
-        candidates = collect_candidates([("stellaris", p)], "technology")
+    doc = parse_text(def_text, path="t.txt")
+    candidates = collect_candidates([("stellaris", doc)], "technology")
     assert len(candidates) == 1
     assert candidates[0].key == "tech_foo"
     assert candidates[0].resolved_name == "tech_foo"
@@ -103,6 +98,32 @@ def test_swap_own_explicit_icon_field_wins_over_inherit(tmp_path):
     swap = next(c for c in candidates if "swap" in c.key)
     assert swap.resolved_name == "tech_x_custom_icon"
     assert swap.channel == "explicit_icon"
+
+
+def test_collect_candidates_sees_an_inline_script_supplied_icon_field(tmp_path):
+    """Regression guard for the raw-block gap closed this session (CLAUDE.md's defect-class
+    note): `collect_candidates` must receive expanded documents, not raw ones, so a template
+    gaining an `icon =` field is actually seen. Currently zero real impact (no shipped template
+    defines one), but this proves the WIRING would catch it if one appeared -- a synthetic
+    template stands in for that future case."""
+    from pipeline.inline_scripts import collect_scripts, expand_document
+
+    scripts = collect_scripts([("technology/my_template", "my_template.txt", 'icon = "template_icon"\n')])
+
+    raw_doc = parse_text('tech_from_template = {\n\tinline_script = { script = technology/my_template }\n}\n', path="tech.txt")
+    expanded_doc, _report = expand_document(raw_doc, scripts)
+
+    # Fed the RAW document: the icon= field is invisible (it only exists inside the
+    # inline_script), so this candidate falls back to filename convention.
+    raw_candidates = collect_candidates([("stellaris", raw_doc)], "technology")
+    assert raw_candidates[0].channel == "filename_convention"
+    assert raw_candidates[0].resolved_name == "tech_from_template"
+
+    # Fed the EXPANDED document (what collect_candidates now always receives in the real
+    # pipeline): the template's icon= field is visible, and wins.
+    expanded_candidates = collect_candidates([("stellaris", expanded_doc)], "technology")
+    assert expanded_candidates[0].channel == "explicit_icon"
+    assert expanded_candidates[0].resolved_name == "template_icon"
 
 
 def test_tradition_swap_used_for_ascension_perks(tmp_path):

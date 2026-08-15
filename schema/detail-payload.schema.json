@@ -25,13 +25,24 @@
     },
 
     "source": {
-      "type": "string",
-      "enum": ["Vanilla", "Gigastructural Engineering", "Vanilla (modified by Gigastructural Engineering)"],
-      "description": "P-12.5."
+      "type": "object",
+      "description": "P-12.5/P-15. Overwriting is not vanilla-only -- ACOT redefines vanilla technologies directly, and AoT redefines ACOT technologies, so a vanilla baseline does not exist for most overwrites in the corpus. 'definedBy' is who defined the winning block; 'overwrites' is the source of the block it replaced (null if this technology was never redefined -- distinct from 'was redefined but the winner IS vanilla', which cannot happen since vanilla loads first). 'label' is the precomputed presentation string for the popup (P-12.5), e.g. 'Vanilla', 'ACOT', 'Vanilla (modified by ACOT)', 'ACOT (modified by AoT)' -- computed at build time per Stage 3's 'no runtime derivation of presentation logic from raw fields' rule.",
+      "properties": {
+        "definedBy": { "$ref": "common.schema.json#/$defs/SourceMod" },
+        "overwrites": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "common.schema.json#/$defs/SourceMod" }
+          ]
+        },
+        "label": { "type": "string" }
+      },
+      "required": ["definedBy", "overwrites", "label"],
+      "additionalProperties": false
     },
 
     "overwriteDiff": {
-      "description": "P-15: for a modified vanilla technology, which fields differ from vanilla. Null when 'source' is not the modified-vanilla case.",
+      "description": "P-15: for a redefined technology, which fields differ from the source it replaced (the immediately-preceding definition in load order, whatever its source -- NOT always vanilla; see 'source' above). Null when 'source.overwrites' is null.",
       "oneOf": [
         { "type": "null" },
         {
@@ -39,7 +50,8 @@
           "properties": {
             "changedFields": {
               "type": "array",
-              "items": { "type": "string", "enum": ["cost", "tier", "prerequisites", "weight", "category", "flags"] }
+              "items": { "type": "string", "enum": ["cost", "tier", "prerequisites", "weight", "category", "flags"] },
+              "description": "A field absent after overwrite but present before is a change, distinguishable in the underlying resolution report from a field that was never present on either side -- this list carries only the field name, so consult the S-2 overwrite report for which direction a field was added/removed/changed. 'prerequisites' is diffed as a set (reordering alone is not a change); the technology's own prerequisites list elsewhere in this payload preserves declaration order from the winning definition for display."
             }
           },
           "required": ["changedFields"],
@@ -75,6 +87,24 @@
       "additionalProperties": false
     },
 
+    "variants": {
+      "type": "array",
+      "description": "D-14 (spec/decisions.md): `technology_swap` alternates whose trigger is NOT fully expressible on the 3-axis empire model (origin, civic, species-trait, ascension-perk, or galaxy-situation leaves -- anything outside `pipeline.availability.AXIS_FACTS`). Never substituted onto the card face or into the empire overlay (that would assert an empire fact this tool cannot verify) -- listed here instead, in the popup only, same precedent as ascension-perk gates: the tree shows what exists and what you would need, never assumes it. A technology with only axis-expressible swaps (or no swaps at all) has an empty array here, not an omitted field.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "icon": { "$ref": "common.schema.json#/$defs/IconRef" },
+          "conditionText": {
+            "type": "string",
+            "description": "Human-readable rendering of the swap's trigger (pipeline.trigger_text.describe_condition), same renderer as weight.modifiers[].conditionText below. Falls back to raw trigger source text when no dedicated phrasing exists for a leaf -- never fabricated prose."
+          }
+        },
+        "required": ["name", "icon", "conditionText"],
+        "additionalProperties": false
+      }
+    },
+
     "weight": {
       "type": "object",
       "description": "P-12.8. No evaluated weight (D-4) -- base weight plus conditions only, never a computed final number.",
@@ -102,7 +132,7 @@
   },
   "required": [
     "schemaVersion", "technologyId", "description", "repeatableCostProgression",
-    "source", "overwriteDiff", "repositoryLink", "weight"
+    "source", "overwriteDiff", "repositoryLink", "variants", "weight"
   ],
   "additionalProperties": false
 }

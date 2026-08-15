@@ -1,0 +1,50 @@
+# Overwrite-resolution override config (P-15) — hand-maintained, checked in, loaded by
+# pipeline/overwrite_overrides.py, consumed by pipeline/overwrites.py.
+#
+# Zero technology data is hand-authored (CLAUDE.md / spec/P-10-performance-automation.md); this
+# file is configuration, not technology data, in the same category as empire profiles, gate
+# patterns, crisis classification rules and icon overrides — all hand-maintained because they
+# either encode an editorial decision or paper over a corpus shape the automatic rule can't
+# resolve unambiguously.
+#
+# pipeline/overwrites.py resolves technology-block overwrites automatically as plain
+# last-source-wins (vanilla < Gigastructural Engineering < ACOT < AoT), which is sufficient for
+# every overwrite actually found in the corpus survey behind this file (see CLAUDE.md's "Source
+# data" section) — every case is a simple pair, one earlier definition replaced by exactly one
+# later one. The resolver treats two specific shapes as too ambiguous to resolve silently and
+# REQUIRES an override entry before it will build:
+#
+#   1. A technology key defined by 3 or more sources (an overwrite chain longer than a simple
+#      pair) — the survey found none, so "last wins" has never been validated against a real
+#      chain.
+#   2. A technology key defined more than once WITHIN a single source's own files — the survey
+#      found none, so there is no confirmed same-source tie-break rule.
+#
+# Hitting either shape with no matching entry here is a hard build failure (CLAUDE.md: "the
+# build fails rather than emitting a partial dataset"), not a silent default — this file is the
+# only way to tell the resolver which definition should actually win in that case.
+#
+# Format: one entry per line, key/winning-source separated by ' = ', followed by a required '#'
+# justification (never optional — a line without one is a config error, not a silent skip):
+#
+#   <technology key> = <winning source: Vanilla | Gigastructural Engineering | ACOT | AoT>  # <justification>
+#
+# The named source's definition of <technology key> is treated as canonical, overriding the
+# resolver's default last-source-wins pick — required for ambiguous shapes 1/2 above.
+#
+# No entries yet. The corpus survey behind this file (see CLAUDE.md's "Source data" section)
+# found zero cases of either ambiguous shape: every technology-block overwrite in the current
+# vendored corpus is a plain pair with exactly one earlier and one later definition, so plain
+# last-source-wins resolves every case with no override needed. This file exists so the resolver
+# has somewhere to fail loudly toward, not because any case currently needs an entry — do not
+# add one speculatively.
+#
+# Worked example (commented out — NOT a real override; delete the leading '# ' only when adding
+# a genuine, reviewed entry for a case the resolver actually raised OverwriteOverrideRequiredError
+# on). Say ACOT, Gigastructural Engineering and AoT all three defined `tech_example_chain`, and
+# the intended winner is ACOT's definition rather than the automatic last-loaded pick (AoT):
+#
+# tech_example_chain = ACOT  # 3-source chain (Gigastructural Engineering, ACOT, AoT); AoT's
+#   version is a stale copy-paste left over from before it depended on ACOT and is missing a
+#   prerequisite ACOT's version has — confirmed by comparing both blocks by hand on <date>,
+#   filed upstream as <issue link>.

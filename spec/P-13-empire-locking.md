@@ -57,3 +57,60 @@ and not available.
 - The minimal violated-constraint summary (e.g. "nomadic empires") is derived from which axis
   values the trigger evaluator's known facts ruled out, not from re-deriving English from the raw
   trigger — see P-1's axis model.
+
+## Config-gated reason template (D-10's fourth AvailabilityState)
+
+A technology can be unavailable because a *mod-configuration option* is off, not because of
+anything about the empire — see `CONFIG_GATED` in `spec/decisions.md`'s D-10. The real corpus's
+first (and, so far, only) instance is the 50-member `giga_tech_repeatable_*_cap` family, gated on
+`has_global_flag = <name>_capped_r`.
+
+**Display wording is user-supplied, matching the mod's own in-game option label — do not
+"improve" it into something a player won't recognize:**
+
+    Requires <Megastructure Name> cap: 1 + Repeatables
+
+e.g. "Requires Alderson Disk cap: 1 + Repeatables". This deliberately echoes Gigastructures'
+own `giga_menu_r` loc entry ("Megastructure Capacity: §S1§! + §BRepeatables§!"), the actual
+option-value label players see for this exact setting.
+
+**Stage 2 emits the semantic subject only, never the composed sentence** — the empire-overlay
+schema's `availability[key].configGatedSubject` field (`schema/empire-overlay.schema.json`)
+carries just the megastructure name (e.g. `"Alderson Disk"`), nullable. **Stage 3 composes the
+final text** by substituting that subject into the fixed template above — the template string
+itself lives in this spec (and in Stage 3's own code once built), not in the emitted data.
+
+The subject is sourced from the technology's own already-resolved localised name
+(`<Name> Management Protocols`, suffix stripped). That suffix-stripped name is frequently itself a
+`$token$` (e.g. `giga_tech_repeatable_alderson_cap` -> `$name_alderson$`) rather than a literal
+string — **corrected finding, superseding an earlier, uncorrected reading of this same data**: a
+prior pass assumed such a token was an unresolvable Stellaris runtime name-pool reference (the
+mechanism that assigns a random name to certain procedurally-varied content) and returned
+`configGatedSubject: null` for all 8 real occurrences. Raw-source re-inspection
+(vendor/*/localisation, per CLAUDE.md's "inspect raw bytes, never conclude from a formatted read"
+rule) found this was wrong: every one of these tokens is ordinary Stellaris localisation `$key$`
+variable substitution — `token` is itself a plain, statically-resolvable loc key one hop away
+(`name_alderson: "Alderson Disk"`). Two of the 8 (`dyson_swarm_3`, `orbital_arc_furnace_4`) are
+**vanilla** megastructures that Gigastructures extends with a repeatable cap, and their name is
+defined in vanilla's own localisation, not Gigastructures' — the lookup (`_resolve_loc_tokens`)
+therefore searches the full cross-source `ctx.loc_table` (vanilla, Gigastructures, ACOT, AoT, in
+load order), never one source in isolation, and is bounded to a small hop limit (some tokens chain
+through a second token, e.g. vanilla's `dyson_swarm_1: "$dyson_swarm_3$: Array"`) so a cyclic or
+unexpectedly deep reference can't loop forever rather than failing cleanly to `null`.
+
+**Real corpus, corrected: 50/50 resolve to a literal megastructure name** — every one of the
+previously-failing 8 now does too: `giga_tech_repeatable_alderson_cap` -> "Alderson Disk" (the
+user's own flagship example), `_asteroid_manufactory_cap` -> "Asteroid Industrial Site",
+`_dyson_swarm_cap` -> "Dyson Swarm", `_furnace_cap` -> "Arc Furnace", `_observatory_cap` ->
+"Atmospheric Storm Observatory", `_orbital_naval_logistics_cap` -> "Orbital Naval Logistics
+Office", `_warmoon_cap` -> "Attack Moon", `_warplanet_cap` -> "Behemoth Planetcraft".
+`configGatedSubject` remains nullable in the schema and the resolver still returns `None` rather
+than guessing whenever a technology's own name has no loc entry, or a token can't be resolved
+within the hop limit — no case in the current corpus hits either path, but the honest-null
+contract stays in place for a future corpus that might.
+
+See `pipeline/dataset_emit.py`'s `_config_gated_subject`/`_resolve_loc_tokens` for the
+implementation and
+`tests/test_dataset_emit.py::test_config_gated_subject_resolves_all_50_megastructure_names`
+for the corpus assertion, including the exact resolved name for each of the 8 previously-null
+cases.

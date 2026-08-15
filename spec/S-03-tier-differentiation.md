@@ -14,15 +14,26 @@ thresholds below.
 
 - At the minimum supported zoom level, a user can identify tier boundaries without reading node
   text.
-- **Tier columns are labelled with a sticky header that renders once across the full lane stack**
-  (P-2, P-5) — not once per lane. Since columns are global and identical across every lane, a
-  tier reads as a single unbroken vertical span from the standard-progression lane down through
-  every crisis lane, with one header at the top, e.g. a sticky column header reading "T12" for a
-  column that far out — rather than each lane repeating its own copy. Labels remain legible or
-  gracefully scale at low zoom, for any enumerated tier including those past T9, and for the
-  single, lane-spanning Repeatables column.
+- **Tier bands are labelled with a sticky header that renders once across the full lane stack**
+  (P-2, P-5) — not once per lane. Since bands are global and identical across every lane, a tier
+  reads as a single unbroken vertical span from the standard-progression lane down through every
+  crisis lane, with one header at the top, e.g. a sticky band header reading "Tier 5" — rather
+  than each lane repeating its own copy. Labels remain legible or gracefully scale at low zoom,
+  for any enumerated tier including those past T9, and for the single, lane-spanning Repeatables
+  band.
 - The alternating treatment does not conflict with, or reduce the contrast of, the node colour
   coding in S-1 or the locked-state treatment in P-13.
+
+**Band header and card tier badge always agree — by construction, not by reconciliation.**
+P-2 was corrected from an earlier draft that placed a node by *computed* position (graph depth
+after promotion) rather than declared tier; under that superseded model the band header and a
+card's own tier badge could diverge (measured at the time: 43% of rendered technologies). That
+model is no longer in effect. **A band is a node's own declared `tier` field, full stop** — the
+band header showing "Tier 5" and every card inside it carrying a "T5" tier badge is now a
+tautology, not something requiring separate reconciliation logic. Computed position still exists
+(P-2), but purely as internal geometry for horizontal ordering within a band and for routing
+backwards edges — it is never displayed as a number anywhere in the UI, so there is nothing for a
+band header to disagree with.
 
 ## Level-of-detail shedding table
 

@@ -46,6 +46,29 @@ styling.
 - The router MUST reserve **inter-column channels** for vertical runs and assign each edge a
   channel index to prevent collinear overlap, so that several traces sharing a corridor remain
   separated at distinct offsets rather than drawing on top of one another.
+- **Backwards edges — an edge whose own declared-tier band is later than its dependent's — are
+  real graph structure the router MUST handle, not an edge case to assume away.** D-13
+  (`spec/decisions.md`) settles that band placement follows declared tier, not computed depth, so
+  these are not rare. **This "1-2 bands back, small and short-range" characterization is scoped
+  to `prerequisite` and `alternative` only** — measured at 3.0% of non-repeatable
+  `prerequisite`/`alternative` edges, max 2 bands back for both kinds. Route a backwards edge of
+  either kind back through the inter-column channel it would otherwise use going forward — same
+  channel-reservation mechanism, opposite horizontal direction — so it reads as a deliberate
+  right-to-left trace rather than an artefact.
+- **`potential-gate` backward edges are a separate population and do NOT fit the characterization
+  above.** Measured over the real corpus: 7 backward `potential-gate` edges, span distribution
+  `{1 band: 1, 2: 2, 3: 1, 4: 2, 5: 1}`, max **5 bands back** — materially longer-range than
+  `prerequisite`/`alternative`. The structural reason: a `has_technology` gate can reference any
+  technology anywhere in the tree as an alternative unlock condition, with no reason to sit near
+  its owner's declared tier the way a formal prerequisite chain does (e.g. a late-game
+  crisis-chain technology gating access to an early-tier vanilla weapon technology). **This spec
+  deliberately does NOT prescribe a routing treatment for these here** — designing long-range
+  routing without a real rendered canvas to check it against risks guessing wrong. `Edge.bandSpan`
+  is emitted on every edge (not just backward ones) specifically so this decision can be made
+  against real data. **TODO(Stage 3)**: decide whether `potential-gate` backward edges reuse the
+  same inter-column channel mechanism (likely fine for the 4 edges at span ≤2) or need a distinct
+  treatment for the ones spanning 3+ bands (crossing multiple inter-band gutters, not just one) —
+  against an actual rendered canvas, not designed blind in this document.
 - The router MUST additionally reserve **inter-lane gutters** — horizontal channel space between
   each pair of adjacent lanes — for any edge that crosses a lane boundary. Cross-lane edges take
   **priority in channel allocation over same-lane traffic**: they travel further and have fewer

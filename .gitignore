@@ -8,6 +8,19 @@ __pycache__/
 *.egg-info/
 .venv/
 
+# client/ (Stage 3, TypeScript + PixiJS + Vite) -- node_modules/dist are reproducible from
+# package.json/package-lock.json + a local run of tools/build_dataset.py.
+# client/public/dataset/ is DELIBERATELY ignored (reversed from an earlier session's decision --
+# see tools/build_dataset.py's module docstring and spec/decisions.md's vendoring-automation
+# decision for the full reasoning): it is derived from vendored third-party content, git would
+# retain every ~7-18 MB version permanently, and a committed artefact can silently disagree with
+# the pipeline that claims to produce it -- exactly the staleness problem content-hashed
+# filenames exist to prevent, reintroduced one layer up. Built locally, deployed via
+# `.github/workflows/deploy.yml`'s workflow_dispatch trigger, never committed.
+client/node_modules/
+client/dist/
+client/public/dataset/
+
 # tests/fixtures/ is reproduced from vendor/ (Stellaris + Steam Workshop mod source) by
 # tools/regenerate_fixtures.py, driven by the committed tests/fixtures/manifest.json. The
 # reproduced content itself is not committed, for the same redistribution reason as vendor/.

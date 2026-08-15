@@ -1,0 +1,44 @@
+name: TypeScript typecheck
+
+# Recorded TODO(Stage 3), now closed: schema/generated/dataset-types.ts had never actually been
+# compiled -- tests/schema/test_typescript_drift.py only proves the checked-in file matches a
+# fresh generator run, not that the output is valid TypeScript. This workflow runs `tsc --noEmit`
+# for real, over the whole client/ project (which includes dataset-types.ts via
+# client/tsconfig.json's `include`), on every change that could affect either side of the
+# contract.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "client/**"
+      - "schema/generated/dataset-types.ts"
+      - ".github/workflows/typecheck.yml"
+  pull_request:
+    paths:
+      - "client/**"
+      - "schema/generated/dataset-types.ts"
+      - ".github/workflows/typecheck.yml"
+  workflow_dispatch: {}
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node (pinned via client/.nvmrc)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: client/.nvmrc
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: tsc --noEmit
+        working-directory: client
+        run: npm run typecheck

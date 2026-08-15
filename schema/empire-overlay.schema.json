@@ -14,13 +14,20 @@
       "additionalProperties": {
         "type": "object",
         "properties": {
-          "state": { "$ref": "common.schema.json#/$defs/ThreeState" },
+          "state": { "$ref": "common.schema.json#/$defs/AvailabilityState" },
           "reason": {
             "oneOf": [
               { "type": "null" },
               { "type": "string" }
             ],
-            "description": "Required (non-null) when state is 'locked' or 'uncertain'; null when 'available'. Two valid origins for a locked reason (P-13): trigger-derived (the specific failed condition) or structure-derived (no edge of any kind reaches this technology for this profile -- P-16). Both are ordinary strings in this one field; a structure-derived reason MUST be phrased in terms of reachability, never as though a trigger failed. An uncertain reason always carries the unresolved trigger's source text."
+            "description": "Required (non-null) when state is 'locked', 'uncertain' or 'config-gated'; null when 'available'. Two valid origins for a locked reason (P-13): trigger-derived (the specific failed condition) or structure-derived (no edge of any kind reaches this technology for this profile -- P-16). Both are ordinary strings in this one field; a structure-derived reason MUST be phrased in terms of reachability, never as though a trigger failed. An uncertain reason always carries the unresolved trigger's source text. A config-gated reason carries the mod-configuration flag's trigger text (e.g. 'has_global_flag = giga_tech_repeatable_dyson_swarm_capped_r') -- phrased around the game OPTION responsible, never as though the empire itself were the obstacle."
+          },
+          "configGatedSubject": {
+            "oneOf": [
+              { "type": "null" },
+              { "type": "string" }
+            ],
+            "description": "P-13's config-gated reason template (spec/P-13-empire-locking.md): the semantic subject only -- e.g. 'Alderson Disk' -- for Stage 3 to substitute into the user-supplied, fixed template 'Requires {subject} cap: 1 + Repeatables'. Deliberately NOT a pre-composed display string: Stage 2 emits the semantic part, Stage 3 composes the final text (the template itself is not data and is never emitted here). Present (non-null) only when 'state' is 'config-gated' AND the subject's own localised name is statically resolvable -- sourced from the technology's own display name, never the raw '$name$' runtime token, which Stellaris resolves per-playthrough from a name pool this static pipeline cannot see. Null both when 'state' isn't 'config-gated' and when it is but the name embeds an unresolved '$...$' token (8/50 in the real giga_tech_repeatable_*_cap corpus, including 'Alderson Disk' itself) -- an honest gap, not a guess."
           }
         },
         "required": ["state", "reason"],
@@ -36,14 +43,27 @@
 
     "swapMappings": {
       "type": "array",
-      "description": "P-14/technology_swap: which swap alternative applies for this profile.",
+      "description": "D-14 (spec/decisions.md): per-profile display substitution for the subset of a technology's `technology_swap` alternates whose trigger is fully expressible on the 3-axis empire model (authority/shipset/nomadic -- `pipeline.availability.AXIS_FACTS`). One entry per rendered technology that has an axis-expressible swap ACTIVE for this profile; a technology with no matching swap (no swaps at all, or none of its swaps' triggers hold for this profile) has no entry here at all, and a renderer falls back to the base dataset's own name/icon/area/category. Swap alternates NEVER become separate rendered nodes (D-1) -- this is presentation substitution on the one node, never a second node reference, which is why this shape carries the substituted fields directly rather than an id pointing at something else.",
       "items": {
         "type": "object",
         "properties": {
-          "baseTechnologyId": { "$ref": "common.schema.json#/$defs/TechnologyId" },
-          "activeVariantId": { "$ref": "common.schema.json#/$defs/TechnologyId" }
+          "technologyId": { "$ref": "common.schema.json#/$defs/TechnologyId" },
+          "name": { "type": "string", "description": "The swap's own localised display name, replacing the base technology's name for this profile." },
+          "icon": { "$ref": "common.schema.json#/$defs/IconRef" },
+          "area": {
+            "oneOf": [
+              { "type": "null", "description": "Unchanged from the base dataset's own area for this technology." },
+              { "type": "string", "enum": ["physics", "society", "engineering"] }
+            ]
+          },
+          "category": {
+            "oneOf": [
+              { "type": "null", "description": "Unchanged from the base dataset's own category for this technology." },
+              { "type": "string" }
+            ]
+          }
         },
-        "required": ["baseTechnologyId", "activeVariantId"],
+        "required": ["technologyId", "name", "icon", "area", "category"],
         "additionalProperties": false
       }
     },

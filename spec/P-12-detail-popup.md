@@ -15,7 +15,7 @@ distinguishable from a pipeline failure.
 | P-12.6 | Repository link | Gigastructures permalink pinned to the build commit, targeting file and line range, where an override exists. Otherwise a Stellaris wiki link. For ACOT/AoT-sourced technologies (P-16), a link to that mod's Steam Workshop item page (D-5) |
 | P-12.7 | Primary gate | The primary gate per P-3, with its icon. Additional gates listed beneath |
 | P-12.8 | Research weight and cost | Base weight prominently, plus an expandable list of weight modifiers and their conditions. **No evaluated weight** (D-4). Cost reflects modded values per P-15 |
-| P-12.9 | Research path | The complete ancestor set required to reach this technology, **computed for the selected empire profile**, in topological order by tier, with cumulative cost. A "shortest chain" toggle offers the cheapest single chain. Each step is clickable |
+| P-12.9 | Research path | **See `spec/P-12.9-research-path.md` for the full algorithm (spec only, not yet implemented as of that file's writing) — this row is a summary, not the authority.** The complete ancestor set required to reach this technology, computed per selected empire profile over true `prerequisite` edges plus resolved `OR`-group (`alternative` edge) selection — cheapest total cost among viable (available/uncertain) branch candidates, expanded fully, never left as an unexpanded label. `uncertain` steps stay in the path with the total marked an estimate; `config-gated` steps are excluded from the total and listed separately with D-10's reason wording. Each step renders under the selected profile's D-14 name/icon substitution. Each step is clickable. The v1 "shortest chain" toggle is retired — see that file for why. |
 | P-12.10 | Mod requirement | Any external mod dependency per P-16, or an explicit "none" state |
 | P-12.11 | Rare | Boolean, derived from the technology's rarity flag in source data (see the glossary in `00-overview.md`). Rendered as a badge, not a warning treatment — contrast P-12.3 |
 
@@ -34,8 +34,14 @@ distinguishable from a pipeline failure.
 
 - P-12.9 requires **per-profile path computation at build time**. Storing one canonical path and
   substituting swaps in the browser is prohibited: swaps change the shape of the chain, not
-  merely its labels.
-- The research path is a subgraph, not necessarily a linear chain. Presentation follows D-1.
+  merely its labels. **Generalised in `spec/P-12.9-research-path.md`**: nothing about the path's
+  shape — which `OR`-branch was chosen, which steps are in it, the total and whether it's an
+  estimate — is computed client-side either, not just the D-14 name/icon substitution.
+- The research path, as v1 presented it and as this project keeps it (confirmed wanted, not
+  re-litigated), is a flat ordered list with a running cumulative cost, not the full ancestor
+  subgraph rendered as its own structure — see `spec/P-12.9-research-path.md` for why a v1-shaped
+  list survives even though the underlying computation (`OR`-group resolution, per-profile
+  availability) does not.
 - Wiki anchors derive from localised technology names and are occasionally wrong. CI MUST
   validate that each anchor resolves in the fetched page and fall back to a wiki search URL
   where it does not, so the field is never dead and never omitted.

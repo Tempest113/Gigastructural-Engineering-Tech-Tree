@@ -3,13 +3,13 @@
   "tierBands": [
     {
       "tier": 0,
-      "column": 0,
-      "label": "T0"
+      "label": "T0",
+      "bandIndex": 0
     },
     {
       "tier": "repeatables",
-      "column": 1,
-      "label": "Repeatables"
+      "label": "Repeatables",
+      "bandIndex": 1
     }
   ],
   "lanes": [
@@ -43,17 +43,15 @@
         "width": 52,
         "height": 52
       },
+      "cost": 50,
       "tier": 0,
-      "column": 0,
       "laneId": "standard",
       "area": "physics",
       "category": "Computing",
       "crisisFaction": null,
       "rare": false,
       "dangerous": false,
-      "repeatable": {
-        "levels": null
-      },
+      "repeatable": null,
       "requiresMods": [],
       "gates": [],
       "availabilityMatrix": [

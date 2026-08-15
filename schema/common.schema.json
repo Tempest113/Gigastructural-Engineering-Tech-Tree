@@ -16,10 +16,16 @@
       "description": "The technology's internal Clausewitz key, e.g. tech_adaptive_bureaucracy. Stable identity used to cross-reference between artefacts and within edges/adjacency."
     },
 
-    "ThreeState": {
+    "SourceMod": {
       "type": "string",
-      "enum": ["available", "locked", "uncertain"],
-      "description": "P-13: availability MUST be a three-valued state, never a boolean. 'uncertain' means the partial trigger evaluator could not resolve the condition for this profile (D-10's 'unknown', propagated) -- it is not a variant of 'locked' and must never be presented as though it were either available or locked."
+      "enum": ["Vanilla", "Gigastructural Engineering", "ACOT", "AoT"],
+      "description": "P-15/P-16: the four sources in load order (vanilla, Gigastructural Engineering, ACOT, AoT). Load order is lowest to highest -- a later source's technology-block definition replaces an earlier one's wholesale, matching engine overwrite semantics."
+    },
+
+    "AvailabilityState": {
+      "type": "string",
+      "enum": ["available", "locked", "uncertain", "config-gated"],
+      "description": "P-13: availability MUST be an enumerated state, never a boolean. 'uncertain' means the partial trigger evaluator could not resolve the condition for this profile (D-10's 'unknown', propagated) -- it is not a variant of 'locked' and must never be presented as though it were either available or locked. 'config-gated' (added by D-10's giga_tech_repeatable_*_cap application, spec/decisions.md) means the technology's potential resolved DEFINITIVELY to false because of a mod-configuration toggle (a has_global_flag matching pipeline.trigger_text.MOD_CONFIG_TOGGLE_SUFFIXES), not because of anything about the empire being played -- distinct from 'locked', which elsewhere always means an empire-state property is what's blocking the technology. This $defs key was named 'ThreeState' before 'config-gated' was added; renamed to a value-count-independent name deliberately, so a fifth state added later doesn't leave a stale 'ThreeState'/'FourState' name behind again."
     },
 
     "GestaltAuthority": {
@@ -103,9 +109,24 @@
           "description": "The technology DECLARING the dependency (the head) -- for every edge kind uniformly. For a potential-gate edge, this is the technology whose potential block contains the has_technology check. Every connector renders from 'from' to 'to', the same direction a prerequisite edge reads, so all three kinds read consistently left-to-right regardless of kind (P-8)."
         },
         "kind": { "$ref": "#/$defs/EdgeKind" },
-        "appliesToEmpireTypes": { "$ref": "#/$defs/EmpireTypeConstraint" }
+        "groupId": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string" }
+          ],
+          "description": "P-14: only set (non-null) for kind == 'alternative'. Identifies which nested OR group inside the 'to' technology's prerequisites this edge's member belongs to -- without it, two independent 2-member OR groups on the same technology are indistinguishable from one 4-member group (the real corpus has 35 OR groups across 32 technologies; 3 technologies carry two groups each, e.g. tech_mega_engineering). Null for 'prerequisite' and 'potential-gate' edges, which have no group structure."
+        },
+        "appliesToEmpireTypes": { "$ref": "#/$defs/EmpireTypeConstraint" },
+        "backward": {
+          "type": "boolean",
+          "description": "D-13 (spec/decisions.md): true when 'from' (the prerequisite) sits in a later declared-tier band than 'to' (the dependent) -- a real, expected consequence of bands reflecting declared tier rather than computed depth. Measured over the full P-14 three-kind edge set (989 real rendered edges): 34 backward, decomposed as 25 prerequisite + 2 alternative + 7 potential-gate -- record this as a per-kind breakdown, never a single number; it has moved three times purely through re-scoping (see CLAUDE.md's P-14 edge-typing section). P-8 MUST render these visually distinguishably from forward edges rather than as if the graph were acyclic in band order. prerequisite/alternative stay within 1-2 bands back; potential-gate reaches up to 5 (a has_technology gate can reference any technology anywhere, with no reason to sit near its owner's declared tier) -- P-8's long-range routing treatment for potential-gate is TODO(Stage 3), deliberately deferred to a real rendered canvas rather than designed blind."
+        },
+        "bandSpan": {
+          "type": "integer",
+          "description": "P-8/TODO(Stage 3): from_bandIndex - to_bandIndex. Positive iff backward is true; emitted on every edge (not just backward ones) so a consumer never needs to recompute it from band indices it may not have handy. Exists specifically so potential-gate's long-range backward routing (up to 5 bands, vs. 1-2 for prerequisite/alternative) can be decided against real data at Stage 3 rather than guessed at now."
+        }
       },
-      "required": ["from", "to", "kind", "appliesToEmpireTypes"],
+      "required": ["from", "to", "kind", "groupId", "appliesToEmpireTypes", "backward", "bandSpan"],
       "additionalProperties": false
     },
 

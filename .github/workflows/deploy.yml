@@ -1,0 +1,77 @@
+name: Deploy to GitHub Pages
+
+# Manual deploy of a LOCALLY-built artefact -- the permanent deploy model, not an interim one.
+# See spec/decisions.md's vendoring-automation decision and tools/build_dataset.py's module
+# docstring for the full reasoning: the dataset cannot be built in this (or any) GitHub Actions
+# runner. Vanilla Stellaris requires a Steam account that owns the game -- storing those
+# credentials as a CI secret is a real security/ToS exposure, and redistributing extracted game
+# files is foreclosed by this project's own never-redistribute-vendor-content rule. This is not a
+# gap to close later.
+#
+# This workflow therefore does NOT run tools/build_dataset.py, npm run build, or touch vendor/ at
+# all. It takes a pre-built `dist.zip` (produced locally by `tools/deploy_local.sh`, attached as
+# an asset to a GitHub Release on THIS repo) and publishes it to Pages, nothing else. Trigger it
+# manually (Actions tab -> this workflow -> Run workflow, or `gh workflow run deploy.yml -f
+# release_tag=<tag>`) after running `tools/deploy_local.sh`, which prints the exact tag to use.
+#
+# Integrity: `client/public/dataset/integrity.json` (built into the deployed artefact itself by
+# tools/build_dataset.py) states the pipeline commit and vendor/manifest.json provenance the
+# local build ran from, plus a sha256 checksum of every dataset artefact. This does NOT make the
+# build CI-verifiable -- nothing can, given the constraint above -- but it means a mismatch
+# between deployed bytes and claimed provenance is detectable (recompute the checksums, compare)
+# rather than invisible. Do not present this as CI-grade auditability; it isn't.
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Tag of the GitHub Release carrying the dist.zip artefact to deploy (see tools/deploy_local.sh's output)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download dist.zip from the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "${{ inputs.release_tag }}" \
+            --repo "${{ github.repository }}" \
+            --pattern "dist.zip" \
+            --output dist.zip
+          mkdir -p site
+          unzip -q dist.zip -d site
+
+      - name: Sanity-check the downloaded artefact
+        run: |
+          test -f site/index.html || { echo "::error::site/index.html missing -- not a valid client build"; exit 1; }
+          test -f site/dataset/manifest.json || { echo "::error::site/dataset/manifest.json missing -- dataset wasn't built in"; exit 1; }
+          test -f site/dataset/integrity.json || { echo "::error::site/dataset/integrity.json missing -- no provenance record"; exit 1; }
+          echo "Deploying build with this provenance:"
+          cat site/dataset/integrity.json
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload the downloaded build as the Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

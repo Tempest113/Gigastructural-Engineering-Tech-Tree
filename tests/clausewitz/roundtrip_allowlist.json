@@ -5252,6 +5252,18 @@
         "type": "RBRACE",
         "text": "}"
       }
+    },
+    {
+      "file": "vendor/mods/gigastructures/common/scripted_triggers/giga_frameworld_triggers.txt",
+      "token_index": 1045,
+      "source_token": {
+        "type": "OPERATOR",
+        "text": "="
+      },
+      "serialized_token": {
+        "type": "OPERATOR",
+        "text": "="
+      }
     }
   ]
 }

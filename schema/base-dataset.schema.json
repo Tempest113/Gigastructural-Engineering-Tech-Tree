@@ -23,7 +23,7 @@
 
     "tierBands": {
       "type": "array",
-      "description": "P-2/S-3: tier range is unbounded and MUST be enumerated from the dataset at build time, never assumed. Ascending order; the last entry is always the Repeatables terminal column.",
+      "description": "P-2/S-3/D-13: tier range is unbounded and MUST be enumerated from the dataset at build time, never assumed. A band is a distinct DECLARED tier value actually present among rendered technologies -- never adjusted by graph depth (D-13, spec/decisions.md). Ascending order by declared tier; the last entry is always the Repeatables terminal band.",
       "items": {
         "type": "object",
         "properties": {
@@ -33,17 +33,17 @@
               { "const": "repeatables" }
             ]
           },
-          "column": { "type": "integer", "minimum": 0 },
+          "bandIndex": { "type": "integer", "minimum": 0, "description": "This band's ordinal position (0-based, ascending by declared tier, Repeatables always last). Internal layout geometry only -- never rendered as a number; the band header shows 'tier' (or 'Repeatables')." },
           "label": { "type": "string" }
         },
-        "required": ["tier", "column", "label"],
+        "required": ["tier", "bandIndex", "label"],
         "additionalProperties": false
       }
     },
 
     "lanes": {
       "type": "array",
-      "description": "P-2/P-5: the standard-progression lane plus one per crisis faction, sharing one column axis.",
+      "description": "P-2/P-5: the standard-progression lane plus one per crisis faction, sharing one band axis. All six always present, including a faction at zero population (e.g. Compound -- confirmed real in the current corpus, not a classifier gap; see pipeline/crisis_faction.py) -- a lane is never omitted for being empty.",
       "items": {
         "type": "object",
         "properties": {
@@ -96,12 +96,14 @@
           "tier": {
             "type": "integer",
             "minimum": 0,
-            "description": "Declared tier. P-2: unbounded, no fixed upper bound anywhere."
+            "description": "Declared tier. P-2: unbounded, no fixed upper bound anywhere. D-13: this IS the technology's band -- never adjusted by graph depth or promoted. Its exact pixel position (including horizontal placement within the band's sub-grid) lives in geometry.nodePositions, not as a separate displayed field here."
           },
-          "column": {
-            "type": "integer",
-            "minimum": 0,
-            "description": "Computed layout column. May exceed 'tier' after promotion (P-2: if declared tier is at or below a prerequisite's, promoted to max(prereq columns)+1)."
+          "cost": {
+            "oneOf": [
+              { "type": "null", "description": "The source's own cost field can't be statically resolved to a number -- e.g. a dynamic cost-modifier block (real corpus shape: 10 vanilla 'cosmic storm' technologies declare `cost = { factor = @var inline_script = {...} }` rather than a scalar) -- or the field is absent entirely (5 real cases, all apparently-free starting technologies). Never guessed at or defaulted to 0; a null cost is an honest 'this tool can't state one', not a claim the technology is free." },
+              { "type": "number", "minimum": 0 }
+            ],
+            "description": "P-12.2/S-1 card field: research cost, first-level/base figure. Per D-4's 'no evaluated weight' precedent, this is a stated field value, not a computed-final number -- in-game costs shift with empire size and other live modifiers the static build can't see, so this is the base/declared cost, approximate by nature, not a promise of what research will actually cost."
           },
           "laneId": { "type": "string", "description": "References lanes[].id." },
           "area": {
@@ -120,18 +122,31 @@
           "rare": { "type": "boolean", "description": "P-12.11/S-1: badge, not a warning treatment." },
           "dangerous": { "type": "boolean", "description": "P-12.3/S-1: warning treatment, outranks rare in outline priority." },
           "repeatable": {
-            "type": "object",
-            "description": "P-12.2: boolean-plus-count on the card and in the popup. Full per-level cost progression is a detail-payload field, not here.",
-            "properties": {
-              "levels": {
-                "oneOf": [
-                  { "type": "integer", "minimum": 1, "description": "Finite level count -- 'Repeatable: ×N'." },
-                  { "type": "null", "description": "Unbounded -- 'Repeatable: ∞'." }
-                ]
+            "oneOf": [
+              { "type": "null", "description": "Not a repeatable technology." },
+              {
+                "type": "object",
+                "description": "Repeatable. D-13's one declared-tier exception: this technology bands into the terminal Repeatables band (spec/decisions.md's D-13) regardless of its own 'tier' field above, and its card badges repeat count in place of the tier badge -- 'levels' is that count. 'tier' remains resolved, validated and emitted unchanged (still meaningful for internal ordering and the detail popup); it is simply not what the card or band header display for a repeatable node.",
+                "properties": {
+                  "levels": {
+                    "oneOf": [
+                      { "type": "integer", "minimum": 1, "description": "Finite level count -- 'Repeatable: ×N'." },
+                      { "type": "null", "description": "Unbounded -- 'Repeatable: ∞'." }
+                    ]
+                  },
+                  "costPerLevel": {
+                    "oneOf": [
+                      { "type": "null", "description": "Declares no cost_per_level, or it can't be statically resolved. Real corpus: 0/88 rendered repeatables currently hit this -- every repeatable declares a resolvable cost_per_level -- but the field stays nullable rather than assumed always-present." },
+                      { "type": "number", "minimum": 0 }
+                    ],
+                    "description": "The per-level cost increment (source's own `cost_per_level` field) -- a SECONDARY card indicator alongside the primary `cost` field above, not a replacement for it. Decision (spec/P-02-layout.md): `cost` (this technology's base/first-level cost, from the top-level `cost` field) is the primary displayed figure; `costPerLevel` is secondary. Rationale: in-game research cost shifts heavily with empire size and other live modifiers, so any absolute number is approximate regardless of which one is shown -- the scaling RATE (`costPerLevel`) is the one thing the card can state truthfully about a repeatable technology's cost trajectory, where the absolute total at level N cannot be. Exact visual treatment (badge text, iconography) is a Stage 3 rendering decision; this field is the semantic data only. Real corpus: exactly the 88-node repeatable set carries this field (0 non-repeatable technologies do -- confirmed, not assumed)."
+                  }
+                },
+                "required": ["levels", "costPerLevel"],
+                "additionalProperties": false
               }
-            },
-            "required": ["levels"],
-            "additionalProperties": false
+            ],
+            "description": "P-12.2/D-13: boolean-plus-count on the card and in the popup. Full per-level cost progression (the detail popup's fuller breakdown) is a detail-payload field (`repeatableCostProgression`), not here -- `costPerLevel` here is the single scaling-rate number, not the expanded series. Membership is 'source declares a levels field at all' -- both the unbounded (-1) and positive-finite-cap shapes in the corpus are repeatable; sign alone is not the signal (see pipeline.layout.is_repeatable's docstring for the corpus finding behind this)."
           },
           "requiresMods": {
             "type": "array",
@@ -145,8 +160,8 @@
           },
           "availabilityMatrix": {
             "type": "array",
-            "description": "P-13's twelve-profile expand-control matrix. Index i is this technology's ThreeState for EmpireProfileIndex i (see common.schema.json). Enum values only, no reason text -- the richer per-profile reason string lives in the empire-overlay artefact; this exists so the popup's matrix view doesn't require prefetching all twelve overlays just to render a summary widget.",
-            "items": { "$ref": "common.schema.json#/$defs/ThreeState" },
+            "description": "P-13's twelve-profile expand-control matrix. Index i is this technology's AvailabilityState for EmpireProfileIndex i (see common.schema.json). Enum values only, no reason text -- the richer per-profile reason string lives in the empire-overlay artefact; this exists so the popup's matrix view doesn't require prefetching all twelve overlays just to render a summary widget.",
+            "items": { "$ref": "common.schema.json#/$defs/AvailabilityState" },
             "minItems": 12,
             "maxItems": 12
           },
@@ -157,7 +172,7 @@
           }
         },
         "required": [
-          "id", "name", "icon", "tier", "column", "laneId", "area", "category",
+          "id", "name", "icon", "cost", "tier", "laneId", "area", "category",
           "crisisFaction", "rare", "dangerous", "repeatable", "requiresMods", "gates",
           "availabilityMatrix", "labelPriority"
         ],

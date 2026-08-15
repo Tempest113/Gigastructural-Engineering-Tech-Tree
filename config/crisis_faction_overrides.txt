@@ -1,0 +1,49 @@
+# Crisis-faction override config (D-7/P-5) — hand-maintained, checked in, loaded by
+# pipeline/crisis_faction_overrides.py, consumed by pipeline/crisis_faction.py.
+#
+# Zero technology data is hand-authored (CLAUDE.md / spec/P-10-performance-automation.md); this
+# file is configuration, not technology data, in the same category as empire profiles, gate
+# patterns, overwrite overrides, and the P-13 lock-reason override table — all hand-maintained
+# because they either encode an editorial decision or paper over a corpus shape the automatic
+# rule can't resolve unambiguously.
+#
+# pipeline/crisis_faction.py derives membership automatically in D-7's order: technology ID
+# (pipeline/crisis_faction.py's classify_by_tech_id), then prerequisite-chain inheritance
+# (classify_by_prerequisite_inheritance — a technology with no ID hint of its own inherits a
+# faction only when EVERY one of its rendered prerequisites already belongs to the same single
+# faction). This file is the fallback for anything neither step resolves, and can also CORRECT a
+# step 1/2 result that turns out wrong (an override always wins when present, per D-7 — this is
+# the one hand-maintained file in the project that is explicitly allowed to override an
+# automatic result, not just fill a gap, because faction membership is closer to an editorial
+# call than any of this project's other overwrite/lock-reason tables).
+#
+# pipeline/crisis_faction.py's own module docstring records two cases that were tried
+# automatically (via a `potential`-block crisis-flag reference, not prerequisite inheritance) and
+# found to be FALSE POSITIVES rather than real membership signals -- both are deliberately NOT
+# entries here, because the correct classification (standard lane) is already what the automatic
+# derivation produces for them without an override:
+#   - tech_sm_autocannons (EHOF/Urmazin-trader content referencing a Compound weapon-compat flag)
+#   - giga_tech_tetradimensional_engineering (a standard physics tech with an alternate
+#     Blokkat-crisis-progress unlock path, not a Blokkats-lane technology)
+#
+# Format: one entry per line, technology key/faction separated by ' = ', followed by a required
+# '#' justification (never optional — a line without one is a config error, not a silent skip):
+#
+#   <technology key> = <faction: Aeternum | Blokkats | Compound | Sirenalia | Katzenartig Imperium | None>  # <justification>
+#
+# `None` forces a technology into the standard-progression lane, overriding an automatic step 1/2
+# match that turns out wrong.
+#
+# No entries yet. The real vendored corpus survey behind this file (CLAUDE.md's "Layout survey"
+# section) found the automatic derivation (steps 1-2) already produces the correct result for
+# every rendered technology checked, including the two false-positive candidates above (which
+# resolve correctly to the standard lane by simply not matching) — do not add one speculatively.
+#
+# Worked example (commented out — NOT a real override; delete the leading '# ' only when adding a
+# genuine, reviewed entry for a technology the automatic derivation actually got wrong). Say a
+# future corpus revision adds a live Compound-crisis technology whose key doesn't contain
+# "compound" and whose prerequisites are all standard-lane, so steps 1-2 can't find it:
+#
+# tech_example_relay_core = Compound  # granted by the Compound invasion chain
+#   (giga_191_compound_fleet_orders.txt), confirmed by tracing the country_event that grants it
+#   on <date>; no ID hint and no faction-exclusive prerequisite for steps 1-2 to use.

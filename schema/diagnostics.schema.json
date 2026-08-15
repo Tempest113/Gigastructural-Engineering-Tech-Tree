@@ -7,21 +7,47 @@
   "properties": {
     "schemaVersion": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
 
-    "unknownRates": {
+    "profileDependentUncertainty": {
       "type": "array",
-      "description": "D-10: per-profile unknown rate, all twelve, plus each profile's delta against the previous build (the exact figure the ratchet fails on).",
+      "description": "D-10's profile-dependent metric only (spec/decisions.md's D-10, amended when the metric split landed): a technology whose resolved state varies by profile. Per-profile rate, all twelve, plus each profile's delta against the previous build -- the exact figure the 3% warn / 10% ceiling / ratchet are evaluated against. Deliberately excludes unconditional uncertainty (see `unconditionalUncertainty` below) -- pooling the two into one rate would let the ceiling fire on, or hide behind, a figure it was never meant to govern.",
       "items": {
         "type": "object",
         "properties": {
           "profile": { "$ref": "common.schema.json#/$defs/EmpireProfile" },
-          "unknownRate": { "type": "number", "minimum": 0, "maximum": 1 },
-          "previousUnknownRate": { "type": "number", "minimum": 0, "maximum": 1 }
+          "rate": { "type": "number", "minimum": 0, "maximum": 1 },
+          "previousRate": { "type": "number", "minimum": 0, "maximum": 1 },
+          "status": { "type": "string", "enum": ["ok", "warn", "fail"] }
         },
-        "required": ["profile", "unknownRate", "previousUnknownRate"],
+        "required": ["profile", "rate", "previousRate", "status"],
         "additionalProperties": false
       },
       "minItems": 12,
       "maxItems": 12
+    },
+
+    "unconditionalUncertainty": {
+      "type": "object",
+      "description": "D-10's unconditional metric (spec/decisions.md's D-10): technologies uncertain under all twelve profiles identically. A data-completeness figure with its own regression ratchet -- NOT subject to the 10% ceiling or 3% warn threshold that govern profileDependentUncertainty, because it measures a different thing (see D-10's reasoning). categoryDistribution classifies every unconditionally-uncertain rendered node by the reason category its undecidable leaf falls into (pipeline/trigger_text.py's ReasonCategory) -- the deliverable that determines whether this is a presentation problem (most nodes explainable) or a data problem (most nodes opaque).",
+      "properties": {
+        "count": { "type": "integer", "minimum": 0 },
+        "previousCount": { "type": "integer", "minimum": 0 },
+        "rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "previousRate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "categoryDistribution": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "category": { "type": "string" },
+              "count": { "type": "integer", "minimum": 0 }
+            },
+            "required": ["category", "count"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["count", "previousCount", "rate", "previousRate", "categoryDistribution"],
+      "additionalProperties": false
     },
 
     "missingInlineScriptParameterCount": {
@@ -48,28 +74,123 @@
       }
     },
 
+    "swapsRenderingOnInheritedIcon": {
+      "type": "array",
+      "description": "D-14 (spec/decisions.md): technology_swap alternates with `inherit_icon = no` (an explicit request for their own icon) whose own icon file does not exist in the vendored corpus -- `pipeline/icons/resolve.py` correctly and deliberately leaves these as an unresolved icon-atlas candidate (never silently redirected there, per that module's own docstring: redirecting would override an explicit authorial refusal). This is a SEPARATE, presentation-layer diagnostic: when EMITTING the dataset, `pipeline.dataset_emit` falls back to the owning technology's own icon for display purposes only, so the card shows something rather than nothing -- this list makes that fallback visible rather than silent. Never fires for a swap that simply never asked for its own icon (inherit_icon omitted or 'yes', the default/legitimate base-icon-reuse case) -- only for the `inherit_icon = no`-and-nothing-found case. If this list shrinks on a future re-vendor, upstream shipped a real icon and the fallback is no longer needed for that entry; if it grows, a swap lost icon coverage.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "technologyId": { "$ref": "common.schema.json#/$defs/TechnologyId" },
+          "swapKey": { "type": "string" }
+        },
+        "required": ["technologyId", "swapKey"],
+        "additionalProperties": false
+      }
+    },
+
     "unrecognisedGatePatterns": { "type": "array", "items": { "type": "string" } },
     "missingLockReasonOverrides": { "type": "array", "items": { "type": "string" } },
     "unresolvedTriggers": { "type": "array", "items": { "type": "string" } },
     "unresolvedModDependencies": { "type": "array", "items": { "type": "string" } },
 
-    "overwriteReport": {
+    "vendorSourcesLoaded": {
       "type": "array",
+      "description": "Vendoring-automation investigation (spec/decisions.md): which of the four sources (in load order) this build actually had `vendor/` content for. Vanilla and Gigastructural Engineering are always present in a valid build (their absence is a hard build failure elsewhere, not something this array softly reports); ACOT and/or AoT absent is a real, SUPPORTED reduced-corpus build mode -- Stellaris (Vanilla) cannot be fetched in CI at all (requires a Steam account that owns the game), which is why the dataset is built locally and deployed via workflow_dispatch rather than built in CI. `placeholderTechnologiesAbsent`/`vanillaTechnologiesRevertedFromAcotOverwrite` below are the loud, specific consequences of ACOT/AoT specifically being missing from this list.",
+      "items": { "$ref": "common.schema.json#/$defs/SourceMod" },
+      "minItems": 1,
+      "maxItems": 4
+    },
+    "placeholderTechnologiesAbsent": {
+      "type": "array",
+      "description": "Empty unless ACOT and/or AoT is missing from `vendorSourcesLoaded`. The real technologies whose `requiresMods` names the missing source in a full build -- Gigastructures' own 'supertensile alternate' content (`giga_17_alternative_mega_build.txt`), the actual reason ACOT/AoT are vendored at all: they show the TRUE prerequisites of those alternates. A build missing these is plausible and self-consistent (no dangling edges, no alternative-only gaps) precisely because nothing else looks broken -- this field exists so the gap is stated, not discovered.",
       "items": {
         "type": "object",
         "properties": {
           "technologyId": { "$ref": "common.schema.json#/$defs/TechnologyId" },
-          "changedFields": { "type": "array", "items": { "type": "string" } }
+          "requiresMod": { "$ref": "common.schema.json#/$defs/SourceMod" }
         },
-        "required": ["technologyId", "changedFields"],
+        "required": ["technologyId", "requiresMod"],
         "additionalProperties": false
       }
+    },
+    "vanillaTechnologiesRevertedFromAcotOverwrite": {
+      "type": "array",
+      "description": "Empty unless ACOT is missing from `vendorSourcesLoaded`. Vanilla technology keys ACOT redefines (P-15) in a full build -- without ACOT, these revert to their vanilla content and REAPPEAR in the rendered set, having been excluded from the rendering-scope closure in their ACOT-overwritten form. This is exactly why the reduced-corpus node count is NOT a simple subtraction (980 - 7 = 973 is wrong; the real figure is 977 -- 7 fewer for the missing placeholders, 4 more for these reversions). `contentDiffersFromOverwrite` distinguishes the two real cases so the diagnostic doesn't imply all entries differ equally: most of ACOT's overwrites here only add modifiers, invisible to this tool's display regardless of which version renders -- `false`. The titan hull technologies are the documented exception, where ACOT's content materially differs from vanilla's -- `true`.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "technologyId": { "$ref": "common.schema.json#/$defs/TechnologyId" },
+          "contentDiffersFromOverwrite": { "type": "boolean" }
+        },
+        "required": ["technologyId", "contentDiffersFromOverwrite"],
+        "additionalProperties": false
+      }
+    },
+
+    "overwriteReport": {
+      "type": "object",
+      "description": "P-15/spec/P-15-overwrites.md. Two distinct sections -- different causes, different repairs, never collapsed into one list. See pipeline/overwrites.py's build_overwrite_report.",
+      "properties": {
+        "technologyBlockOverwrites": {
+          "type": "array",
+          "description": "A technology key redefined outright by a later source. The diff baseline is the immediately-preceding definition in load order, whatever its source -- NOT always vanilla; most of the corpus's overwrites have no vanilla baseline at all (see spec/P-15-overwrites.md).",
+          "items": {
+            "type": "object",
+            "properties": {
+              "technology": { "$ref": "common.schema.json#/$defs/TechnologyId" },
+              "definedBy": { "$ref": "common.schema.json#/$defs/SourceMod" },
+              "overwrites": { "$ref": "common.schema.json#/$defs/SourceMod" },
+              "label": { "type": "string" },
+              "changedFields": { "type": "array", "items": { "type": "string" } },
+              "fieldChanges": {
+                "type": "array",
+                "description": "Full per-field diagnostic detail: presence before/after (distinguishing a field that was removed from one that was never present), and both the raw pre-resolution form and the @variable-resolved value -- a literal-to-variable-reference change is a mechanism change, not just a value change.",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "field": { "type": "string" },
+                    "beforePresent": { "type": "boolean" },
+                    "afterPresent": { "type": "boolean" },
+                    "beforeRaw": {},
+                    "afterRaw": {},
+                    "beforeResolved": {},
+                    "afterResolved": {}
+                  },
+                  "required": ["field", "beforePresent", "afterPresent", "beforeRaw", "afterRaw"],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": ["technology", "definedBy", "overwrites", "label", "changedFields", "fieldChanges"],
+            "additionalProperties": false
+          }
+        },
+        "scriptedVariableOverwrites": {
+          "type": "array",
+          "description": "A `@name` scripted variable redefined by a later source, changing the effective cost/weight of every technology that references it without touching those technologies' own blocks -- a distinct overwrite mechanism from a technology-block redefinition.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "variable": { "type": "string" },
+              "definedBy": { "$ref": "common.schema.json#/$defs/SourceMod" },
+              "overwrites": { "$ref": "common.schema.json#/$defs/SourceMod" },
+              "affectedTechnologies": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/TechnologyId" } }
+            },
+            "required": ["variable", "definedBy", "overwrites", "affectedTechnologies"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["technologyBlockOverwrites", "scriptedVariableOverwrites"],
+      "additionalProperties": false
     }
   },
   "required": [
-    "schemaVersion", "unknownRates", "missingInlineScriptParameterCount", "tierPromotions",
+    "schemaVersion", "profileDependentUncertainty", "unconditionalUncertainty",
+    "missingInlineScriptParameterCount", "tierPromotions", "swapsRenderingOnInheritedIcon",
     "unrecognisedGatePatterns", "missingLockReasonOverrides", "unresolvedTriggers",
-    "unresolvedModDependencies", "overwriteReport"
+    "unresolvedModDependencies", "overwriteReport", "vendorSourcesLoaded",
+    "placeholderTechnologiesAbsent", "vanillaTechnologiesRevertedFromAcotOverwrite"
   ],
   "additionalProperties": false
 }

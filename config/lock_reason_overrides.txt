@@ -1,0 +1,41 @@
+# Lock-reason override config (P-13) — hand-maintained, checked in, loaded by
+# pipeline/lock_reason_overrides.py, consumed by pipeline/availability.py.
+#
+# Zero technology data is hand-authored (CLAUDE.md / spec/P-10-performance-automation.md); this
+# file is configuration, not technology data, in the same category as empire profiles, gate
+# patterns, crisis classification rules, icon overrides, and P-15's overwrite overrides — all
+# hand-maintained because they either encode an editorial decision or paper over a corpus shape
+# the automatic rule can't resolve unambiguously.
+#
+# pipeline/availability.py's evaluator derives a LOCKED technology's reason automatically for
+# every leaf key that resolves through an axis fact or a documented ground-fact assumption (see
+# pipeline/trigger_text.py's _LEAF_PHRASES_TRUE and the special-cased leaf kinds in
+# _describe_leaf) — CLAUDE.md's "Documented evaluator assumptions" and D-6's three empire axes
+# are exactly the set of things a technology can be genuinely, understandably LOCKED for. A
+# derived reason falls back to raw trigger text (e.g. "some_trigger = yes") whenever no phrase is
+# known for the responsible leaf; P-13 requires that this fallback path be checked against this
+# table, and the build warn (never fail) when a technology needing an entry doesn't have one.
+#
+# Format: one entry per line, technology key/reason text separated by ' = ', followed by a
+# required '#' justification (never optional — a line without one is a config error, not a
+# silent skip):
+#
+#   <technology key> = <reason text shown on the P-13 lock badge>  # <justification>
+#
+# No entries yet. The real vendored corpus survey behind this file (Task 3's category-
+# distribution work, CLAUDE.md's "Availability evaluator" section) found zero LOCKED
+# (technology, profile) results anywhere in the 980-rendered-node x 12-profile grid that fall
+# back to unphrased raw trigger text — every leaf key that can actually cause a LOCKED result in
+# the current corpus already has a dedicated phrase. This file exists so the evaluator has
+# somewhere to fall back to and warn toward, not because any case currently needs an entry — do
+# not add one speculatively. Re-run the survey after any corpus refresh or new AXIS_FACTS/
+# GROUND_FACT_BOOL entry; a newly-unphrased LOCKED leaf is exactly what this table is for.
+#
+# Worked example (commented out — NOT a real override; delete the leading '# ' only when adding
+# a genuine, reviewed entry for a technology pipeline.availability actually flagged via
+# needs_lock_reason_override()). Say a future corpus revision adds a technology locked behind a
+# newly-introduced ground-fact-shaped leaf this evaluator doesn't yet have a phrase for:
+#
+# tech_example_locked = Unavailable: requires the Example DLC's starting bonus  # raw trigger was
+#   "has_example_dlc_bonus = yes", no phrase mapping exists yet in pipeline/trigger_text.py's
+#   _LEAF_PHRASES_TRUE; confirmed by hand against the DLC's patch notes on <date>.
