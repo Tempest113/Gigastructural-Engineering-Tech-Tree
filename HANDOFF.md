@@ -36,7 +36,26 @@ prohibitively expensive because the whole transcript was resent every turn.
 
 The user defers technical and visual judgement calls to Claude, and contributes the
 mod-specific domain knowledge. Claude is expected to make the call and justify it, not to
-present a menu of options.
+present a menu of options. **This is a standing instruction, restated explicitly by the user
+mid-project**: "We'll proceed with your recommendation for these sorts of things here on out."
+Do not hand technical decisions back to him — make the call, state the reasoning, and flag
+separately when something is genuinely a *game or mod* question rather than a technical one.
+
+**The user's domain knowledge and screenshots have repeatedly caught bugs no test could.** This
+is not a courtesy — it is the single most productive input channel in the project, and it works
+because he is asked specific, answerable questions:
+- A v1 screenshot showing a card badged "T5 ×5" exposed `is_repeatable`'s `levels < 0` bug (12
+  misplaced technologies, full green suite).
+- Pasting the `giga_mega_repeatable` inline_script template surfaced both the `cost_per_level`
+  display gap and the lowercase-`not` operator question.
+- Clarifying that `$name$_capped_r` is a **mod-configuration** flag, not a progress flag —
+  correcting Claude's stated assumption — reclassified 50 nodes and produced the `config-gated`
+  state.
+- Clarifying that no core preset sets a cap to "1 + Repeatables" turned those 50 from *uncertain*
+  into *determinate*.
+- Correcting Claude's reading of v1's second failure (see the Layout model section) prevented an
+  entire wasted design effort on untruncatable card text.
+When a corpus finding is ambiguous, **ask him a specific game question** rather than inferring.
 
 ## Methodology that has worked — keep doing this
 
@@ -758,6 +777,21 @@ was close to right, but two things were wrong behaviourally: **incorrect tier pl
 in tier 6, and "likely not the only one") and **inadequate labelling of locks and
 prerequisites**.
 
+**IMPORTANT correction to the second failure's diagnosis (later session, from the user
+directly).** For many sessions this document read "inadequate labelling of locks and
+prerequisites" as a *card text* problem — truncated gate strings, missing badges — and
+`spec/P-02-layout.md` still carries design constraints derived from that reading. **That reading
+was wrong.** Shown his own v1 screenshots and asked directly, the user's answer was:
+
+> "the issue isn't the gate or tech names being cut off, while it isn't ideal, players will know
+> what they're looking for, and in the event of them being confused, they can select the tech for
+> more info"
+
+**Truncated card text is acceptable.** The real second failure is the **research path** — see the
+"Research path" section below. Do not spend design effort making card text untruncatable; that
+constraint was inferred, never reported. The popup is the escape hatch for full text and the user
+considers it sufficient.
+
 The screenshot diagnoses the first precisely: the band headed **TIER 6 contained cards almost
 all badged T5**. v1 was assigning nodes to bands by *computed column* (post-promotion position)
 while badging them with *declared tier*. A T5 technology promoted to column 6 landed under a
@@ -845,9 +879,15 @@ layout axis.
   Particle Generation"; the `giga_tech_repeatable_*_cap` → "… Management Protocols" convention
   sits at 43–53). 17% of names carry `§` markup. Designed to p95 with ellipsis truncation, full
   name in popup and hover title — though 270px in practice fits even the 54-char max across two
-  lines. **Gate text is never truncated** — that was v1's literal reported failure. Dropping the
+  lines. ~~**Gate text is never truncated** — that was v1's literal reported failure.~~
+  **CORRECTED (later session, from the user directly): this premise was false.** Gate text
+  truncation was never the reported failure — see the correction note at the top of this section.
+  The user explicitly accepts truncated gate and name text on the card, with the popup as the
+  escape hatch. The 270×92px dimension and the p95 design target still stand on their own
+  measurement merits; only the "never truncate gate text" *rationale* was wrong. Dropping the
   "Needs " prefix (the icon already carries the semantic per P-3) cuts the worst gate string from
-  41 to 35 chars, which fits on its own row.
+  41 to 35 chars, which is still worth doing — but as a legibility improvement, not to satisfy a
+  hard constraint that does not exist.
 - **Gate population**: 46/980 nodes (4.7%) carry ≥1 gate, 9 carry 2 (max observed) — covered by
   P-3's existing primary+secondary rule, no design gap. Only 28 possible gate strings exist
   total, shared across many nodes — a small bounded set, unlike per-node names.
@@ -856,6 +896,63 @@ layout axis.
   reason unknown". Full raw trigger text, category and 12-profile matrix in the popup. This
   directly targets v1's second reported failure: uncertain/locked states reading as missing data
   rather than as information.
+
+---
+
+## Research path — v1's real second failure, diagnosed from a screenshot (spec: P-12.9)
+
+This is the other half of what the user reported about v1, and it is **not** a card-labelling
+problem (see the correction at the top of the Layout model section). It is a correctness problem
+in the research path, diagnosed from a v1 screenshot of the path to `tech_mega_engineering` —
+a flat numbered list of steps with a running cost total, ending at Σ 74,750.
+
+**What was wrong with it**, per the user, all four the same root cause — the path was computed
+once, profile-blind, with OR branches flattened to inline annotations rather than traversed:
+
+- "*or Arkship Mastery*" named an alternative but never expanded **its own prerequisites** — the
+  path was incomplete for anyone who would actually take that branch.
+- "*or Stingers*" was shown as optional when for a **bio-shipset** empire it is the only route
+  (Maulers → Stingers), and belonged in the path proper.
+- **Starbase techs were included for every empire**, though a **nomadic** empire does not need
+  them.
+- Consequently **the Σ total was wrong for most of the 12 profiles** — 74,750 is the
+  regular-shipset non-nomadic figure presented as if universal. This is the worst of the four: a
+  cost total reads as authoritative in a way an inline annotation does not.
+
+**The data to fix this now exists and did not when v1 was built** — P-14 separated `alternative`
+edges from true `prerequisite`s with group IDs, the empire overlay carries per-profile
+availability across all 12 profiles, and D-14 added per-profile swap name substitution. The P-14
+edge-typing work turned out to be the prerequisite for fixing this, not just a data-model tidy-up.
+
+**Design decisions, all settled with the user in chat and written into
+`spec/P-12.9-research-path.md`** (spec only — nothing is implemented):
+
+- **Per selected profile.** Technologies not on that profile's route simply do not appear. This is
+  correctness, not filtering. The user considered "show multiple paths, one per empire type" and
+  rejected it once it was clear per-profile computation makes it unnecessary.
+- **Shape stays as v1 had it** — one flat ordered list with a running cost total. Explicitly
+  confirmed by the user; do not redesign it into a graph overlay without asking.
+- **OR-branch selection: cheapest total cost**, including that branch's own prerequisite chain,
+  with the alternative noted at that step. **Measured 0/72 disagreement with fewest-steps on the
+  real corpus** — the rule is currently a distinction without a difference and is explicitly
+  revisitable.
+- **Uncertain steps stay in the path; the total is marked an estimate** (a lower bound). Excluding
+  them understates cost; presenting an exact number over an unknown is a false claim. Worst
+  profile is 182/980 paths carrying ≥1 uncertain step, so this must read as an ordinary annotated
+  state, not an error.
+- **Config-gated steps are excluded from the total and explained separately.** Structurally
+  confirmed: config-gated technologies are sinks, so a config-gated step can only ever be the path
+  **target**, never mid-path — no path total is ever mixed.
+- **Triggered by selecting a technology**, as in v1. Pinning a goal technology for always-on
+  display is a **deferred QOL feature**, explicitly out of scope for the first renderer. The
+  user's framing: "main focus is getting the tree working, extra QOL features come after."
+
+**The design was validated against the user's own bug report before being accepted**, which is
+the strongest evidence in the project that it is right: recomputing `tech_mega_engineering`'s path
+for regular/mechanical/non-nomadic reproduces **74,750 exactly** — v1's own reported figure — while
+nomadic correctly routes through Arkship Mastery (**99,750**, a *higher* number, not a flattering
+one) and bio-shipset correctly routes through Stingers (**73,750**) with Battleships excluded as
+locked rather than shown as a false option.
 
 ---
 
