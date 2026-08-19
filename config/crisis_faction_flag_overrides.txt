@@ -1,0 +1,52 @@
+# Crisis-faction FLAG override config (D-7/P-5) — hand-maintained, checked in, loaded by
+# pipeline/crisis_faction_flags.py, consumed by pipeline/crisis_faction.py's classify_by_flag.
+#
+# Distinct from config/crisis_faction_overrides.txt (which maps a TECHNOLOGY KEY directly to a
+# faction, step 3 of D-7). This file maps a `has_country_flag` NAME, found in a technology's own
+# `potential` block, to a faction — a technology whose `potential` references a mapped flag is
+# classified to that faction, and (unlike the technology-key override) this classification feeds
+# the SAME step-2 prerequisite-chain inheritance every other step-1 classification feeds, so
+# technologies gated behind the flagged technology can inherit through the ordinary mechanism.
+#
+# Why this exists as a separate, narrow, hand-seeded map rather than a general
+# `potential`-block flag-inspection rule: pipeline/crisis_faction.py's own module docstring
+# records that general flag inspection was tried against the real corpus and rejected — of two
+# candidates it surfaced, one was a confirmed false positive
+# (giga_tech_tetradimensional_engineering) and the other needed individual reachability
+# verification, not a name-pattern match (tech_sm_autocannons/tech_qnm_disruptors, now handled by
+# the technology-key override instead). A blanket rule is still wrong. This file is the narrow
+# alternative: each entry requires the same individual verification as an override, just applied
+# to a flag identity instead of a technology identity, and is scoped to classify only the ONE
+# technology whose `potential` sets that flag as its own gate — inheritance downstream is the
+# ordinary step-2 mechanism, not this file reaching further than the one flag it names.
+#
+# Format: one entry per line, flag name/faction separated by ' = ', followed by a required '#'
+# justification (never optional):
+#
+#   <has_country_flag name> = <faction: Aeternum | Blokkats | Compound | Sirenalia | Katzenartig Imperium>  # <justification>
+#
+# --- Real entries below ---
+
+qnm_utilities_possible = Compound  # tech_qnm_utilities (giga_06_special_project_tech.txt) gates its potential on `has_country_flag = qnm_utilities_possible`. That flag's sole setter in the vendored corpus is vendor/mods/gigastructures/events/giga_191_annihilator_dialog.txt:87 (event annihilator_dialog.004), set from the "Stellar Annihilator" dialogue's `immediate` block. That event's own localised text (giga_ehof_l_english.yml:796, annihilator_dialog.004.desc) is explicit about provenance -- the Annihilator is an NPC whose stated purpose is "[t]otal annihilation of the $ehof_the_compound_text$" (the Compound), offering QNM technology specifically to help fight it. A technology reachable only through this Compound-crisis-storyline dialogue is Compound content, verified by reading the raw event and its localisation text, not inferred from the flag's name alone.
+
+# --- EAWAF/Sirenalia entries (added the session that corrected the "whole giga_tech_eawaf_*
+# flag family dismissed as a distinct minor-faction storyline" verdict -- see
+# pipeline/crisis_faction.py's module docstring and CLAUDE.md's defect-class entry for the full
+# story). All six flags below are set EXCLUSIVELY inside
+# vendor/mods/gigastructures/events/giga_034_eawaf_events.txt (namespace `giga_eawaf`), the
+# Sirens' own event chain -- confirmed by grepping the full vendored corpus for each flag name,
+# not assumed from the "eawaf" prefix alone. None of these six entries relies on
+# `has_star_flag = giga_eawaf_siren_faust` (the signal a prior session used and the user
+# identified as unsound, since Faust is where the Sirens spawn but is not exclusive to them --
+# another empire can occupy the system if the Sirens fail to spawn or are disabled). Every flag
+# here instead traces to a `set_country_flag` inside an event whose own `create_country`/`trigger`
+# ties it to the Sirens' own country specifically: the `giga_eawaf_country` global event target
+# these events act on is created with `name = "Sirenalia"`, `type = giga_eawaf_sirens`
+# (giga_034_eawaf_events.txt:1303-1311) -- there is no second, non-Siren country type in
+# giga_eawaf_country_types.txt this flag family could instead belong to.
+giga_faust_weaponry_possible = Sirenalia  # Gates giga_tech_thaumaturgic_weaponry's `potential`. Set at giga_034_eawaf_events.txt:4770 (an "Equestria at War" easter-egg tech-dump event) and :5586 (event giga_eawaf.7100, "Faust is invaded", trigger `from = { has_country_flag = giga_eawaf_country, is_country_type = primitive }`) -- both fire only against the Sirens' own `giga_eawaf_country` (created as country "Sirenalia", type giga_eawaf_sirens), not a generic Faust-primitive check. No has_star_flag involved.
+giga_tech_eawaf_disenchanter_1_possible = Sirenalia  # Gates giga_tech_eawaf_disenchanter_1's `potential`. Set only at giga_034_eawaf_events.txt:2695, inside the giga_eawaf-namespace event chain that also creates/acts on the Sirens' own giga_eawaf_country. No has_star_flag involved.
+giga_tech_eawaf_disenchanter_2_possible = Sirenalia  # Gates giga_tech_eawaf_disenchanter_2's `potential`. Set only at giga_034_eawaf_events.txt:2717, same event chain as disenchanter_1 above.
+giga_tech_eawaf_disenchanter_3_possible = Sirenalia  # Gates giga_tech_eawaf_disenchanter_3's `potential`. Set only at giga_034_eawaf_events.txt:2739, same event chain as disenchanter_1 above.
+giga_tech_eawaf_disenchanter_4_possible = Sirenalia  # Gates giga_tech_eawaf_disenchanter_4's `potential`. Set only at giga_034_eawaf_events.txt:2761, same event chain as disenchanter_1 above; this technology's prereqfor_desc names `allow_anti_sirens_shield`, an anti-*Sirens* shield megastructure, independent corroborating evidence beyond the flag alone.
+giga_tech_eawaf_weapons_repeatable_possible = Sirenalia  # Gates giga_tech_eawaf_weapons_repeatable's `potential`. Set only at giga_034_eawaf_events.txt:3425 (guarded by `NOT = { has_country_flag = giga_tech_eawaf_weapons_repeatable_possible }` at :3421, an idempotency guard, not a second signal), same giga_eawaf-namespace event chain as the entries above.
