@@ -79,30 +79,62 @@ def test_base_dataset_edge_count_matches_p14_survey(base_dataset):
 def test_base_dataset_gates_match_the_gate_classification_survey(base_dataset):
     """P-3 (gate-classification session): real per-mechanism counts, pinned so a future corpus
     change is caught rather than silently drifting. 45 ascension_perk-kind gate instances (22
-    has_ascension_perk + 9 has_gigastructural_constructs + 14 has_galactic_wonders) + 25
-    technology-kind gate instances (== the 25 potential-gate edges, one-to-one) == 70 total, over
-    60 technologies, 10 of which carry more than one gate INSTANCE (7 crossing two distinct
-    mechanism types -- 6 tech_lathe_* + giga_tech_the_vat -- plus 3 more carrying two
-    has_technology targets each -- giga_tech_disco_moon, tech_qnm_disruptors,
-    tech_sm_autocannons -- which the survey's per-mechanism-TYPE grouping didn't distinguish from
-    a single-target technology, only found once gates were actually built)."""
+    has_ascension_perk + 9 has_gigastructural_constructs + 14 has_galactic_wonders), unaffected by
+    Item 5. technology-kind gate instances: 25 raw `has_technology`-in-`potential` occurrences
+    (== the 25 potential-gate edges, one-to-one), minus 4 excluded by Item 5 (later session) --
+    `giga_tech_amb_supertensiles_acot_alpha/sigma/delta/phanon` each redundantly encode the same
+    ACOT/AoT dependency as BOTH a true `prerequisites` entry AND a `has_technology` check in
+    `potential` (CLAUDE.md's documented "4 real pairs are both a formal prerequisite and a
+    potential-gate"); displaying the latter as gate-badge text duplicated the former, already
+    shown via the edge/popup, so `_build_gates` now excludes a "technology"-kind match whose
+    target is also a true prerequisite of the same technology -- a DISPLAY-layer exclusion only,
+    the underlying `potential-gate` edges are untouched (still 25, asserted separately below).
+    21 technology-kind + 45 ascension_perk-kind = 66 total, over 56 technologies (was 60 -- the 4
+    excluded technologies each had exactly one gate, this one, so they drop to zero gates
+    entirely), 10 of which carry more than one gate INSTANCE (7 crossing two distinct mechanism
+    types -- 6 tech_lathe_* + giga_tech_the_vat -- plus 3 more carrying two has_technology targets
+    each -- giga_tech_disco_moon, tech_qnm_disruptors, tech_sm_autocannons -- unaffected by Item
+    5, since none of those 3 is one of the 4 redundant-prerequisite technologies)."""
     from collections import Counter
 
     doc, _node_bytes, _edge_bytes = base_dataset
     gated = [t for t in doc["technologies"] if t["gates"]]
     all_gates = [g for t in doc["technologies"] for g in t["gates"]]
-    assert len(all_gates) == 70
-    assert dict(Counter(g["kind"] for g in all_gates)) == {"ascension_perk": 45, "technology": 25}
-    assert len(gated) == 60
+    assert len(all_gates) == 66
+    assert dict(Counter(g["kind"] for g in all_gates)) == {"ascension_perk": 45, "technology": 21}
+    assert len(gated) == 56
     assert sum(1 for t in gated if len(t["gates"]) > 1) == 10
 
-    # Every technology-kind gate instance is exactly one of the 25 potential-gate edges, one to
-    # one -- classification never removes or alters the underlying edge (spec/P-03-gates.md).
+    for key in [
+        "giga_tech_amb_supertensiles_acot_alpha", "giga_tech_amb_supertensiles_acot_sigma",
+        "giga_tech_amb_supertensiles_acot_delta", "giga_tech_amb_supertensiles_acot_phanon",
+        "giga_tech_arkship_neutronium_harvester",
+    ]:
+        tech = next(t for t in doc["technologies"] if t["id"] == key)
+        assert tech["gates"] == []
+
+    # Every technology-kind gate instance is one of the 25 potential-gate edges (still 25 --
+    # Item 5 only filters the CARD-DISPLAY gate list, never the edge extraction itself), but no
+    # longer a 1:1 match: the 4 excluded gate instances are a strict subset of the edges.
     potential_gate_pairs = {(e["from"], e["to"]) for e in doc["edges"] if e["kind"] == "potential-gate"}
+    assert len(potential_gate_pairs) == 25
     gate_tech_pairs = {
         (g["refId"], t["id"]) for t in doc["technologies"] for g in t["gates"] if g["kind"] == "technology"
     }
-    assert gate_tech_pairs == potential_gate_pairs
+    assert gate_tech_pairs < potential_gate_pairs  # strict subset, not equal (Item 5)
+    # 4 real exclusions, not the 4 amb_supertensiles technologies as originally assumed --
+    # `giga_tech_amb_supertensiles_acot_delta`'s own `potential` has no `has_technology` leaf at
+    # all (only `has_acot`/`has_global_flag`), so it was never a potential-gate owner to begin
+    # with; only alpha/sigma/phanon are. The 4th real exclusion is the OTHER known dual-encoded
+    # pair (CLAUDE.md's edge-typing example): `tech_mega_engineering ->
+    # giga_tech_arkship_neutronium_harvester`, unrelated to the ACOT/AoT tensile family but the
+    # same underlying redundant-encoding shape.
+    assert potential_gate_pairs - gate_tech_pairs == {
+        ("tech_dark_matter_power_core_ae", "giga_tech_amb_supertensiles_acot_alpha"),
+        ("tech_dark_matter_power_core_se", "giga_tech_amb_supertensiles_acot_sigma"),
+        ("tech_civil_phanon_application", "giga_tech_amb_supertensiles_acot_phanon"),
+        ("tech_mega_engineering", "giga_tech_arkship_neutronium_harvester"),
+    }
 
     vat = next(t for t in doc["technologies"] if t["id"] == "giga_tech_the_vat")
     assert [g["kind"] for g in vat["gates"]] == ["ascension_perk", "ascension_perk"]

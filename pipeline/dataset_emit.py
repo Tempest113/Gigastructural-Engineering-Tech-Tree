@@ -102,6 +102,7 @@ from .overwrites import (
     build_overwrite_report,
     collect_technology_definitions,
     collect_variable_definitions,
+    ordered_prerequisites,
     resolve_technology_overwrites,
     resolve_variable_overwrites,
 )
@@ -743,7 +744,24 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
         return name
 
     def _build_gates(defn: "TechnologyDefinition") -> list[dict]:
-        matches = order_gates(classify_gates(defn.block))
+        # Item 5 (later session): CLAUDE.md's documented "4 real pairs are both a formal
+        # prerequisite AND a potential-gate" (`giga_tech_amb_supertensiles_acot_alpha/sigma/
+        # delta/phanon`, each redundantly encoding the same ACOT/AoT dependency in both its own
+        # `prerequisites` field AND a `has_technology` check inside `potential`) means a
+        # "technology"-kind gate whose target is ALSO a true prerequisite of this same
+        # technology is not a real GATE in the P-3 sense -- it's an ordinary prerequisite,
+        # already shown via the edge and the popup's Prerequisites list. Displaying it a second
+        # time as "Needs X" card-badge text duplicates that, rather than communicating a
+        # distinct eligibility condition (P-3's actual purpose). This is a DISPLAY-layer
+        # exclusion only -- pipeline.edges' `potential-gate` edge extraction and pipeline.
+        # gate_patterns' raw classification are both deliberately untouched (CLAUDE.md's
+        # "Edge-kind membership is NOT mutually exclusive" precedent for the edge graph itself
+        # stands; only the CARD/POPUP gate-badge display is filtered here).
+        true_prerequisites = set(ordered_prerequisites(defn.block))
+        matches = [
+            m for m in order_gates(classify_gates(defn.block))
+            if not (m.kind == "technology" and m.ref_id in true_prerequisites)
+        ]
         gates: list[dict] = []
         for match in matches:
             if match.kind == "ascension_perk":
