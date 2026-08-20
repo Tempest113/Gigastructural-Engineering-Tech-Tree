@@ -1187,8 +1187,10 @@ this session, and the corpus does keep moving.
 **Prerequisite, same as every session**: `client/public/dataset/` is gitignored (D-15) and won't
 exist in a fresh checkout — run `tools/build_dataset.py` locally (needs `vendor/` populated)
 before `npm run dev`/`build` in `client/`. Re-run it fresh rather than assume any on-disk build is
-current; the real node/edge counts are **973/977** as of this session (D-18 then Item 2c), canvas
-is 29,670 × 13,332px, 66 gate instances over 56 technologies under Item 5's display-layer fix.
+current; the real node/edge counts are **973/977** (D-18 then Item 2c). **Gate instance count is
+now stale here — see CLAUDE.md's "Gates" section for the current, real figure (136 instances over
+109 technologies, four `GateKind` values, as of the "path to zero uncertain" follow-up session's
+Items 3–4) rather than the 66/56 recorded in this paragraph historically.**
 
 ---
 

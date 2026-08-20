@@ -2936,3 +2936,110 @@ this session while touching the same section. HANDOFF.md's "Next prompt" section
 several sessions, pointing at long-completed work) rewritten to point at the P-12.9
 implementation, with the three stale validation figures named explicitly so they get corrected in
 the same pass rather than silently trusted.
+
+## "Path to zero uncertain" follow-up session — has_ancrel fix, scripted-trigger expansion, ethics/civic/origin gates, OR-context gate fix
+
+Implements the mechanical, user-approved parts of a six-part survey run the prior session
+(scratch scripts, never shipped). Four items, each measured against the real corpus, no estimates
+carried forward unverified — several real figures diverged from the survey's own projections, and
+each divergence is recorded with its real cause below rather than silently accepted.
+
+**Item 1 — `has_ancrel` fix, the FIFTH instance of this project's recurring defect class.**
+`pipeline/trigger_text.py` asserted `has_ancrel` was "not a scripted_trigger definition anywhere
+in the vendored corpus" and a Gigastructures relic-questline flag — never verified against raw
+source, and wrong: `vendor/stellaris/common/scripted_triggers/00_scripted_triggers.txt:2678` is
+`has_ancrel = { host_has_dlc = "Ancient Relics Story Pack" }`, a literal DLC check. Fixed via
+`pipeline.availability.GROUND_FACT_BOOL` (the existing DLC-ownership rule), not a `trigger_text`
+category change, since it's never UNCERTAIN any more. 22 technologies (`tech_archaeo_*`) move
+AVAILABLE, 1 (`tech_archeology_lab`) moves LOCKED. Distinct from the first four defect-class
+instances: those were wrong ANSWERS computed by code; this was a wrong CLAIM written down as a
+documented finding and trusted by every later session without re-verification. Real effect: 238 →
+215 uncertain (any-profile), unconditional 205 → 183, worst profile-dependent 2.88% → 2.77%.
+
+**Item 2 — `pipeline/scripted_triggers.py`, general recursive scripted-trigger expansion.** New
+module: substitutes a trigger's real body in place of its name (bare-identifier-leaf shape, NOT
+`inline_scripts`' parameterised text substitution — confirmed not reusable by survey before
+implementation), then hands the rewritten block to the UNCHANGED Kleene evaluator. Real corpus:
+3,463 distinct trigger names after overwrite resolution (135 redefined by a later source), zero
+cycles, max depth 8 (`MAX_EXPANSION_DEPTH=12`, hard failure not silent truncation if ever hit).
+`is_ai=yes` branches stripped, generalising the two previously-hardcoded wrapper mappings' own
+treatment — took three real iterations to get right, each caught by re-running the corpus survey
+after writing the previous version:
+1. Naive "contains is_ai anywhere in this subtree" dropped whole unrelated sibling branches.
+2. **The real regression**: `country_uses_bio_ships` is ALSO a real scripted-trigger name (body
+   opens with `exists = this`, a shape the evaluator has no notion of) but is ALREADY specially
+   resolved by `AXIS_FACTS` — blind expansion destroyed the axis-fact shortcut for all ~238 real
+   occurrences, a 110-technology regression (215 → 320) caught only by re-running the survey.
+   Fixed: any key already in `AXIS_FACTS`/`GROUND_FACT_BOOL`/`DLC_NAME_CHECK_KEYS` is skipped by
+   expansion unconditionally (`_ALREADY_RESOLVED_KEYS`).
+3. `has_galactic_wonders`'s real `is_ai` branch is wrapped in `hidden_trigger = { and = {...} } }`,
+   not a bare `AND` — an 11-technology regression, fixed by recognising `hidden_trigger` as
+   droppable specifically when ALL its own children are themselves is_ai-gated.
+Real effect on its own (from Item 1's already-fixed 215 baseline): any-profile-uncertain count
+UNCHANGED (215 → 215 — the target triggers only ever produce PARTIAL per-profile improvement, not
+full resolution), but unconditional improves (183 → 176, e.g. `is_wilderness_empire`'s hive-only
+origin now short-circuits LOCKED for the 8 non-hive profiles via the authority axis alone) while
+the worst profile-dependent rate RISES (2.77% → 3.49%, crossing the 3% warn line) — the same 7
+technologies moving from "uncertain for everyone" to "uncertain only where axis-consistent," more
+informative but counted against this specific metric. A real, reported tradeoff, not hidden.
+
+**Item 3 — ethics/civic/origin as display gates, 19 new `EXCLUDED_KEYS` entries.** Same
+identity-element treatment ascension perks already get. Origin-shaped (`has_origin` direct, plus
+1:1 wrappers `is_wilderness_empire`/`giga_has_frameworld_origin`), ethics/civic-shaped
+(`has_ethic`/`has_valid_civic`/`has_civic` direct, plus 1:1 wrappers `is_fanatic_spiritualist`/
+`is_fanatic_pacifist`), plus 11 more excluded-but-not-gate-classified compound triggers (an `OR`
+of several real sub-conditions, no single clean `refId` — `is_void_dweller_empire`, `is_megacorp`,
+...; see `pipeline.gate_patterns.NOT_GATE_CLASSIFIED_EXCLUDED_KEYS`). **Every one of the 19 that is
+ALSO a real scripted-trigger catalog name needed the SAME fix as Item 2's `country_uses_bio_ships`
+regression** — found again, at 19x the scale, and fixed generally this time
+(`_ALREADY_RESOLVED_KEYS` now derives from `EXCLUDED_KEYS` wholesale, minus the two deliberately-
+expandable wrapper names). New `GateKind` values `origin`/`ethics_or_civic` (D-3 priority: perk >
+origin > ethics-or-civic > technology); icons NOT vendored (`common/civics`/`origins`/`ethics`
+absent for every source — reported, not acted on; falls back to the existing
+`_default_icon_ref` stub, label text is the real content). Real effect: any-profile-uncertain 215
+→ 127, unconditional 176 → 107, worst profile-dependent 3.49% → **1.54%** (all 12 profiles back to
+"ok" status) — `ORIGIN_REQUIREMENT`/`ETHICS_OR_CIVIC_REQUIREMENT` both drop to zero in the
+unconditional distribution. Gate instances 66/56 → 136/109 (45 ascension_perk + 45 origin + 24
+ethics_or_civic + 22 technology, the last including a new `can_research_technology` alias of
+`has_technology`).
+
+**Item 4 — the OR-context gate display bug, confirmed real and fixed.** `tech_torpedoes_1` showed
+"Needs Riddle Escort" as unconditional when it's one of four independent OR branches (non-bio-ship
+empires already qualify via a different branch entirely) — `tech_missiles_1` shares the shape.
+11/25 (44%) real `has_technology`-under-`potential` occurrences sit inside an OR.
+`GateMatch`/`Gate` schema gained `alternative: boolean` (`_scoped_gate_leaves` tracks OR-ancestry
+independent of negation) — label becomes `"or: <name>"` instead of `"Needs <name>"`. Generalised
+correctly beyond the reported bug: `giga_tech_the_vat`'s `ap_mechromancy` perk gate is ALSO
+genuinely OR-context, now `"or: Mechromancy"` where its sibling `has_galactic_wonders` (AND-
+context) stays `"Needs Galactic Wonders"`. Second field `appliesToEmpireTypes` (nullable
+`EmpireTypeConstraint`) reuses `pipeline.edge_constraints`' EXISTING per-edge axis constraint
+(`shipset: ["biological"]` for the Riddle Escort edge, already computed for `activeEdgeIds`, not
+recomputed) — wired into the CLIENT too (`gateAppliesToProfile`, combined with the existing
+zoom-driven LOD visibility loop via a new `nodePrimaryGateConstraint` index-parallel array, plus
+the popup's gate-list filter), so a Mechanical-shipset profile never sees the badge at all and a
+Biological-shipset profile sees it worded as an alternative. Verified visually against the real
+built dataset (Playwright + headless Chromium, no `chromium-cli` available in this environment —
+installed Playwright's own Chromium build instead): screenshots confirm the badge absent/present
+correctly in both card and popup across the profile switch, zero console errors either way.
+`pipeline/edges.py` deliberately untouched — confirmed not the bug, a different concern (edge
+completeness) from gate display wording.
+
+**Cumulative real effect, all four items, same measurement basis throughout (973 rendered
+technologies)**: any-profile-uncertain **238 → 127** (111 technologies resolved), unconditional
+**205 → 107**, worst profile-dependent **2.88% → 1.54%** (comfortably under the 3% warn threshold
+throughout, despite a real intermediate rise to 3.49% under Item 2 alone). Gate instances
+**66 → 136** over **56 → 109** technologies, four `GateKind` values instead of two. Full pytest
+suite green throughout (1492 passed at session end), `tsc --noEmit` and `vite build` both clean,
+zero headless-Chromium console errors or failed requests across every screenshot pass.
+
+**Housekeeping**: CLAUDE.md's "Trigger evaluation" and "Gates" sections updated in place with the
+real current figures and full writeups for all four items (not summarized elsewhere only).
+HANDOFF.md's stale `66 gate instances over 56 technologies` prerequisite-paragraph figure flagged
+as superseded, pointing at CLAUDE.md rather than restating the new number in two places. New test
+files: `tests/test_scripted_triggers.py` (mechanism), `tests/test_scripted_triggers_corpus.py`
+(real corpus, cycle/depth/is_ai regression guards). `tests/test_gate_patterns.py`'s cross-module
+sync test extended from a strict equality (`GATE_LEAF_KEYS == EXCLUDED_KEYS`) to a three-way split
+(`GATE_LEAF_KEYS | NOT_GATE_CLASSIFIED_EXCLUDED_KEYS == EXCLUDED_KEYS`, disjoint) now that not
+every excluded key gets a badge. Real dataset rebuilt (`tools/build_dataset.py`) and client built
+(`npm run build`) against it for the verification pass, not left as a stale on-disk artefact from
+before this session's changes.

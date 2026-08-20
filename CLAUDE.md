@@ -290,11 +290,115 @@ The two denominators (all-1,879-canonical vs. rendered-973) give materially diff
 oppositely-signed, answers: rendered-only uncertainty is *higher* than all-canonical, because
 Gigastructures' own content — not unrendered ACOT/AoT bulk — is the concentration point. Narrowing
 ACOT/AoT rendering scope does not fix a ceiling breach. Always state which denominator a reported
-rate uses. **Real corpus, current session: worst profile-dependent 28/973 (2.88%, under the 3%
-warn threshold — was 33/977, 3.37%, over it); unconditional 205/973 (was 209/977). Both figures
-IMPROVED (never regressed) from the four resolution rules below plus the always-no exclusion's
-denominator shrink** — see the "Availability evaluator" bullet in Open Items/BUILD-LOG for the
-full before/after category breakdown.
+rate uses. **Real corpus (current, both moves from the "path to zero uncertain" follow-up session):
+worst profile-dependent 34/973 (3.49%, back OVER the 3% warn threshold — was 33/977, 3.37%, over
+it, then 28/973, 2.88%, then 27/973, 2.77%, under it); unconditional 176/973 (was 209/977, then
+205/973, then 183/973).** The `has_ancrel` fix (below) improved both figures together, same as
+every earlier rule; the scripted-trigger expansion module (also below) improved unconditional
+uncertainty further but, in the SAME move, pushed the worst profile-dependent rate back over the
+3% line — a considered, reported tradeoff, not a regression to hide: see that module's own
+paragraph for why. See the "Availability evaluator" bullet in Open Items/BUILD-LOG for the full
+before/after category breakdown.
+
+**`has_ancrel` fix (a later session, "path to zero uncertain" Item 1) — the FIFTH instance of this
+project's recurring defect class**: `pipeline/trigger_text.py` carried a comment asserting
+`has_ancrel` was "not a scripted_trigger definition anywhere in the vendored corpus" and was a
+Gigastructures relic/precursor-questline flag, classified `CRISIS_OR_STORY_PROGRESS`. That claim
+was never checked against raw source and was wrong: the real definition is `vendor/stellaris/
+common/scripted_triggers/00_scripted_triggers.txt:2678`, `has_ancrel = { host_has_dlc =
+"Ancient Relics Story Pack" }` — a literal DLC-ownership check, already covered by assumption 2
+below. Fixed by adding `has_ancrel` to `pipeline.availability.GROUND_FACT_BOOL` (the same
+DLC-ownership rule as every other named wrapper) rather than to `trigger_text`'s category table,
+since it is no longer ever UNCERTAIN. Real corpus: 22 technologies (the `tech_archaeo_*` family)
+move UNCERTAIN → AVAILABLE, 1 (`tech_archeology_lab`, `has_ancrel = no`) moves UNCERTAIN → LOCKED.
+**What makes this the fifth instance, and distinct from the first four** (`is_repeatable`'s
+`levels < 0`, `_resolve_loc_tokens`' sibling-token bug, Compound's "confirmed real zero," the
+EAWAF flag-family dismissal — see `docs/BUILD-LOG.md`'s defect-class paragraph): those four were
+each a wrong answer *computed* by code reading the wrong signal. This one was a wrong answer
+*written down as a documented finding* — a claim in a code comment, cited and trusted by every
+later session's understanding of the corpus, that nobody re-verified against raw text until this
+session. The lesson isn't new (this project's own "raw inspection only" rule already exists for
+exactly this reason), but the FAILURE MODE is new: a documented claim is not self-verifying just
+because it's written down with confidence and a specific-sounding citation (`giga_relics.txt`'s
+`ancrel.NNNN` event-id namespace was real, but didn't support the conclusion drawn from it).
+
+**Recursive scripted-trigger expansion (same "path to zero uncertain" session, Item 2) —
+`pipeline/scripted_triggers.py`.** A technology's `potential` block can reference a scripted
+trigger by bare identifier leaf (`giga_can_use_habitables = yes`); before this module, any name
+the evaluator didn't specifically recognise was permanently `unknown`, even when the trigger's own
+real body was itself made of leaves the evaluator COULD resolve (axis facts, DLC ground facts).
+This module substitutes a trigger's real body in place of its name, recursively, then hands the
+rewritten block to `pipeline.availability`'s UNCHANGED Kleene evaluator — never a second evaluator,
+never new boolean semantics. Wired into `pipeline.dataset_emit.BuildContext.expanded_potentials`,
+computed once and reused by every availability call site in that module (matching the "pipeline
+owns all geometry" discipline, applied here to trigger content).
+
+Not `pipeline.inline_scripts` and not reusable as it stands — confirmed by survey before
+implementation: a scripted-trigger call is a bare identifier leaf, already an ordinary AST node
+once parsed, not the parameterised text substitution `inline_script` exists for. Real corpus:
+3,463 distinct trigger names after overwrite resolution (135 redefined by a later source), zero
+reference cycles, max observed reference-chain depth 8 — `MAX_EXPANSION_DEPTH` is set to 12 as a
+sanity ceiling, a hard failure if ever hit, never a silent truncation. One file
+(`zzz_overwrites.txt`'s `has_research_building`) can't be fully `inline_script`-expanded (a
+dynamic `@[...]` file-path computation this module doesn't attempt to fix); the catalog loader
+falls back to that one file's raw parse rather than losing every other definition it carries
+(notably `has_galactic_wonders`, defined later in the same file) — zero real-corpus effect, since
+no rendered technology references `has_research_building`.
+
+**`is_ai = yes` branches are stripped, not modelled** — generalising the two previously-hardcoded
+wrapper mappings' own treatment (`pipeline.gate_patterns.WRAPPER_TO_PERK`, which stays, see that
+module's own docstring for why general expansion doesn't make it redundant). Getting this right
+took three real, corpus-verified iterations, each caught by re-running the corpus survey after
+writing the previous version, not by design review — worth recording as its own instance of "a
+green test suite proved the mechanism self-consistent, not correct" until the corpus check itself
+caught it:
+1. A naive "does this subtree contain `is_ai` anywhere" check dropped whole sibling branches that
+   merely happened to share an ancestor with an `is_ai` leaf several levels down — a 110-technology
+   regression from a SEPARATE bug (below) made this one hard to see at first.
+2. **The real regression, found first and the more serious of the two**: `country_uses_bio_ships`
+   — already specially resolved by `pipeline.availability.AXIS_FACTS` as the shipset axis fact —
+   is ALSO a real scripted-trigger name whose own body opens with `exists = this` (a scope-
+   existence tautology-shaped leaf the evaluator's leaf model has no notion of). Expanding it blind
+   to what the evaluator already resolves destroyed the axis-fact shortcut for every one of its
+   ~238 real occurrences, a 110-technology regression (215 → 320 uncertain) only caught by
+   re-running the corpus survey, not by design review. Fixed: any leaf key already in
+   `AXIS_FACTS`/`GROUND_FACT_BOOL`/`DLC_NAME_CHECK_KEYS` is now skipped by expansion unconditionally
+   — those tables keep resolving it exactly as before.
+3. Once (2) was fixed, `has_galactic_wonders`'s real is_ai branch turned out to be wrapped in
+   `hidden_trigger = { and = { is_ai = yes, ... } } }`, not a bare `AND` — a real Stellaris wrapper
+   that only suppresses a tooltip, never changes truth value, but which `pipeline.availability`
+   doesn't recognise as a boolean wrapper either. Left unexpanded, it became one opaque,
+   permanently-`unknown` leaf of its own — an 11-technology regression (every real
+   `has_galactic_wonders`-gated technology). Fixed: `hidden_trigger` is recognised as droppable
+   specifically when ALL of its own direct children are themselves is_ai-gated, recursively —
+   never for a `hidden_trigger` wrapping anything else, which stays untouched rather than guessed
+   at. Verified: zero residual `is_ai` leaves anywhere in the expanded 973-node rendered corpus
+   (`tests/test_scripted_triggers_corpus.py::test_zero_residual_is_ai_leaves_after_expansion`).
+
+**Real measured effect on its own** (this session's actual corpus run, not the prior survey's
+estimate — the survey's own 238→215/23-resolved figure turned out to be ENTIRELY the has_ancrel
+fix, confirmed by rerunning with has_ancrel already fixed separately): starting from Item 1's
+already-fixed 215-uncertain baseline, general expansion leaves the "≥1 uncertain profile" COUNT
+unchanged (215 → 215 — the remaining target triggers only ever produce PARTIAL improvement, fewer
+uncertain profiles per technology, never a full resolution to zero), but the D-10 split tells the
+real story: unconditional uncertainty improves (183 → 176, 7 technologies moved from "uncertain for
+every profile identically" to "uncertain only for the profiles that could actually have it" — e.g.
+`is_wilderness_empire`'s hive-authority-only origin now correctly short-circuits to LOCKED for the
+8 non-hive profiles via the authority axis alone, leaving only the 4 hive-mind profiles genuinely
+uncertain on the real, unresolvable origin question), while the worst profile-dependent rate rises
+(2.77% → 3.49%, crossing back over the 3% warn threshold) — the SAME 7 technologies (and others)
+moving from the unconditional bucket into the profile-dependent one, which the 3%/10% thresholds
+specifically govern. More informative output, worse against this one metric — reported honestly,
+not smoothed over. See `tests/test_dataset_emit.py::
+test_gate_classification_leaves_d10_uncertainty_unchanged` for the full writeup and
+`tests/test_scripted_triggers_corpus.py` for the corpus-wide cycle/depth/is_ai regression guards.
+
+Expansion also surfaces leaf shapes the evaluator has never seen and deliberately leaves
+unresolved (no invented handling, per this session's own scope): `has_authority` (24 tech×profile
+occurrences), `founder_species` (44), `has_civic` — distinct from `has_valid_civic` (28), and
+`if = { limit = {...} }` conditional-effect blocks (48). These are real residue, not bugs; see the
+"path to zero uncertain" survey's own item 3/6 for which are further resolvable and which are
+genuinely unknowable.
 
 **Documented evaluator assumptions**, applied before anything counts as uncertain (each
 individually verified against the vendored corpus, not a blanket "assume everything works" —
@@ -396,19 +500,111 @@ base id (the only one of the four that's actually vendored/localised). Both wrap
 **Zero interaction with availability evaluation.** All four registered keys were already in
 `pipeline.availability.EXCLUDED_KEYS` (an identity-element state) before this module existed —
 gate classification adds only display metadata.
-`tests/test_gate_patterns.py::test_gate_leaf_keys_matches_availabilitys_excluded_keys_exactly`
+`tests/test_gate_patterns.py::test_gate_leaf_keys_plus_not_classified_matches_availabilitys_excluded_keys_exactly`
 pins the two lists staying in exact sync, so a future change to either without the other fails
 loudly. D-10's worst-case profile-dependent uncertainty is unaffected by gate classification
 itself (still asserted directly, not assumed —
 `tests/test_dataset_emit.py::test_gate_classification_leaves_d10_uncertainty_unchanged`); see
-"Trigger evaluation" above for the CURRENT figure (28/973, 2.88%), which moved for unrelated
-reasons (the four evaluator resolution rules, a later session).
+"Trigger evaluation" above for the CURRENT figure (15/973, 1.54%), which moved for unrelated
+reasons (the "path to zero uncertain" follow-up session's Items 1–3).
 
-Ordering (D-3): ascension-perk gates outrank technology gates; index 0 is the primary gate,
-the only one the node card renders (spec's "where space permits, additional gates render as
-compact secondary badges" for a technology with more than one gate is not built — only 10/973
-real technologies have a second gate instance). The popup shows every gate in the ordered list,
-each with its resolved icon and localised "Needs `<name>`" label.
+**Extended (later session, "path to zero uncertain" follow-up, Item 3) — ethics/civic/origin
+display gates, two new `GateKind` values.** `GATE_KIND_ORIGIN` (`has_origin` direct, plus two 1:1
+scripted-trigger wrappers, `is_wilderness_empire`/`giga_has_frameworld_origin`) and
+`GATE_KIND_ETHICS_OR_CIVIC` (`has_ethic`/`has_valid_civic`/`has_civic` direct, plus two 1:1
+wrappers, `is_fanatic_spiritualist`/`is_fanatic_pacifist`) — same registered-pattern shape
+ascension perks already use, badged the same way. `can_research_technology` (an engine-builtin
+alias of `has_technology`, not a scripted_trigger definition anywhere in the corpus) joins the
+existing `GATE_KIND_TECHNOLOGY` bucket. D-3's priority order: ascension perk > origin >
+ethics-or-civic > technology.
+
+**11 more `EXCLUDED_KEYS` entries are deliberately NOT gate-classified** — genuinely compound
+triggers (an `OR` of several real sub-conditions, no single clean `refId`: `is_void_dweller_
+empire`, `has_void_dweller_origin`, `is_giga_one_planet_origin`, `is_spiritualist`, `is_natural_
+design_empire`, `is_beastmasters_empire`, `is_world_forger_empire`) or not origin/civic/ethic-
+shaped at all despite the same "empire-defining choice" character (`is_megacorp` — targets
+`has_authority`, a real 4th authority value outside this project's 3-axis model; `is_individual_
+machine` — species-archetype + gestalt check; `has_genetically_ascended` — tradition-completion
+check; `is_infernal_empire` — species-trait check). These resolve AVAILABLE with no gate badge,
+same as any leaf outside the registry always has, just no longer UNCERTAIN either. See
+`pipeline.gate_patterns.NOT_GATE_CLASSIFIED_EXCLUDED_KEYS`'s own comment for the full per-key
+reasoning.
+
+**A real, non-obvious interaction with the general scripted-trigger expander
+(`pipeline.scripted_triggers`, Item 2's own module) — found and fixed in the same session.**
+Every new `EXCLUDED_KEYS` entry that is ALSO a real scripted-trigger catalog name (`is_wilderness_
+empire`, `is_megacorp`, ... — most of them) needed adding to that module's own skip-set
+(`_ALREADY_RESOLVED_KEYS`), or the general expander would blindly substitute the excluded leaf's
+real body in place of its name, silently undoing the exclusion — the EXACT bug class the
+`country_uses_bio_ships` regression already taught this session once, recurring at a larger scale
+(19 keys, not one) the moment a second table (`EXCLUDED_KEYS`) needed the same protection as the
+first (`AXIS_FACTS`/`GROUND_FACT_BOOL`/`DLC_NAME_CHECK_KEYS`). Fixed generally: `pipeline.
+scripted_triggers._ALREADY_RESOLVED_KEYS` now includes all of `EXCLUDED_KEYS` except the two
+wrapper names (`has_gigastructural_constructs`/`has_galactic_wonders`) deliberately left
+expandable to answer `WRAPPER_TO_PERK`'s own redundancy question. See that module's own docstring
+for the full writeup.
+
+**Icons — reported, not vendored.** `common/civics`/`common/origins`/`common/ethics` are not
+vendored for ANY source (not in `tools/collect_vanilla.py`'s required-directory list, and the
+manually-pinned Gigastructures/ACOT snapshots happen to carry only their OWN custom civic/origin
+icon directories, not vanilla's). Localised display NAMES resolve fine (`localisation/english` is
+vendored in full, independent of the missing `common/` directories), but there is no icon file to
+show — `_build_gates` falls back to the same graceful-degradation stub (`_default_icon_ref`)
+already used elsewhere for a genuinely missing icon. The label text is the real informative
+content for these two new gate kinds until real icons are vendored — vendoring a new source
+directory is its own review-gated corpus-pinning change, deliberately not done this session.
+
+**Extended again, same session — Item 4: OR-context (alternative) gates, the fix for a real bug the
+user reported.** `tech_torpedoes_1` ("Space Torpedoes") displayed "Needs Riddle Escort"
+(`tech_cosmogenesis_escort`) as an unconditional requirement — wrong: its real `potential` is
+`OR = { country_uses_bio_ships = no, has_tradition = tr_nanotech_4, has_crisis_level =
+crisis_level_2, has_technology = tech_cosmogenesis_escort }`, four INDEPENDENT ways to qualify;
+non-bio-ship empires (8/12 profiles) already qualify via the first branch alone, unrelated to the
+gate. `tech_missiles_1` shares the identical shape. Real corpus: **11 of 25 (44%) real
+`has_technology`-under-`potential` occurrences sit inside an `OR`.**
+
+`GateMatch` and the emitted `Gate` schema shape both gained an `alternative: boolean` field
+(`pipeline.gate_patterns._scoped_gate_leaves` now tracks OR-ancestry independent of negation
+polarity — an `OR`/`NOR` ancestor anywhere marks a descendant leaf `alternative`, an `AND`-only
+path never does). Label wording changes accordingly: `"or: <name>"` for an alternative gate,
+`"Needs <name>"` only for a genuinely unconditional one — the client renders `gate.label` directly
+in both card and popup, so no client wording logic duplicates this. **Generalises correctly beyond
+the reported bug**: `giga_tech_the_vat`'s own `ap_mechromancy` ascension-perk gate ("robots go
+brrt") is ALSO genuinely OR-context (alongside `has_genetically_ascended`/`has_active_tradition`),
+now correctly labelled `"or: Mechromancy"` where `has_galactic_wonders` on the same technology
+(AND-context, unconditional) stays `"Needs Galactic Wonders"`.
+
+**A second field, `appliesToEmpireTypes` (nullable `EmpireTypeConstraint`), closes the
+"shouldn't present as a requirement for those profiles at all" half of the fix** — for a
+`"technology"`-kind alternative gate backed by a real `potential-gate` edge,
+`pipeline.edge_constraints`' EXISTING per-edge axis constraint (already computed for
+`activeEdgeIds`, unchanged, not recomputed) is reused directly:
+`tech_torpedoes_1`/`tech_missiles_1`'s Riddle Escort gate carries `shipset: ["biological"]`. The
+CLIENT now consumes this too (`client/src/main.ts`'s `gateAppliesToProfile`, wired into both the
+card's zoom-driven LOD visibility loop — `nodePrimaryGateConstraint`, index-parallel to
+`nodeGateIcons`/`nodeGateLabels` — and the popup's gate list filter) — a Mechanical-shipset profile
+never sees the badge at all for Torpedoes/Missiles; a Biological-shipset profile does, worded as
+an alternative. Verified visually (Playwright + headless Chromium against the real built dataset,
+not a synthetic fixture): screenshots confirm the badge absent for Regular/Mechanical/Non-nomadic
+and present (icon + `"or: Riddle Escort"`) for Regular/Biological/Non-nomadic, in both card and
+popup, zero console errors either way.
+
+**Edge extraction (`pipeline/edges.py`) was NOT touched** — confirmed not the bug, per the
+original diagnosis: its scope discipline (universal `has_technology`-under-`potential` extraction,
+deliberately including OR-context leaves for edge/traversal completeness) is a different concern
+from gate DISPLAY wording, and remains exactly as before.
+
+Ordering (D-3): ascension-perk gates outrank origin gates outrank ethics-or-civic gates outrank
+technology gates; index 0 is the primary gate, the only one the node card renders (spec's "where
+space permits, additional gates render as compact secondary badges" for a technology with more
+than one gate is not built — 24/973 real technologies now have a second gate instance, up from
+10/973 before Item 3). The popup shows every gate in the ordered list (now profile-filtered by
+`appliesToEmpireTypes`, Item 4), each with its resolved icon and localised
+`"Needs <name>"`/`"or: <name>"` label. **Real corpus, current: 136 gate instances (45
+ascension_perk + 45 origin + 24 ethics_or_civic + 22 technology) over 109 technologies** (was
+66/56 before Item 3), of which real per-technology counts include several genuinely `alternative`
+matches beyond the two reported/found this session — see `pipeline.gate_patterns.GateMatch`'s own
+docstring for the count.
 
 The spec's original "Tetradimensional Engineering" example of one technology gating another was
 checked against the real corpus and found wrong — `giga_tech_tetradimensional_engineering`
