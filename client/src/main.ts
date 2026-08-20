@@ -8,7 +8,7 @@
 // click, selection, popups, search, empire-profile switching.
 
 import { Application, Assets, Container, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
-import type { BaseDataset, GestaltAuthority, Nomadic as NomadicValue, Shipset as ShipsetValue } from "../../schema/generated/dataset-types";
+import type { BaseDataset, EmpireOverlay, GestaltAuthority, Nomadic as NomadicValue, Shipset as ShipsetValue } from "../../schema/generated/dataset-types";
 import { atlasUrl, fetchBaseDataset, fetchDetailPayload, fetchEmpireOverlay, fetchGeometry, fetchSearchIndex } from "./dataset";
 import {
   allProfiles,
@@ -84,6 +84,7 @@ import {
 // shape out of BaseDataset itself rather than hand-duplicating it here, so this can't drift from
 // the generated contract.
 type TechnologyRecord = BaseDataset["technologies"][number];
+type SwapMapping = EmpireOverlay["swapMappings"][number];
 type TierBandRecord = BaseDataset["tierBands"][number];
 type EdgeRecord = BaseDataset["edges"][number];
 type EdgeKind = EdgeRecord["kind"];
@@ -1014,6 +1015,9 @@ async function render(): Promise<void> {
   // objects.
   const nodeIcons: (Sprite | null)[] = [];
   const nodeNames: Text[] = [];
+  // Item 2 (tech swaps): the card's own outline Graphics, so a swap that changes `area` (7/123
+  // real swaps do) can be recoloured on a profile switch without recreating the card.
+  const nodeCards: Graphics[] = [];
   // Reconciliation-session verification questions (Item 7): the exact wrapped/clamped display
   // text per card, so `window.__tt.checkNameRendering` can report real ellipsis-truncation and
   // duplicate-visible-text counts rather than approximating from raw name length.
@@ -1065,6 +1069,7 @@ async function render(): Promise<void> {
       .stroke({ width: 2, color: tech.rare && tech.dangerous ? RARE_COLOR : baseOutlineColor });
     card.position.set(x, y);
     world.addChild(card);
+    nodeCards.push(card);
 
     if (tech.rare && tech.dangerous) {
       // 45-degree split outline: a duplicate stroke in DANGEROUS_COLOR, masked to the top-left
@@ -1220,6 +1225,65 @@ async function render(): Promise<void> {
       nodeGateLabels.push(null);
     }
   }
+
+  // Item 2 (tech swaps): `overlay.swapMappings` substitutes name/icon/area/category for the
+  // profile-active swap alternate of a technology that has one (123 real technologies carry at
+  // least one axis-expressible swap somewhere across the 12 profiles; 116 differ by name only,
+  // 7 also change area/category -- both handled here, never just the name). A swap NEVER creates
+  // a second node (D-1) -- this only ever mutates the ONE existing card's already-created
+  // Graphics/Sprite/Text objects in place, exactly like `traceActiveEdges` does for edges, never
+  // a re-layout. `currentSwapMap` is empty (falls back to base name/icon/area everywhere) until
+  // the first `applyProfile` call populates it from the real overlay.
+  let currentSwapMap = new Map<string, SwapMapping>();
+  let previousSwappedIds = new Set<string>();
+
+  function displayName(techId: string): string {
+    return currentSwapMap.get(techId)?.name ?? base.technologies[techIndexById.get(techId)!]!.name;
+  }
+  function displayIcon(techId: string): TechnologyRecord["icon"] {
+    return currentSwapMap.get(techId)?.icon ?? base.technologies[techIndexById.get(techId)!]!.icon;
+  }
+  function displayArea(techId: string): TechnologyRecord["area"] {
+    const tech = base.technologies[techIndexById.get(techId)!]!;
+    return currentSwapMap.get(techId)?.area ?? tech.area;
+  }
+  function displayCategory(techId: string): string {
+    const tech = base.technologies[techIndexById.get(techId)!]!;
+    return currentSwapMap.get(techId)?.category ?? tech.category;
+  }
+
+  function applySwapVisuals(newSwapMap: Map<string, SwapMapping>): void {
+    const affected = new Set([...previousSwappedIds, ...newSwapMap.keys()]);
+    for (const id of affected) {
+      const idx = techIndexById.get(id);
+      if (idx === undefined) continue;
+      const tech = base.technologies[idx]!;
+      const swap = newSwapMap.get(id);
+
+      const name = swap?.name ?? tech.name;
+      const wrapped = wrapAndClampName(measureCtx, name, NAME_MAX_WIDTH_PX, MAX_NAME_LINES, "tail", `${NAME_FONT_SIZE}px ${NAME_FONT_FAMILY}`);
+      nodeNames[idx]!.text = wrapped;
+      wrappedNames[idx] = wrapped;
+
+      const icon = swap?.icon ?? tech.icon;
+      const sheetTexture = atlasTextures.get(icon.sheet);
+      if (sheetTexture && nodeIcons[idx]) {
+        nodeIcons[idx]!.texture = new Texture({ source: sheetTexture.source, frame: new Rectangle(icon.x, icon.y, icon.width, icon.height) });
+      }
+
+      const area = swap?.area ?? tech.area;
+      const areaOutlineColor = AREA_COLORS[area] ?? 0x888888;
+      const baseOutlineColor = tech.dangerous ? DANGEROUS_COLOR : tech.rare ? RARE_COLOR : areaOutlineColor;
+      const x = nodePositions[idx * 2]!;
+      const y = nodePositions[idx * 2 + 1]!;
+      nodeCards[idx]!.clear().roundRect(0, 0, CARD_WIDTH, CARD_HEIGHT, 6).fill(CARD_FILL)
+        .stroke({ width: 2, color: tech.rare && tech.dangerous ? RARE_COLOR : baseOutlineColor });
+      nodeCards[idx]!.position.set(x, y);
+    }
+    previousSwappedIds = new Set(newSwapMap.keys());
+    currentSwapMap = newSwapMap;
+  }
+  applySwapVisuals(new Map(initialOverlay.swapMappings.map((s) => [s.technologyId, s])));
 
   // --- Empire-profile switching (reconciliation session 4): per-node availability overlay. ---
   // One dim-rect + one small state-badge per node, created ONCE at layout time (position is
@@ -1608,26 +1672,54 @@ async function render(): Promise<void> {
     const idx = techIndexById.get(techId)!;
     const tech = base.technologies[idx]!;
     const row = base.rows.find((r) => r.id === tech.rowId);
-    const { ancestors, dependents } = computeAncestryAndDependents(techId);
+    const profileIndex = empireProfileIndex(currentProfile);
 
-    // Item 1: a direct-neighbour check must also respect activeEdgeIds -- `id` can be in
-    // `ancestors`/`dependents` via a DIFFERENT active path even when its own direct edge to/from
-    // `techId` is inactive for this profile, so re-checking `base.edges` without the active-set
-    // filter here would silently readmit an inactive edge into the direct-neighbour lists.
-    const prereqNames = [...ancestors]
-      .filter((id) => base.edges.some((e, i) => activeEdgeIds.has(i) && e.from === id && e.to === techId))
-      .map((id) => base.technologies[techIndexById.get(id)!]!.name);
-    const dependentNames = [...dependents]
-      .filter((id) => base.edges.some((e, i) => activeEdgeIds.has(i) && e.from === techId && e.to === id))
-      .map((id) => base.technologies[techIndexById.get(id)!]!.name);
+    // Item 3: kind-labeled, activeEdgeIds-filtered, never pooled. `potential-gate` edges are
+    // deliberately excluded from both lists below -- every one already has a corresponding "Needs
+    // X" entry in the Gates section above (P-3: the 25 potential-gate edges are the 25 technology-
+    // kind gate instances, one to one), so repeating them here would be the exact duplication this
+    // fix removes, not a second bug to reproduce.
+    const requiredPrereqNames = base.edges
+      .filter((e, i) => activeEdgeIds.has(i) && e.kind === "prerequisite" && e.to === techId)
+      .map((e) => displayName(e.from));
+
+    // Alternative groups: each groupId is its own "need one of" choice, never flattened together
+    // and never flattened with the required list above. Per the survey, membership is additionally
+    // narrowed to non-locked members for the SELECTED profile using the already-emitted
+    // availabilityMatrix -- an alternative whose branch this profile cannot reach isn't a real
+    // choice for it. If every member of a group is locked for this profile, the group still
+    // renders (with all members shown, unfiltered) rather than silently vanishing -- an empty
+    // "need one of" choice would misrepresent the technology as needing nothing.
+    const altGroups = new Map<string, string[]>();
+    for (let i = 0; i < base.edges.length; i++) {
+      const e = base.edges[i]!;
+      if (!activeEdgeIds.has(i) || e.kind !== "alternative" || e.to !== techId) continue;
+      (altGroups.get(e.groupId!) ?? altGroups.set(e.groupId!, []).get(e.groupId!)!).push(e.from);
+    }
+    const altGroupsDisplay = [...altGroups.values()].map((members) => {
+      const reachable = members.filter((id) => {
+        const t = base.technologies[techIndexById.get(id)!]!;
+        return t.availabilityMatrix[profileIndex] !== "locked";
+      });
+      return reachable.length > 0 ? reachable : members;
+    });
+
+    const dependentNames = base.edges
+      .filter((e, i) => activeEdgeIds.has(i) && e.kind === "prerequisite" && e.from === techId)
+      .map((e) => displayName(e.to));
+
+    const tierBandLabel = tech.repeatable ? "Repeatable" : `Tier ${tech.tier}`;
+    const displayedName = displayName(techId);
+    const displayedArea = displayArea(techId);
+    const displayedCategory = displayCategory(techId);
 
     popupContentEl.innerHTML = `
-      <h2>${escapeHtml(tech.name)}</h2>
-      <div class="field-value" style="color:#9fb3c8">${escapeHtml(row?.label ?? tech.rowId)} &middot; Tier ${tech.tier} &middot; ${escapeHtml(tech.area)}${tech.crisisFaction ? ` &middot; ${escapeHtml(tech.crisisFaction)}` : ""}</div>
+      <h2>${escapeHtml(displayedName)}</h2>
+      <div class="field-value" style="color:#9fb3c8">${escapeHtml(row?.label ?? tech.rowId)} &middot; ${tierBandLabel} &middot; ${escapeHtml(displayedArea)}${displayedCategory ? ` / ${escapeHtml(displayedCategory)}` : ""}${tech.crisisFaction ? ` &middot; ${escapeHtml(tech.crisisFaction)}` : ""}</div>
       <div class="field-value">${tech.cost !== null ? `Cost: ${Math.round(tech.cost).toLocaleString("en-US")}` : "Cost: unresolvable"}</div>
       ${tech.requiresMods.length > 0 ? `<div class="badge-row">${tech.requiresMods.map((m) => `<span class="chip" style="background:#4a5568;color:#fff">${escapeHtml(m)}</span>`).join("")}</div>` : ""}
       <div class="field-label">Availability (${escapeHtml(profileLabel(currentProfile))})</div>
-      <div class="field-value" id="popup-availability">${escapeHtml(tech.availabilityMatrix[empireProfileIndex(currentProfile)]!)}</div>
+      <div class="field-value" id="popup-availability">${escapeHtml(tech.availabilityMatrix[profileIndex]!)}</div>
       ${tech.gates.length > 0 ? `
         <div class="field-label">Gates${tech.gates.length > 1 ? ` (${tech.gates.length})` : ""}</div>
         <div class="field-value">${tech.gates
@@ -1642,8 +1734,12 @@ async function render(): Promise<void> {
       ` : ""}
       <div class="field-label">Description</div>
       <div class="field-value" id="popup-description">loading&hellip;</div>
-      <div class="field-label">Prerequisites (${prereqNames.length})</div>
-      <div class="field-value">${prereqNames.length > 0 ? `<ul>${prereqNames.map((n) => `<li>${escapeHtml(n)}</li>`).join("")}</ul>` : "none"}</div>
+      <div class="field-label">Prerequisites (${requiredPrereqNames.length})</div>
+      <div class="field-value">${requiredPrereqNames.length > 0 ? `<ul>${requiredPrereqNames.map((n) => `<li>${escapeHtml(n)}</li>`).join("")}</ul>` : "none"}</div>
+      ${altGroupsDisplay.length > 0 ? altGroupsDisplay.map((members, gi) => `
+      <div class="field-label">Alternative${altGroupsDisplay.length > 1 ? ` group ${gi + 1}` : ""} &mdash; need one of (${members.length})</div>
+      <div class="field-value"><ul>${members.map((id) => `<li>${escapeHtml(displayName(id))}</li>`).join("")}</ul></div>
+      `).join("") : ""}
       <div class="field-label">Dependents (${dependentNames.length})</div>
       <div class="field-value">${dependentNames.length > 0 ? `<ul>${dependentNames.map((n) => `<li>${escapeHtml(n)}</li>`).join("")}</ul>` : "none"}</div>
       <div id="popup-off-tree"></div>
@@ -1760,6 +1856,10 @@ async function render(): Promise<void> {
     const overlay = await fetchEmpireOverlay(profileKey(currentProfile));
     activeEdgeIds = new Set(overlay.activeEdgeIds);
     traceActiveEdges(activeEdgeIds);
+    // Item 2: swap-substituted name/icon/area only ever touches the technologies that were
+    // swapped either just before or just after this switch -- reverting a no-longer-active swap
+    // back to its base display is exactly as real a visual change as applying a new one.
+    applySwapVisuals(new Map(overlay.swapMappings.map((s) => [s.technologyId, s])));
     if (selectedIndex >= 0) setSelected(selectedIndex);
     // Profile persists across pan/zoom/selection (this session's own instruction) -- selection
     // itself is untouched by a profile change, but the OPEN popup's availability section (state
@@ -1831,8 +1931,10 @@ async function render(): Promise<void> {
     for (const entry of searchIndexEntries) {
       const allTokensMatch = queryTokens.every((qt) => entry.tokens.some((t) => t.startsWith(qt)));
       if (!allTokensMatch) continue;
-      const tech = base.technologies[techIndexById.get(entry.technologyId)!]!;
-      const nameLower = tech.name.toLowerCase();
+      // Item 2: rank against the DISPLAYED (swap-substituted, if any) name -- a search that
+      // exactly matches the profile-correct name should rank as an exact match even when the
+      // base dataset's own name differs for this profile.
+      const nameLower = displayName(entry.technologyId).toLowerCase();
       const rank = nameLower === trimmed.toLowerCase() ? 0 : nameLower.startsWith(trimmed.toLowerCase()) ? 1 : 2;
       matches.push({ id: entry.technologyId, rank });
     }
@@ -1849,7 +1951,7 @@ async function render(): Promise<void> {
       const row = base.rows.find((r) => r.id === tech.rowId);
       const el = document.createElement("div");
       el.className = "result";
-      el.innerHTML = `<div class="result-name">${escapeHtml(tech.name)}</div><div class="result-meta">${escapeHtml(row?.label ?? tech.rowId)} · Tier ${tech.tier}</div>`;
+      el.innerHTML = `<div class="result-name">${escapeHtml(displayName(id))}</div><div class="result-meta">${escapeHtml(row?.label ?? tech.rowId)} · Tier ${tech.tier}</div>`;
       el.addEventListener("click", () => {
         setSelected(idx);
         focusOnNode(idx);
@@ -1938,6 +2040,15 @@ async function render(): Promise<void> {
     drawnEdgeCount: () => edgeCountByKindForStatus
       ? edgeCountByKindForStatus.prerequisite + edgeCountByKindForStatus["potential-gate"] + edgeCountByKindForStatus.alternative
       : 0,
+    // Item 2 verification: the swap-aware display name/rendered card text for a technology under
+    // the CURRENT profile, and the raw swap map itself, so a test can assert a known swap pair's
+    // name changes across profiles and that no group ever shows two members simultaneously.
+    displayName: (techId: string) => displayName(techId),
+    cardRenderedName: (techId: string) => {
+      const idx = techIndexById.get(techId);
+      return idx === undefined ? null : nodeNames[idx]?.text ?? null;
+    },
+    currentSwapMap: () => Object.fromEntries(currentSwapMap),
     empireProfileIndex: (profile: EmpireProfile) => empireProfileIndex(profile),
     allProfiles: () => allProfiles(),
     checkAvailabilityMatchesEmitted: () => {
@@ -2139,6 +2250,39 @@ async function render(): Promise<void> {
         if (icon) checkOne(base.technologies[i]!.id, "gateIcon", icon, nodePositions[i * 2]!, nodePositions[i * 2 + 1]!, icon.width);
         const label = nodeGateLabels[i];
         if (label) checkOne(base.technologies[i]!.id, "gateLabel", label, nodePositions[i * 2]!, nodePositions[i * 2 + 1]!, label.width);
+      }
+      return { ok: violations.length === 0, checked, violations };
+    },
+    // Item 4: the gate-label font-measurement regression fix (measured at 20px instead of its
+    // actual 11px, plus a Y-collision with 2-line card names) affected every gated card since the
+    // badges slice, not just the one observed -- this asserts it numerically, over ALL 60 real
+    // gated technologies, rather than trusting the fix by inspection. Two independent checks:
+    // (1) the label's real rendered width never exceeds what an 11px measurement would allow
+    // (i.e. it was actually measured/wrapped with `gateLabelStyle`'s own font, not `nameStyle`'s
+    // 20px -- a stale 20px measurement would UNDER-wrap the text relative to its real 11px
+    // rendered width, so a mismatch here would show as the rendered width sitting far below what
+    // NAME_MAX_WIDTH_PX allows at 11px, never as an overflow); (2) the label's bounding rect never
+    // intersects the name text's own bounding rect, checked as real rectangle intersection, not
+    // just "same card" as checkIndicatorBounds's card-containment check already does.
+    checkGateLabelFontAndCollision: () => {
+      const violations: { id: string; kind: string; detail: string }[] = [];
+      let checked = 0;
+      for (let i = 0; i < base.technologies.length; i++) {
+        const label = nodeGateLabels[i];
+        if (!label) continue;
+        checked++;
+        const name = nodeNames[i]!;
+        const id = base.technologies[i]!.id;
+        // Real rectangle intersection (not just card-bounds containment).
+        const overlapsX = label.x < name.x + name.width && name.x < label.x + label.width;
+        const overlapsY = label.y < name.y + name.height && name.y < label.y + label.height;
+        if (overlapsX && overlapsY) violations.push({ id, kind: "name-collision", detail: `label y=${label.y}..${label.y + label.height}, name y=${name.y}..${name.y + name.height}` });
+        // Font-measurement sanity: an 11px-measured, tail-clamped single line can never be wider
+        // than NAME_MAX_WIDTH_PX (the same column every card name is clamped to) -- a stale 20px
+        // measurement would produce a label whose REAL 11px-rendered width sits well under this,
+        // since 20px-wrapped text over-truncates relative to what 11px could actually fit.
+        if (label.width > NAME_MAX_WIDTH_PX + 0.5) violations.push({ id, kind: "overwidth", detail: `width=${label.width}` });
+        if (Math.abs(label.style.fontSize as number) !== 11) violations.push({ id, kind: "wrong-font-size", detail: `fontSize=${label.style.fontSize}` });
       }
       return { ok: violations.length === 0, checked, violations };
     },
