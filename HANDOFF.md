@@ -1142,14 +1142,22 @@ UNCHANGED at 1.54% (Item 2); confirmed `founder_species`/`has_authority` are alr
 by an earlier session's ethics/civic/origin gate work, no code change needed (Item 3); investigated
 and reported (not applied) the `@giga_amb_flag` config-toggle candidate, pending user confirmation
 of its default state (Item 4); catalogued the remaining 54-technology residue by classification,
-with one genuine domain question flagged for the user (`is_country_type = acot_phanon_base` on
-`tech_dark_matter_power_core_se` — may be a permanent-impossibility case this model has no state
-for) (Item 5). See `docs/BUILD-LOG.md`'s "commit + close the loop" section for the full writeup,
-real numbers, and the residue table. **Open follow-ups from this session, not yet resolved:**
-user confirmation needed on `giga_buildcap_j`'s default state (10 technologies),
-`giga_rings_beh`/`_gar`/`_tit` (5 technologies, already on CLAUDE.md's older unconfirmed
-candidate list), and the `acot_phanon_base` domain question above; a scoped evaluator-thoroughness
-relaxation for `if = { limit = {...} }` blocks (4 technologies) the user already pre-approved in
+with a domain question flagged for the user (`is_country_type = acot_phanon_base` on
+`tech_dark_matter_power_core_se`) (Item 5). **Both flagged questions were answered by the user in
+the same session, as a follow-up**: `acot_phanon_base` is confirmed AI/event-only, and the
+technology IS reachable by a player who has progressed far into ACOT (not a permanent-
+impossibility case) — `pipeline.availability.COUNTRY_TYPE_NEVER_PLAYER` now resolves that leaf as
+a ground fact, correcting the technology's UNCERTAIN reason to the real one
+(`has_country_flag = stellarite_tech_enable`, still genuinely unresolved). `giga_buildcap_j` was
+DELIBERATELY left unresolved (not applied) — the user confirmed the reference-balance preset has
+it ON by default but real players mostly change it and Gigastructures' own default may drift,
+the opposite evidence shape from the already-approved `_capped_r` toggle; resolving to either
+constant would misrepresent genuinely unstable state. See `docs/BUILD-LOG.md`'s "commit + close
+the loop" section for the full writeup, real numbers, and the residue table. **Open follow-ups
+from this session, not yet resolved:** `giga_rings_beh`/`_gar`/`_tit` (5 technologies, already on
+CLAUDE.md's older unconfirmed candidate list) still need per-flag user confirmation; a scoped
+evaluator-thoroughness relaxation for `if = { limit = {...} }` blocks (4 technologies) the user
+already pre-approved in
 principle but this session didn't implement; `exists`/`has_dna`/`always` leaf constructs not yet
 individually surveyed.
 

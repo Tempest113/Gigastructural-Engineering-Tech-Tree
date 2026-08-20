@@ -3187,6 +3187,36 @@ giga_buildcap_j, plus whatever `PROGRESSION_FLAGS_TRUE`/similar entries the conf
 reaching the true floor beyond that requires only surveying `exists`/`has_dna`/`always`, not more
 user confirmation.
 
+**Post-report follow-up: the two open questions were answered by the user.**
+
+- **`acot_phanon_base` is confirmed AI/event-only, never a player empire — and, critically, the
+  technology IS reachable** (the user: "the ...core_se tech is accessible to players who have
+  progressed pretty much to the end of ACOT's content"). This is NOT the permanent-impossibility
+  case the survey flagged as possible; it's an ordinary ground fact, same mechanism as
+  `is_fallen_empire`, just keyed on a specific country-type VALUE rather than a bare leaf. Added
+  `pipeline.availability.COUNTRY_TYPE_NEVER_PLAYER = {"acot_phanon_base"}` and an `is_country_type`
+  branch in `_evaluate_leaf` resolving membership to FALSE (only this one confirmed value — an
+  unconfirmed `is_country_type` value stays UNKNOWN, not swept in blind). Real corpus effect:
+  `tech_dark_matter_power_core_se` stays UNCERTAIN (unchanged count), but the responsible leaf
+  corrects from the wrong `is_country_type = acot_phanon_base` reason to the real one,
+  `has_country_flag = stellarite_tech_enable` — genuine per-playthrough ACOT-progression state,
+  correctly still unresolved. No node count or D-10 figure moves; this is a reason-text
+  correctness fix, not a resolution-count fix.
+- **`giga_buildcap_j` deliberately left UNRESOLVED — a considered call, not an oversight.** The
+  user: the mod's own reference-balance preset has supertensiles ON by default, but most real
+  players change the setting and Gigastructures' own default may drift over time. This is the
+  OPPOSITE evidence shape from `_capped_r` (confirmed unset in every core preset, no ambiguity) —
+  here the reference default is SET, real-world usage diverges from it, and the designer's own
+  intent is explicitly volatile. Resolving to either constant would misrepresent a genuinely
+  unstable fact as settled, exactly what UNCERTAIN exists to avoid. Left UNCERTAIN; the 10
+  affected technologies (`giga_tech_amb_living_metal_infusion`, `giga_tech_amb_sentient_metal_
+  molecular_foundries`, `giga_tech_amb_supertensiles(_acot_alpha/_delta/_phanon/_sigma)`,
+  `giga_tech_fe_megaworkshop_1/2`, `giga_tech_orbital_ring_supertensiles_mine_hub`) keep an
+  accurate `has_global_flag = @giga_amb_flag` reason string already (`_value_text` already renders
+  `VariableReference`s correctly for display, even though `_flag_value_name` — the RESOLUTION path
+  — still doesn't resolve them; that gap stays open, now confirmed not worth closing without a
+  resolution target to apply it to).
+
 **Three-state availability is unaffected and not up for revision.** `uncertain` remains a real,
 reachable state regardless of how small its population gets (54 today, was 973's full complement
 before this project's evaluator existed at all) — this session's resolutions each removed a

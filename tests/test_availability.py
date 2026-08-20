@@ -174,6 +174,27 @@ def test_dlc_assumed_owned():
     assert evaluate_trigger_block(block, REGULAR_MECH_SEDENTARY).state == AVAILABLE
 
 
+def test_acot_phanon_base_country_type_resolves_false_as_a_ground_fact():
+    # Item 5 of the "commit + close the loop" follow-up session, user-confirmed: acot_phanon_base
+    # is an AI/event-only country type, never a player empire. tech_dark_matter_power_core_se's
+    # real shape (NOR = { is_fallen_empire = yes, is_country_type = acot_phanon_base } AND
+    # has_country_flag = X): both NOR branches now resolve definitively FALSE, leaving the
+    # has_country_flag leaf as the sole, correct, still-genuine UNCERTAIN reason.
+    block = _block(
+        "{ NOR = { is_fallen_empire = yes is_country_type = acot_phanon_base } "
+        "has_country_flag = stellarite_tech_enable }"
+    )
+    result = evaluate_trigger_block(block, REGULAR_MECH_SEDENTARY)
+    assert result.state == UNCERTAIN
+    assert result.reason == "has_country_flag = stellarite_tech_enable"
+
+    # An unconfirmed is_country_type value stays UNKNOWN, not silently swept in.
+    block2 = _block("{ is_country_type = some_other_type }")
+    result2 = evaluate_trigger_block(block2, REGULAR_MECH_SEDENTARY)
+    assert result2.state == UNCERTAIN
+    assert result2.reason == "is_country_type = some_other_type"
+
+
 def test_has_ancrel_resolves_true_as_a_dlc_ground_fact():
     # has_ancrel is `host_has_dlc = "Ancient Relics Story Pack"` (vendor/stellaris/common/
     # scripted_triggers/00_scripted_triggers.txt:2678) -- a DLC-ownership check, not a

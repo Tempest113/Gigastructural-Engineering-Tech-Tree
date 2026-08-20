@@ -256,6 +256,23 @@ GROUND_FACT_BOOL: dict[str, bool] = {
     "merg_is_fallen_empire": False,
 }
 
+# Item 5 of the "commit + close the loop" follow-up session, user-confirmed: `acot_phanon_base` is
+# an AI/event-only country type, never a player empire -- same "which country type would a player
+# ever be" character as `is_fallen_empire` above, just keyed on a specific named country type
+# rather than a bare yes/no leaf. `is_country_type = acot_phanon_base` therefore resolves FALSE
+# unconditionally, same mechanism as GROUND_FACT_BOOL, just addressed by (key, value) instead of
+# key alone since `is_country_type`'s target is a type name, not yes/no. Real corpus: 1 occurrence
+# (`tech_dark_matter_power_core_se`'s `NOR = { is_fallen_empire = yes, is_country_type =
+# acot_phanon_base } AND has_country_flag = stellarite_tech_enable`, acot_03_stellarite_
+# components_tech.txt:709-715) -- the user confirmed the technology IS reachable by a player who
+# has progressed far into ACOT's content, i.e. this is NOT a permanent-impossibility case; the
+# `is_country_type` leaf was the wrong reason recorded and this fix corrects the leaf responsible
+# for the technology's (still-genuine) UNCERTAIN result to `has_country_flag =
+# stellarite_tech_enable`, real per-playthrough progression state, deliberately left unresolved.
+# Only `acot_phanon_base` is confirmed here -- do NOT extend this to other `is_country_type` values
+# without the same per-value confirmation this project's own methodology requires.
+COUNTRY_TYPE_NEVER_PLAYER = {"acot_phanon_base"}
+
 # Item 2d companion: `has_global_flag = has_aot_mod` is AoT's own mod-presence flag (distinct
 # shape from `has_acot`, which is a dedicated leaf key) -- same "assume present" reasoning,
 # checked alongside `PROGRESSION_FLAGS_TRUE` in the `has_global_flag` branch below but kept in
@@ -420,6 +437,12 @@ def _evaluate_leaf(assignment: Assignment, profile: dict) -> _Eval:
 
     if key in DLC_NAME_CHECK_KEYS:
         return _bool_eval(True, negate, assignment)
+
+    if key == "is_country_type":
+        type_name = _flag_value_name(assignment.value)
+        if type_name is not None and type_name in COUNTRY_TYPE_NEVER_PLAYER:
+            return _bool_eval(False, negate, assignment)
+        return _Eval(_State.UNKNOWN, assignment)
 
     if key in GROUND_FACT_BOOL:
         target = _yesno(assignment.value)
