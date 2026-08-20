@@ -46,6 +46,33 @@
     #detail-popup .gate-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.3rem; }
     #detail-popup .gate-icon { display: inline-block; flex: none; image-rendering: pixelated; }
 
+    /* Item 1 (later session): dev health monitor, ?dev-gated. Plain, unstyled -- a diagnostic
+       tool, not a feature, so this reuses the detail-popup's basic panel shape rather than
+       investing in its own design. */
+    #dev-monitor {
+      position: fixed; top: 0; left: 0; bottom: 0; width: 480px; z-index: 3;
+      background: rgba(10, 11, 14, 0.98); border-right: 1px solid #333a45;
+      overflow-y: auto; padding: 1rem 1.1rem; font: 12px/1.45 ui-monospace, monospace; color: #d8dee8;
+      display: none;
+    }
+    #dev-monitor[data-open="true"] { display: block; }
+    #dev-monitor h2 { font-size: 15px; margin: 0 0 0.5rem; color: #f0f0f0; font-family: system-ui, sans-serif; }
+    #dev-monitor h3 { font-size: 12px; margin: 1rem 0 0.3rem; color: #c8b98a; }
+    #dev-monitor .close-btn {
+      position: absolute; top: 0.6rem; right: 0.7rem; background: none; border: none;
+      color: #9fb3c8; font-size: 18px; cursor: pointer; line-height: 1;
+    }
+    #dev-monitor .dm-summary { color: #9fb3c8; margin-bottom: 0.5rem; }
+    #dev-monitor .dm-category { cursor: pointer; padding: 0.15rem 0; }
+    #dev-monitor .dm-category:hover { color: #fff; }
+    #dev-monitor .dm-tech { border-top: 1px solid #262b33; padding: 0.35rem 0; }
+    #dev-monitor .dm-tech-name { color: #eef2f7; cursor: pointer; }
+    #dev-monitor .dm-tech-name:hover { text-decoration: underline; }
+    #dev-monitor .dm-tag { color: #7f8ea3; font-size: 10px; }
+    #dev-monitor .dm-profile-row { color: #9fb3c8; padding-left: 0.6rem; }
+    #dev-monitor details { margin-top: 0.1rem; }
+    #dev-monitor summary { cursor: pointer; }
+
     /* Empire-profile switching + search slice (reconciliation session 4): a single top-left
        control panel -- profile selector (three axes, independently, never a flat 12-item list)
        above search, so both stay clear of the right-side detail popup. */
@@ -90,6 +117,12 @@
   <div id="detail-popup" data-open="false">
     <button class="close-btn" id="detail-popup-close" aria-label="Close">✕</button>
     <div id="detail-popup-content"></div>
+  </div>
+  <!-- Item 1 (later session): dev-only health monitor, gated behind ?dev. Diagnostic tool, not a
+       feature -- deliberately plain, unstyled DOM, no PixiJS involvement. -->
+  <div id="dev-monitor" data-open="false">
+    <button class="close-btn" id="dev-monitor-close" aria-label="Close">✕</button>
+    <div id="dev-monitor-content"></div>
   </div>
   <pre id="report">loading…</pre>
   <script type="module" src="/src/main.ts"></script>

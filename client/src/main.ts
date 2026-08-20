@@ -9,7 +9,7 @@
 
 import { Application, Assets, Container, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
 import type { BaseDataset, EmpireOverlay, GestaltAuthority, Nomadic as NomadicValue, Shipset as ShipsetValue } from "../../schema/generated/dataset-types";
-import { atlasUrl, fetchBaseDataset, fetchDetailPayload, fetchEmpireOverlay, fetchGeometry, fetchSearchIndex } from "./dataset";
+import { atlasUrl, fetchBaseDataset, fetchDetailPayload, fetchDiagnostics, fetchEmpireOverlay, fetchGeometry, fetchSearchIndex } from "./dataset";
 import {
   allProfiles,
   axisValues,
@@ -1973,6 +1973,107 @@ async function render(): Promise<void> {
       `${edgeCountByKindForStatus!.alternative} alternative), ${base.tierBands.length} tier bands, ${base.rows.length} rows.`
   );
   updateStatusLine(camera, currentTier!, currentEdgeTier!);
+
+  // --- Item 1 (later session): dev health monitor, gated behind ?dev. Diagnostic tool for the
+  // user to review remaining `uncertain` technologies and decide what's fixable with domain
+  // knowledge versus genuinely undecidable game state -- see diagnostics.schema.json's
+  // `uncertainTechnologies` (pipeline.dataset_emit.build_diagnostics) for the data shape. Fetched
+  // and rendered ONLY when `?dev` is present; otherwise this whole block is a no-op and the
+  // diagnostics artefact is never fetched (S-2's own "never affects P-10 budgets when unused"). ---
+  const devMonitorEl = document.getElementById("dev-monitor")!;
+  const devMonitorContentEl = document.getElementById("dev-monitor-content")!;
+  document.getElementById("dev-monitor-close")!.addEventListener("click", () => {
+    devMonitorEl.dataset.open = "false";
+  });
+
+  if (new URLSearchParams(window.location.search).has("dev")) {
+    void (async () => {
+      const CATEGORY_LABELS: Record<string, string> = {
+        crisis_or_story_progress: "Crisis / story progress",
+        origin_requirement: "Origin requirement",
+        ethics_or_civic_requirement: "Ethics / civic requirement",
+        mod_content_requirement: "Mod content requirement",
+        mod_configuration: "Mod configuration",
+        opaque_country_state: "Opaque country state",
+        unclassified: "Unclassified",
+      };
+      const profileTag = (p: EmpireProfile) => `${p.authority}/${p.shipset}/${p.nomadic === "yes" ? "nomadic" : "non-nomadic"}`;
+
+      try {
+        const diagnostics = await fetchDiagnostics();
+        const entries = diagnostics.uncertainTechnologies;
+
+        // Group by the FIRST profile's category per technology for clustering purposes -- a
+        // technology can carry more than one category across its 12 profile entries (rare, but
+        // real: different axis facts can hit different unresolved leaves), so this groups by the
+        // most common category among its own perProfile entries rather than assuming uniformity.
+        const categoryOf = (e: (typeof entries)[number]): string => {
+          const counts = new Map<string, number>();
+          for (const p of e.perProfile) counts.set(p.category, (counts.get(p.category) ?? 0) + 1);
+          return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]![0];
+        };
+        const byCategory = new Map<string, typeof entries>();
+        for (const e of entries) {
+          const cat = categoryOf(e);
+          (byCategory.get(cat) ?? byCategory.set(cat, []).get(cat)!).push(e);
+        }
+
+        const unconditionalCount = entries.filter((e) => e.unconditional).length;
+        const profileDependentCount = entries.length - unconditionalCount;
+
+        const categorySections = [...byCategory.entries()]
+          .sort((a, b) => b[1].length - a[1].length)
+          .map(([cat, techs]) => {
+            const techRows = techs
+              .map((e) => {
+                const profileLines = e.unconditional
+                  ? `<div class="dm-profile-row">all 12 profiles: ${escapeHtml(e.perProfile[0]!.description)}</div>`
+                  : e.perProfile
+                      .map((p) => `<div class="dm-profile-row">${escapeHtml(profileTag(p.profile))}: ${escapeHtml(p.description)}</div>`)
+                      .join("");
+                return `
+                <div class="dm-tech">
+                  <span class="dm-tech-name" data-tech-id="${escapeHtml(e.technologyId)}">${escapeHtml(e.name)}</span>
+                  <span class="dm-tag">${e.unconditional ? "unconditional" : `profile-dependent (${e.perProfile.length}/12)`}</span>
+                  <details><summary>reason</summary>${profileLines}</details>
+                </div>`;
+              })
+              .join("");
+            return `
+              <details>
+                <summary class="dm-category">${escapeHtml(CATEGORY_LABELS[cat] ?? cat)} (${techs.length})</summary>
+                ${techRows}
+              </details>`;
+          })
+          .join("");
+
+        devMonitorContentEl.innerHTML = `
+          <h2>Uncertainty monitor</h2>
+          <div class="dm-summary">
+            ${entries.length} / ${base.technologies.length} rendered technologies have at least one uncertain profile.<br/>
+            ${unconditionalCount} unconditional (uncertain for all 12 profiles) &middot; ${profileDependentCount} profile-dependent.
+          </div>
+          <h3>By category</h3>
+          ${categorySections}
+        `;
+
+        devMonitorContentEl.querySelectorAll<HTMLElement>(".dm-tech-name[data-tech-id]").forEach((el) => {
+          el.addEventListener("click", () => {
+            const id = el.dataset.techId!;
+            const idx = techIndexById.get(id);
+            if (idx === undefined) return;
+            setSelected(idx);
+            focusOnNode(idx);
+          });
+        });
+
+        devMonitorEl.dataset.open = "true";
+      } catch (err) {
+        devMonitorContentEl.innerHTML = `<h2>Uncertainty monitor</h2><div class="dm-summary">failed to load diagnostics: ${escapeHtml(String(err))}</div>`;
+        devMonitorEl.dataset.open = "true";
+      }
+    })();
+  }
 
   // Debug/verification surface only -- this is a static client-only site with no backend or
   // security surface, so exposing introspection on `window` costs nothing and is what the

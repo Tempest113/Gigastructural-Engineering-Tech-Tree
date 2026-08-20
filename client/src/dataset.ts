@@ -3,7 +3,7 @@
 // spike's synthetic data). No rendering logic here; Stage 3's real loader design (caching,
 // per-profile overlay switching, lazy detail-payload fetch batching) is future work.
 
-import type { BaseDataset, DetailPayload, EmpireOverlay, GeometryRef, SearchIndex } from "../../schema/generated/dataset-types";
+import type { BaseDataset, Diagnostics, DetailPayload, EmpireOverlay, GeometryRef, SearchIndex } from "../../schema/generated/dataset-types";
 
 const DATASET_BASE = "./dataset/";
 
@@ -136,4 +136,18 @@ export async function fetchSearchIndex(): Promise<SearchIndex> {
     return fetchViaManifest<SearchIndex>(manifest.searchIndex);
   })();
   return searchIndexPromise;
+}
+
+// Item 1 (later session): the `?dev` health monitor's data source. S-2's own contract --
+// diagnostics is a lazy, dev-only artefact, fetched only when the `?dev` URL param is present, so
+// it never affects P-10's budgets for an ordinary player load. Same fetch-once-and-cache pattern
+// as the search index above.
+let diagnosticsPromise: Promise<Diagnostics> | null = null;
+
+export async function fetchDiagnostics(): Promise<Diagnostics> {
+  diagnosticsPromise ??= (async () => {
+    const manifest = await fetchManifest();
+    return fetchViaManifest<Diagnostics>(manifest.diagnostics);
+  })();
+  return diagnosticsPromise;
 }
