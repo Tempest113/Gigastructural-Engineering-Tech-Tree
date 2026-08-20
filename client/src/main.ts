@@ -8,7 +8,7 @@
 // click, selection, popups, search, empire-profile switching.
 
 import { Application, Assets, Container, Graphics, Rectangle, Sprite, Text, TextStyle, Texture } from "pixi.js";
-import type { BaseDataset, EmpireOverlay, GestaltAuthority, Nomadic as NomadicValue, Shipset as ShipsetValue } from "../../schema/generated/dataset-types";
+import type { BaseDataset, EmpireOverlay, EmpireTypeConstraint, GestaltAuthority, Nomadic as NomadicValue, Shipset as ShipsetValue } from "../../schema/generated/dataset-types";
 import { atlasUrl, fetchBaseDataset, fetchDetailPayload, fetchDiagnostics, fetchEmpireOverlay, fetchGeometry, fetchSearchIndex } from "./dataset";
 import {
   allProfiles,
@@ -1047,6 +1047,13 @@ async function render(): Promise<void> {
   const nodeModRequirementBadges: Container[][] = [];
   const nodeGateIcons: (Sprite | null)[] = [];
   const nodeGateLabels: (Text | null)[] = [];
+  // Item 4 ("path to zero uncertain" follow-up): the primary gate's own `appliesToEmpireTypes`
+  // (null when unconstrained -- applies to every profile), index-parallel to nodeGateIcons/
+  // nodeGateLabels. An alternative gate backed by a genuinely axis-constrained potential-gate
+  // edge (e.g. tech_torpedoes_1's "Riddle Escort", shipset=[biological]) must not present as a
+  // requirement for a profile the constraint rules out -- non-bio-ship empires already qualify
+  // via a completely different OR branch, unrelated to this gate.
+  const nodePrimaryGateConstraint: (EmpireTypeConstraint | null)[] = [];
   let costlessCardCount = 0;
 
   // Item 1a fix (screenshot-review session): resolved ONCE, up front, over every rendered
@@ -1188,6 +1195,7 @@ async function render(): Promise<void> {
     // than one gate is NOT built (only 10/977 real technologies have a second gate instance);
     // flagged here rather than silently built as new scope beyond what this session asked for.
     const primaryGate = tech.gates[0];
+    nodePrimaryGateConstraint.push(primaryGate?.appliesToEmpireTypes ?? null);
     if (primaryGate) {
       const gateSheetTexture = atlasTextures.get(primaryGate.icon.sheet);
       let gateIconSprite: Sprite | null = null;
@@ -1491,6 +1499,18 @@ async function render(): Promise<void> {
     rowCellLabelRects.set(row.id, cellLabelRects);
   }
 
+  // Item 4 ("path to zero uncertain" follow-up): true iff `constraint` (a Gate's
+  // appliesToEmpireTypes, null when unconstrained) permits `profile`. Same per-axis-array
+  // semantics as EmpireTypeConstraint everywhere else in this file -- an absent axis is
+  // unconstrained (all its values allowed), a present axis lists the allowed values.
+  function gateAppliesToProfile(constraint: EmpireTypeConstraint | null, profile: EmpireProfile): boolean {
+    if (!constraint) return true;
+    if (constraint.authority && !constraint.authority.includes(profile.authority)) return false;
+    if (constraint.shipset && !constraint.shipset.includes(profile.shipset)) return false;
+    if (constraint.nomadic && !constraint.nomadic.includes(profile.nomadic)) return false;
+    return true;
+  }
+
   let currentTier: LodTier | null = null;
   let currentEdgeTier: EdgeLodTier | null = null;
   let patternSolid: boolean | null = null;
@@ -1523,8 +1543,17 @@ async function render(): Promise<void> {
       for (const b of nodeRareBadges) if (b) b.visible = showRare;
       for (const b of nodeDangerousBadges) if (b) b.visible = showDangerous;
       for (const list of nodeModRequirementBadges) for (const b of list) b.visible = showModRequirement;
-      for (const s of nodeGateIcons) if (s) s.visible = showGateIcon;
-      for (const t of nodeGateLabels) if (t) t.visible = showGateLabel;
+      // Item 4: combined with per-profile gate applicability (gateAppliesToProfile) -- an
+      // alternative gate constrained away from the current profile (e.g. tech_torpedoes_1's
+      // Riddle Escort for a non-biological-shipset profile) never shows regardless of zoom.
+      for (let i = 0; i < nodeGateIcons.length; i++) {
+        const s = nodeGateIcons[i];
+        if (s) s.visible = showGateIcon && gateAppliesToProfile(nodePrimaryGateConstraint[i] ?? null, currentProfile);
+      }
+      for (let i = 0; i < nodeGateLabels.length; i++) {
+        const t = nodeGateLabels[i];
+        if (t) t.visible = showGateLabel && gateAppliesToProfile(nodePrimaryGateConstraint[i] ?? null, currentProfile);
+      }
     }
 
     const edgeTier = edgeTierForScale(scale);
@@ -1765,9 +1794,15 @@ async function render(): Promise<void> {
       ${tech.requiresMods.length > 0 ? `<div class="badge-row">${tech.requiresMods.map((m) => `<span class="chip" style="background:#4a5568;color:#fff">${escapeHtml(m)}</span>`).join("")}</div>` : ""}
       <div class="field-label">Availability (${escapeHtml(profileLabel(currentProfile))})</div>
       <div class="field-value" id="popup-availability">${escapeHtml(tech.availabilityMatrix[profileIndex]!)}</div>
-      ${tech.gates.length > 0 ? `
-        <div class="field-label">Gates${tech.gates.length > 1 ? ` (${tech.gates.length})` : ""}</div>
-        <div class="field-value">${tech.gates
+      ${(() => {
+        // Item 4: the popup filters the SAME way the card does -- an alternative gate the current
+        // profile's own axis facts already rule out (e.g. Riddle Escort for a non-biological-
+        // shipset profile) shouldn't appear as a requirement here either, even though the card
+        // only ever shows the primary gate and the popup lists every gate.
+        const visibleGates = tech.gates.filter((g) => gateAppliesToProfile(g.appliesToEmpireTypes ?? null, currentProfile));
+        return visibleGates.length > 0 ? `
+        <div class="field-label">Gates${visibleGates.length > 1 ? ` (${visibleGates.length})` : ""}</div>
+        <div class="field-value">${visibleGates
           .map(
             (g) => `
           <div class="gate-row">
@@ -1776,7 +1811,8 @@ async function render(): Promise<void> {
           </div>`
           )
           .join("")}</div>
-      ` : ""}
+      ` : "";
+      })()}
       <div class="field-label">Description</div>
       <div class="field-value" id="popup-description">loading&hellip;</div>
       <div class="field-label">Prerequisites (${requiredPrereqNames.length})</div>
@@ -1893,6 +1929,11 @@ async function render(): Promise<void> {
     shipsetSelect.value = profile.shipset;
     nomadicSelect.value = profile.nomadic;
     updateAvailabilityDisplay();
+    // Item 4: gate visibility (gateAppliesToProfile) depends on currentProfile, not just zoom --
+    // invalidate updateLod's change-detection cache so the gate icon/label loop actually re-runs
+    // even though the zoom-derived LOD key itself hasn't changed.
+    lodStateKey = "";
+    updateLod();
     // activeEdgeIds is per-profile -- re-fetch the new profile's overlay (cached by
     // pipeline.dataset_emit's build, and client-side by fetchEmpireOverlay) and retrace the
     // edges, THEN refresh the selection highlight (which also traverses activeEdgeIds via
