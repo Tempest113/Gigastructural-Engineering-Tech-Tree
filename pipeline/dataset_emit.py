@@ -1106,10 +1106,22 @@ def _repository_link(key: str, defn: TechnologyDefinition) -> dict:
 
 
 def build_search_index(ctx: BuildContext, base_dataset: dict, detail_payloads: dict[str, dict]) -> dict:
+    """Item 2: tokens include every AXIS-EXPRESSIBLE swap alternate's display name too, not just
+    the base name -- a user who remembers "Zero Point Metabolism" (the bioship swap name) must
+    still find `tech_zero_point_power` while browsing the default (regular/mechanical) profile,
+    where the card shows "Zero Point Power". Pooled across ALL twelve profiles' worth of swap
+    alternates unconditionally (not gated by whether a swap is active for the CURRENT profile --
+    search matching is deliberately more permissive than display, per this session's own
+    instruction); the CLIENT is responsible for displaying the profile-correct name in the result
+    regardless of which name token matched."""
     entries = []
     for tech in base_dataset["technologies"]:
         key = tech["id"]
-        text = f"{tech['name']} {key} {detail_payloads.get(key, {}).get('description', '')}"
+        defn = ctx.rendered_defs.get(key)
+        swap_names = " ".join(
+            _swap_display_name(s, ctx) for s in collect_swaps(key, defn.block) if s.axis_expressible
+        ) if defn else ""
+        text = f"{tech['name']} {key} {swap_names} {detail_payloads.get(key, {}).get('description', '')}"
         tokens = sorted(set(t for t in re.split(r"[^a-z0-9]+", text.lower()) if t))
         entries.append({"technologyId": key, "tokens": tokens})
     return {"schemaVersion": SCHEMA_VERSION, "entries": entries}

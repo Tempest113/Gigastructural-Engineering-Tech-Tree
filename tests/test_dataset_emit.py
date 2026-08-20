@@ -484,6 +484,20 @@ def test_search_index_covers_all_technologies_and_validates(ctx, base_dataset, a
     assert all(e["tokens"] for e in index["entries"])
 
 
+def test_search_index_includes_axis_expressible_swap_alternate_names(ctx, base_dataset, all_detail_payloads):
+    """Item 2: a user who remembers a swap alternate's name (e.g. the bioship swap "Zero Point
+    Metabolism") must be able to find `tech_zero_point_power` while browsing under ANY profile,
+    including one where that swap isn't active -- search matching is pooled across all swap
+    alternates, unconditionally, not gated by the currently selected profile."""
+    doc, _node_bytes, _edge_bytes = base_dataset
+    index = build_search_index(ctx, doc, all_detail_payloads)
+    entry = next(e for e in index["entries"] if e["technologyId"] == "tech_zero_point_power")
+    assert "metabolism" in entry["tokens"]
+    base_name = next(t for t in doc["technologies"] if t["id"] == "tech_zero_point_power")["name"]
+    assert base_name == "Zero Point Power"
+    assert "power" in entry["tokens"]  # the base name's own tokens are still present too
+
+
 def test_diagnostics_validates_and_reports_the_unconditional_uncertain_finding(ctx):
     """Real finding, corrected twice, not a bug in this emission code either time:
 
