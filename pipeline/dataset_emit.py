@@ -11,13 +11,14 @@ dataset").
 
 **Known v1 scope limitations, stated here so they're not mistaken for oversights**:
 
-- `appliesToEmpireTypes` is emitted unconstrained (`{}` — applies to every profile) on every
-  edge. Building a real per-edge empire-type constraint extractor (walking the boolean context an
-  edge's `has_technology`/`OR` member sits under for axis-fact leaves) is new scope beyond what
-  P-14 built; CLAUDE.md's "empire-type edge shape" finding confirms every real constraint is a
-  rectangular per-axis subset, but confirms the *shape* a future extractor must produce, not that
-  one exists yet. Consequence: `activeEdgeIds` is therefore every edge index, identically, for
-  all twelve profiles — correct-but-undifferentiated, not wrong.
+- ~~`appliesToEmpireTypes` is emitted unconstrained on every edge~~ **Closed** (Item 1 session):
+  `pipeline.edge_constraints.compute_potential_gate_constraints` now populates real per-edge
+  constraints for `potential-gate` edges (`prerequisite`/`alternative` are unconstrained by
+  construction — see that module's docstring). `activeEdgeIds` now genuinely varies per profile
+  (980–983 of 984, real corpus) instead of the previous constant 984/984 — see that module's
+  docstring for the algorithm and why naive sensitivity was rejected in favour of an
+  axis-fact-only criterion (`giga_tech_disco_moon`'s two gate edges are the case that mattered:
+  they must never go inactive just because an unrelated fact is unresolvable).
 - `swapMappings` and detail payload `variants` are now real (D-14, spec/decisions.md, closed a
   later session) -- `pipeline.technology_swaps` classifies each `technology_swap` as
   axis-expressible (substituted per profile into `swapMappings`) or not (listed as a popup-only
@@ -74,6 +75,7 @@ from .dataset_schema.empire_profile import (
     build_empire_profile_axes,
     empire_profile_index,
 )
+from .edge_constraints import compute_potential_gate_constraints, edge_active_for_profile
 from .edges import compute_typed_edges
 from .gate_patterns import classify_gates, order_gates
 from .geometry import pack_edge_polylines, pack_node_positions
@@ -483,6 +485,10 @@ class BuildContext:
     # atlas is deliberately never filtered by P-16's technology rendering-scope closure.
     perk_icon_refs: dict
     sources_present: list[str]
+    # (from_key, to_key) -> appliesToEmpireTypes, `potential-gate` edges only, absent entries
+    # unconstrained -- see pipeline.edge_constraints's module docstring for the algorithm and why
+    # naive sensitivity was rejected.
+    edge_constraints: dict
 
 
 def _sources_present(vendor_root: Path) -> list[str]:
@@ -531,6 +537,7 @@ def build_context(vendor_root: Path) -> BuildContext:
     perk_sheets, perk_icon_result = build_atlases("ascension_perk", vendor_root)
 
     typed_edges, _edge_diagnostics = compute_typed_edges({k: d.block for k, d in rendered_defs.items()})
+    edge_constraints = compute_potential_gate_constraints(rendered_defs, typed_edges, profiles)
 
     icon_refs = _icon_ref_map(tech_icon_result, tech_sheets)
     swap_icon_refs, inherited_swap_icons = _swap_icon_ref_map(tech_icon_result, tech_sheets, icon_refs)
@@ -552,7 +559,7 @@ def build_context(vendor_root: Path) -> BuildContext:
         tech_icon_result=tech_icon_result, perk_icon_result=perk_icon_result,
         tech_sheets=tech_sheets, perk_sheets=perk_sheets, typed_edges=typed_edges,
         icon_refs=icon_refs, swap_icon_refs=swap_icon_refs, inherited_swap_icons=inherited_swap_icons,
-        perk_icon_refs=perk_icon_refs,
+        perk_icon_refs=perk_icon_refs, edge_constraints=edge_constraints,
         sources_present=sources_present, off_tree_prerequisites=off_tree_prerequisites, history=history,
     )
 
@@ -653,9 +660,10 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
     forward: dict[str, dict[str, list[int]]] = {}
     reverse: dict[str, dict[str, list[int]]] = {}
     for i, e in enumerate(layout.edges):
+        applies_to = ctx.edge_constraints.get((e.from_key, e.to_key, e.kind), {})
         edges_json.append({
             "from": e.from_key, "to": e.to_key, "kind": e.kind, "groupId": e.group_id,
-            "appliesToEmpireTypes": {}, "backward": e.backward, "bandSpan": e.band_span,
+            "appliesToEmpireTypes": applies_to, "backward": e.backward, "bandSpan": e.band_span,
         })
         forward.setdefault(e.to_key, {}).setdefault(e.kind, []).append(i)
         reverse.setdefault(e.from_key, {}).setdefault(e.kind, []).append(i)
@@ -950,7 +958,10 @@ def build_empire_overlay(ctx: BuildContext, profile: dict) -> dict:
                 "category": category,
             })
 
-    active_edge_ids = list(range(len(ctx.layout.edges)))  # unconstrained appliesToEmpireTypes -- see module docstring
+    active_edge_ids = [
+        i for i, e in enumerate(ctx.layout.edges)
+        if edge_active_for_profile(ctx.edge_constraints.get((e.from_key, e.to_key, e.kind)), profile)
+    ]
 
     research_paths = {key: _ancestor_research_path(key, prereq_of, costs, tiers) for key in ctx.rendered_keys}
 

@@ -144,6 +144,109 @@ def test_gate_classification_leaves_d10_uncertainty_unchanged(ctx, base_dataset)
     assert round(worst_profile_dependent / len(doc["technologies"]), 4) == 0.0338  # 33/977
 
 
+def test_edge_constraints_leave_d10_uncertainty_unchanged(ctx, base_dataset):
+    """Item 1's own requirement, mirroring the gate-classification test above:
+    `pipeline.edge_constraints` never imports or calls into `pipeline.availability`'s real
+    evaluation path (`evaluate_technology_for_profiles`) -- assert this rather than assume it, the
+    same discipline the gate-classification session already established."""
+    doc, _node_bytes, _edge_bytes = base_dataset
+    per_profile_uncertain_counts = [
+        sum(1 for t in doc["technologies"] if t["availabilityMatrix"][index] == "uncertain")
+        for index in range(len(ctx.profiles))
+    ]
+    unconditional = sum(
+        1 for t in doc["technologies"] if all(state == "uncertain" for state in t["availabilityMatrix"])
+    )
+    worst_profile_dependent = max(per_profile_uncertain_counts) - unconditional
+    assert worst_profile_dependent == 33
+
+
+def test_active_edge_ids_are_not_identical_across_all_twelve_profiles(ctx):
+    """The exact regression this session found and fixed: `activeEdgeIds` shipped as a true no-op
+    (every edge index, identically, for all twelve profiles) across many sessions, undetected,
+    because the fallback (every edge active) happens to look correct. Fails loudly if this
+    recurs -- e.g. a future edit that reverts `build_empire_overlay`'s `active_edge_ids` back to
+    `list(range(len(ctx.layout.edges)))`."""
+    overlays = [build_empire_overlay(ctx, p) for p in ctx.profiles]
+    edge_id_sets = [frozenset(ov["activeEdgeIds"]) for ov in overlays]
+    assert len(set(edge_id_sets)) > 1, "activeEdgeIds is identical across all 12 profiles -- the no-op defect has recurred"
+
+
+def test_active_edge_ids_real_per_profile_counts(ctx):
+    """Pins the real, corpus-measured per-profile active edge counts (984 total edges) so a
+    corpus refresh that silently changes this is caught, not silently accepted. See
+    `pipeline.edge_constraints`'s module docstring for the 5 real constrained edges this reflects:
+    `nomadic` (2 edges), `shipset` (2 edges), and one two-axis (`authority` + `shipset`)
+    intersection."""
+    overlays = {
+        (p["authority"], p["shipset"], p["nomadic"]): build_empire_overlay(ctx, p) for p in ctx.profiles
+    }
+    counts = {key: len(ov["activeEdgeIds"]) for key, ov in overlays.items()}
+    assert counts[("regular", "mechanical", "no")] == 980
+    assert counts[("regular", "mechanical", "yes")] == 980
+    assert counts[("regular", "biological", "no")] == 983
+    assert counts[("regular", "biological", "yes")] == 983
+    assert counts[("hive_mind", "mechanical", "no")] == 980
+    assert counts[("hive_mind", "biological", "no")] == 983
+    assert counts[("machine_intelligence", "mechanical", "no")] == 980
+    assert counts[("machine_intelligence", "biological", "no")] == 982
+
+
+def test_disco_moon_gate_edges_are_active_for_every_profile(ctx, base_dataset):
+    """The specific case that drove Item 1's corrected definition of 'active': `giga_tech_
+    disco_moon`'s two `has_technology` gate edges must stay active on all 12 profiles even though
+    the node's own availability is unconditionally uncertain (an unrelated, unresolvable sibling
+    fact, `giga_can_use_habitables`, dominates its `potential` block to UNKNOWN regardless of
+    empire type). An earlier (rejected) sensitivity-based definition reported these edges 0/12
+    active, which would have silently dropped real prerequisite structure to encode uncertainty
+    that belongs on the NODE, not the edge -- see `pipeline.edge_constraints`'s module docstring."""
+    doc, _node_bytes, _edge_bytes = base_dataset
+    disco_edge_indices = [
+        i for i, e in enumerate(doc["edges"])
+        if e["to"] == "giga_tech_disco_moon" and e["from"] in ("tech_autocurating_vault", "tech_transcendent_faith")
+    ]
+    assert len(disco_edge_indices) == 2
+    for p in ctx.profiles:
+        overlay = build_empire_overlay(ctx, p)
+        active = set(overlay["activeEdgeIds"])
+        assert set(disco_edge_indices) <= active, f"Disco Moon gate edges inactive for {p}"
+
+
+def test_applies_to_empire_types_populated_only_for_the_five_constrained_edges(base_dataset):
+    """Pins the real corpus result of `pipeline.edge_constraints`: only 5 of 984 edges carry a
+    non-empty `appliesToEmpireTypes`, all `potential-gate`, none `prerequisite`/`alternative`
+    (structurally impossible for those two kinds -- see that module's docstring)."""
+    doc, _node_bytes, _edge_bytes = base_dataset
+    constrained = {(e["from"], e["to"], e["kind"]): e["appliesToEmpireTypes"] for e in doc["edges"] if e["appliesToEmpireTypes"]}
+    assert constrained == {
+        ("tech_mega_engineering", "giga_tech_arkship_neutronium_harvester", "potential-gate"): {"nomadic": ["yes"]},
+        ("tech_terrestrial_sculpting", "giga_tech_orbital_artificial_eco", "potential-gate"): {"nomadic": ["no"]},
+        ("tech_cosmogenesis_escort", "tech_missiles_1", "potential-gate"): {"shipset": ["biological"]},
+        ("tech_cosmogenesis_escort", "tech_torpedoes_1", "potential-gate"): {"shipset": ["biological"]},
+        ("tech_gene_tailoring", "giga_tech_planetary_seeder_nexus", "potential-gate"): {
+            "authority": ["hive_mind", "regular"], "shipset": ["biological"],
+        },
+    }
+
+
+def test_dual_kind_edge_pair_does_not_leak_its_gate_constraint_onto_the_prerequisite_edge(base_dataset):
+    """CLAUDE.md's 'Edge-kind membership is NOT mutually exclusive per (from, to) pair':
+    `tech_mega_engineering -> giga_tech_arkship_neutronium_harvester` is both a `prerequisite` edge
+    (unconstrained, always) and a `potential-gate` edge (nomadic=yes only). A `(from_key, to_key)`
+    keyed lookup would leak the gate's constraint onto the prerequisite edge -- this is the real
+    corpus pair that would have caught it."""
+    doc, _node_bytes, _edge_bytes = base_dataset
+    pair = [
+        e for e in doc["edges"]
+        if e["from"] == "tech_mega_engineering" and e["to"] == "giga_tech_arkship_neutronium_harvester"
+    ]
+    assert {
+        (e["kind"], tuple((k, tuple(v)) for k, v in sorted(e["appliesToEmpireTypes"].items()))) for e in pair
+    } == {
+        ("prerequisite", ()), ("potential-gate", (("nomadic", ("yes",)),)),
+    }
+
+
 def test_base_dataset_band_and_lane_shape(base_dataset):
     doc, _node_bytes, _edge_bytes = base_dataset
     assert len(doc["tierBands"]) == 11
