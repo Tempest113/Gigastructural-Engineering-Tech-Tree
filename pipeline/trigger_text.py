@@ -141,18 +141,17 @@ _LEAF_KEY_CATEGORY: dict[str, ReasonCategory] = {
     # content compatibility" check, not a clean fit anywhere else.
     "giga_can_use_habitables": ReasonCategory.ORIGIN_REQUIREMENT,
     "has_acot": ReasonCategory.MOD_CONTENT_REQUIREMENT,
-    # has_ancrel: not a scripted_trigger definition anywhere in the vendored corpus (checked,
-    # not assumed -- unlike every other leaf key in this table, its definition can't be shown
-    # directly). Confirmed instead via giga_relics.txt's `country_event = { id = ancrel.NNNN }`
-    # entries (a relic's dedicated event-id namespace) -- "Ancrel" is a Gigastructures relic/
-    # precursor questline, so a technology gated on it is gated on relic-questline progress, the
-    # same kind of "you achieved something through play" fact as the crisis/story-progress
-    # bucket. 23 of 209 unconditional-uncertain rendered nodes (Task 3's residue audit) turned on
-    # this single reclassification -- 209 was that audit's own denominator at the time, since
-    # corrected to 259 (CLAUDE.md's "Availability evaluator" section: the 50-node difference is
-    # the giga_tech_repeatable_*_cap group, unrelated to this has_ancrel finding, which stands as
-    # originally audited).
-    "has_ancrel": ReasonCategory.CRISIS_OR_STORY_PROGRESS,
+    # has_ancrel: REMOVED (later session) -- this entry was wrong. The prior claim ("not a
+    # scripted_trigger definition anywhere in the vendored corpus... a Gigastructures relic/
+    # precursor questline") was never checked against raw text and doesn't hold: the real
+    # definition is vendor/stellaris/common/scripted_triggers/00_scripted_triggers.txt:2678,
+    # `has_ancrel = { host_has_dlc = "Ancient Relics Story Pack" }` -- a literal DLC-ownership
+    # check, not story-progression state. It is now resolved directly by
+    # `pipeline.availability.GROUND_FACT_BOOL` (the same "all official DLC assumed owned" rule
+    # as every other named DLC wrapper) and never reaches this categoriser as UNCERTAIN, so it
+    # has no entry here any more. See CLAUDE.md's "Availability evaluator" section for the full
+    # defect-class writeup -- this is the fifth instance of a component trusting a claim that was
+    # written down but never verified against raw source.
     # Dynamic galaxy/country state that isn't a story beat, an origin, or a civic -- confirmed by
     # inspection (country_uses_consumer_goods resolves through a live resource-expense check;
     # the rest are structural/scope triggers or genuinely one-off runtime facts, not name-guessed):
@@ -236,6 +235,14 @@ def _describe_leaf(assignment: Assignment) -> str:
         return f"Requires the {value_name} civic"
     if key in ("has_dlc", "host_has_dlc") and value_name is not None:
         return f'Requires the "{value_name}" DLC'
+    if key == "has_ancrel":
+        # `host_has_dlc = "Ancient Relics Story Pack"` wrapper (see GROUND_FACT_BOOL in
+        # pipeline.availability) -- phrased the same way as a direct has_dlc/host_has_dlc leaf,
+        # since that's exactly what it is. Needed so a LOCKED `has_ancrel = no` result (real
+        # corpus: tech_archeology_lab) doesn't need a config/lock_reason_overrides.txt entry.
+        if value_name == "no":
+            return 'Not: requires the "Ancient Relics Story Pack" DLC'
+        return 'Requires the "Ancient Relics Story Pack" DLC'
     if key == "has_country_flag" and value_name is not None:
         return f"Unresolved internal flag: {value_name}"
     if key == "has_global_flag" and value_name is not None:

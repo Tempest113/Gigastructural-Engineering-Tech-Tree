@@ -102,6 +102,62 @@ EXCLUDED_KEYS = {
     "has_galactic_wonders",
 }
 
+# "Path to zero uncertain" follow-up session, Item 3: ethics/civic/origin conditions the
+# three-axis empire model deliberately cannot represent, treated the same way ascension perks
+# already are -- a display gate (P-3), never a profile fact. Extends `EXCLUDED_KEYS`'s identity-
+# element treatment, not resolved either way. The survey that preceded this change confirmed none
+# of the real corpus's 97 ethics/civic/origin-gated technologies is eligibility-IMPOSSIBLE for
+# every empire type (every one is a real, obtainable combination for SOME profile) -- the
+# distinguishing question a display gate answers ("what would you need") rather than the
+# eligibility question availability answers ("can your empire type ever have this").
+#
+# Real corpus (survey + this session's own verification): 19 leaf keys.
+# - Origin-shaped: `has_origin` (direct), `giga_has_frameworld_origin` / `is_wilderness_empire`
+#   (both single 1:1 `has_origin = X` wrappers, confirmed by direct inspection --
+#   `pipeline.gate_patterns.WRAPPER_TO_ORIGIN` badges these two), `is_void_dweller_empire`,
+#   `has_void_dweller_origin`, `is_giga_one_planet_origin` (all three are genuinely COMPOUND --
+#   an OR of multiple real sub-conditions, e.g. `is_void_dweller_empire` = ascension perk OR
+#   origin -- no single clean gate target, so these are excluded from AVAILABILITY here but
+#   deliberately NOT gate-badge-classified; see gate_patterns.py's own docstring).
+# - Ethic/civic-shaped: `has_ethic`, `has_valid_civic`, `has_civic` (direct, all three badged --
+#   `has_civic` is a DISTINCT leaf from `has_valid_civic`, missed by the first survey pass),
+#   `is_fanatic_spiritualist` / `is_fanatic_pacifist` (single 1:1 `has_ethic = X` wrappers,
+#   badged via `pipeline.gate_patterns.WRAPPER_TO_ETHIC`), `is_spiritualist`,
+#   `is_natural_design_empire`, `is_beastmasters_empire`, `is_world_forger_empire` (all four
+#   compound -- an OR of multiple civics/ethics -- excluded from availability, not gate-badged).
+# - Not origin/civic/ethic-shaped at all, but the same "which choice, not which empire type"
+#   character, excluded here for the same reason even though they get no gate badge:
+#   `is_megacorp` (targets `has_authority`, a real 4th authority value outside this project's
+#   3-axis model -- CLAUDE.md's own is_megacorp note), `is_individual_machine` (species-archetype
+#   + gestalt check), `has_genetically_ascended` (tradition-path-completion check),
+#   `is_infernal_empire` (species-trait check).
+# - `can_research_technology`: an engine-builtin alias of `has_technology` (P-14 prerequisite-
+#   graph reachability, not a scripted_trigger definition anywhere in the corpus, confirmed by
+#   direct search) -- same treatment, same reason, badged via `pipeline.gate_patterns`
+#   alongside `has_technology`.
+EXCLUDED_KEYS |= {
+    "has_origin",
+    "giga_has_frameworld_origin",
+    "is_wilderness_empire",
+    "is_void_dweller_empire",
+    "has_void_dweller_origin",
+    "is_giga_one_planet_origin",
+    "has_ethic",
+    "has_valid_civic",
+    "has_civic",
+    "is_fanatic_spiritualist",
+    "is_fanatic_pacifist",
+    "is_spiritualist",
+    "is_natural_design_empire",
+    "is_beastmasters_empire",
+    "is_world_forger_empire",
+    "is_megacorp",
+    "is_individual_machine",
+    "has_genetically_ascended",
+    "is_infernal_empire",
+    "can_research_technology",
+}
+
 # Mod-config toggle suffixes: defined once in pipeline.trigger_text (MOD_CONFIG_TOGGLE_SUFFIXES)
 # since trigger_text.categorize_leaf needs the exact same list to classify the leaf responsible
 # for a FALSE result -- see that module for the full list and the evidence behind each suffix
@@ -172,6 +228,15 @@ GROUND_FACT_BOOL: dict[str, bool] = {
     # `tech_matter_decompressor`, `tech_strategic_coordination`) carry `has_megacorp = yes` and
     # move from UNCERTAIN to AVAILABLE; `is_megacorp`-gated technologies (`tech_executive_retreat`,
     # `tech_xeno_tourism_agency`) are untouched by this entry.
+    "has_ancrel": True,  # host_has_dlc = "Ancient Relics Story Pack" wrapper (vendor/stellaris/
+    # common/scripted_triggers/00_scripted_triggers.txt:2678), verified same as every other named
+    # DLC wrapper above -- NOT a Gigastructures relic-questline flag. A prior session's
+    # pipeline.trigger_text categorisation claimed the opposite ("not a scripted_trigger
+    # definition anywhere in the vendored corpus... a relic/precursor questline") without ever
+    # checking raw source; that claim was wrong and is corrected here. Real corpus: resolves 23
+    # technologies (the tech_archaeo_* family + tech_archeology_lab) from UNCERTAIN/
+    # crisis_or_story_progress to AVAILABLE. See CLAUDE.md's "Availability evaluator" section for
+    # the defect-class writeup.
     "has_acot": True,  # Item 2d: mod-content requirement, not DLC ownership -- this deployed
     # tree assumes ACOT (and AoT, which depends on ACOT) are always present, same as the existing
     # "renders vanilla + Gigastructures + ACOT + AoT" deployment assumption CLAUDE.md already

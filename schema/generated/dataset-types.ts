@@ -87,8 +87,8 @@ export interface IconRef {
   height: number;
 }
 
-/** P-3: gate registry priority table ranks ascension-perk gates above technology gates (D-3) -- this field is what that priority table keys on. */
-export type GateKind = "ascension_perk" | "technology";
+/** P-3: gate registry priority table ranks ascension-perk gates above origin/ethics-or-civic gates above technology gates (D-3, extended by the "path to zero uncertain" follow-up's Item 3) -- this field is what that priority table keys on. */
+export type GateKind = "ascension_perk" | "origin" | "ethics_or_civic" | "technology";
 
 /** P-3. A technology's gates are an ordered list; index 0 is the primary gate (P-12.7). */
 export interface Gate {
@@ -98,6 +98,10 @@ export interface Gate {
   icon: IconRef;
   /** Localised gate label, e.g. 'Needs Cosmogenesis'. Sourced from the mod's own localisation, never hard-coded (P-3). */
   label: string;
+  /** "path to zero uncertain" follow-up, Item 4: true iff this leaf sits inside an OR in the technology's own potential block -- one of SEVERAL independent ways to satisfy it, not the sole/AND-required condition (e.g. tech_torpedoes_1's 'Needs Riddle Escort' is one of four independent OR branches, not an unconditional requirement). The client MUST render an alternative gate distinctly from an unconditional one -- never as a bare 'Needs X' requirement. */
+  alternative: boolean;
+  /** Item 4: for a "technology"-kind alternative gate backed by a real potential-gate edge with a genuine per-axis constraint (pipeline.edge_constraints), the same constraint reused here -- e.g. tech_torpedoes_1's Riddle Escort gate only ever matters for shipset=[biological] profiles; for every other profile the gate should not present as a requirement at all. Null when the gate is unconstrained (applies to every profile) or not backed by an edge-constraint entry. */
+  appliesToEmpireTypes: unknown;
 }
 
 /** 00-overview.md: geometry lives in typed-array side-files, JSON references them, never inlines coordinate arrays. */

@@ -176,8 +176,8 @@
 
     "GateKind": {
       "type": "string",
-      "enum": ["ascension_perk", "technology"],
-      "description": "P-3: gate registry priority table ranks ascension-perk gates above technology gates (D-3) -- this field is what that priority table keys on."
+      "enum": ["ascension_perk", "origin", "ethics_or_civic", "technology"],
+      "description": "P-3: gate registry priority table ranks ascension-perk gates above origin/ethics-or-civic gates above technology gates (D-3, extended by the \"path to zero uncertain\" follow-up's Item 3) -- this field is what that priority table keys on."
     },
 
     "Gate": {
@@ -187,9 +187,11 @@
         "kind": { "$ref": "#/$defs/GateKind" },
         "refId": { "type": "string", "description": "The ascension perk key or technology key this gate names." },
         "icon": { "$ref": "#/$defs/IconRef" },
-        "label": { "type": "string", "description": "Localised gate label, e.g. 'Needs Cosmogenesis'. Sourced from the mod's own localisation, never hard-coded (P-3)." }
+        "label": { "type": "string", "description": "Localised gate label, e.g. 'Needs Cosmogenesis'. Sourced from the mod's own localisation, never hard-coded (P-3)." },
+        "alternative": { "type": "boolean", "description": "\"path to zero uncertain\" follow-up, Item 4: true iff this leaf sits inside an OR in the technology's own potential block -- one of SEVERAL independent ways to satisfy it, not the sole/AND-required condition (e.g. tech_torpedoes_1's 'Needs Riddle Escort' is one of four independent OR branches, not an unconditional requirement). The client MUST render an alternative gate distinctly from an unconditional one -- never as a bare 'Needs X' requirement." },
+        "appliesToEmpireTypes": { "anyOf": [{ "$ref": "#/$defs/EmpireTypeConstraint" }, { "type": "null" }], "description": "Item 4: for a \"technology\"-kind alternative gate backed by a real potential-gate edge with a genuine per-axis constraint (pipeline.edge_constraints), the same constraint reused here -- e.g. tech_torpedoes_1's Riddle Escort gate only ever matters for shipset=[biological] profiles; for every other profile the gate should not present as a requirement at all. Null when the gate is unconstrained (applies to every profile) or not backed by an edge-constraint entry." }
       },
-      "required": ["kind", "refId", "icon", "label"],
+      "required": ["kind", "refId", "icon", "label", "alternative", "appliesToEmpireTypes"],
       "additionalProperties": false
     },
 

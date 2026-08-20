@@ -107,6 +107,7 @@ from .overwrites import (
     resolve_variable_overwrites,
 )
 from .rendering_scope import compute_alternative_only_gaps, compute_off_tree_prerequisites, rendered_technology_keys
+from .scripted_triggers import expand_scripted_triggers, load_scripted_trigger_catalog
 from .technology_swaps import TechnologySwap, collect_swaps
 from .trigger_text import ReasonCategory, describe_condition, describe_trigger_block
 from .variables import build_variable_table
@@ -543,6 +544,13 @@ class BuildContext:
     # unconstrained -- see pipeline.edge_constraints's module docstring for the algorithm and why
     # naive sensitivity was rejected.
     edge_constraints: dict
+    # rendered technology key -> its `potential` block, `pipeline.scripted_triggers`-expanded
+    # (None if the technology has no `potential` at all). Computed ONCE here and reused by every
+    # availability-evaluation call site in this module -- never re-derived per call, so there is
+    # exactly one source of truth for "what does this technology's potential actually say," the
+    # same discipline CLAUDE.md's "pipeline owns all geometry" rule already establishes for
+    # layout, applied here to trigger content instead.
+    expanded_potentials: dict[str, Block | None]
 
 
 def _sources_present(vendor_root: Path) -> list[str]:
@@ -564,6 +572,12 @@ def build_context(vendor_root: Path) -> BuildContext:
     history = collect_technology_definitions(tech_docs)
     rendered_keys = rendered_technology_keys(history)
     rendered_defs = {k: history[k][-1] for k in rendered_keys}
+
+    trigger_catalog = load_scripted_trigger_catalog(vendor_root, scripts, _source_roots(vendor_root))
+    expanded_potentials = {
+        key: expand_scripted_triggers(_field(defn.block, "potential") and _field(defn.block, "potential").value, trigger_catalog)
+        for key, defn in rendered_defs.items()
+    }
 
     crisis = classify_crisis_factions(rendered_defs, load_crisis_overrides(), load_crisis_flag_overrides())
 
@@ -615,6 +629,7 @@ def build_context(vendor_root: Path) -> BuildContext:
         icon_refs=icon_refs, swap_icon_refs=swap_icon_refs, inherited_swap_icons=inherited_swap_icons,
         perk_icon_refs=perk_icon_refs, edge_constraints=edge_constraints,
         sources_present=sources_present, off_tree_prerequisites=off_tree_prerequisites, history=history,
+        expanded_potentials=expanded_potentials,
     )
 
 
@@ -743,7 +758,22 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
             )
         return name
 
-    def _build_gates(defn: "TechnologyDefinition") -> list[dict]:
+    def _trait_gate_label(ref_id: str) -> str:
+        # Item 3 ("path to zero uncertain" follow-up): the same loc-lookup pattern as
+        # _perk_gate_label above, for an origin/ethics-or-civic gate's target id (e.g.
+        # `origin_wilderness` -> "Wilderness", `civic_machine_assimilator` -> "Driven
+        # Assimilator"). Every real target confirmed to resolve during this item's own survey.
+        entry = ctx.loc_table.get(ref_id)
+        raw = strip_markup(entry.value.raw) if entry else ref_id
+        name = _require_resolved(raw, ref_id, "gate label (origin/ethics/civic)", ctx)
+        if name == ref_id:
+            raise UnresolvedLocalisationTokenError(
+                ref_id, "gate label (origin/ethics/civic)",
+                f"resolves to its own raw id {ref_id!r} -- no real localisation exists"
+            )
+        return name
+
+    def _build_gates(owner_key: str, defn: "TechnologyDefinition") -> list[dict]:
         # Item 5 (later session): CLAUDE.md's documented "4 real pairs are both a formal
         # prerequisite AND a potential-gate" (`giga_tech_amb_supertensiles_acot_alpha/sigma/
         # delta/phanon`, each redundantly encoding the same ACOT/AoT dependency in both its own
@@ -764,6 +794,11 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
         ]
         gates: list[dict] = []
         for match in matches:
+            # Item 4 ("path to zero uncertain" follow-up): an alternative (OR-context) gate is
+            # never worded as an unconditional requirement -- "or: X" instead of "Needs X",
+            # matching the real semantics (tech_torpedoes_1's "Riddle Escort" is one of four
+            # independent ways to satisfy potential, not a mandatory prerequisite).
+            label_prefix = "or:" if match.alternative else "Needs"
             if match.kind == "ascension_perk":
                 # Same graceful-degradation convention `_default_icon_ref` already establishes
                 # for a technology's own icon -- never observed to trigger for a real gate target
@@ -775,7 +810,25 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
                     "kind": "ascension_perk",
                     "refId": match.ref_id,
                     "icon": icon,
-                    "label": f"Needs {_perk_gate_label(match.ref_id)}",
+                    "label": f"{label_prefix} {_perk_gate_label(match.ref_id)}",
+                    "alternative": match.alternative,
+                    "appliesToEmpireTypes": None,
+                })
+            elif match.kind in ("origin", "ethics_or_civic"):
+                # Item 3 ("path to zero uncertain" follow-up): no `common/civics`/`common/origins`/
+                # `common/ethics` source, and no icon directory, is vendored for ANY source today
+                # (survey finding, reported not acted on this session -- vendoring a new source
+                # directory is its own review-gated corpus-pinning change). Falls back to the same
+                # graceful-degradation stub `_default_icon_ref` already establishes elsewhere --
+                # the LABEL (a real, loc-resolved name) is the actual informative content; the
+                # generic icon is a placeholder until real origin/civic/ethic icons are vendored.
+                gates.append({
+                    "kind": match.kind,
+                    "refId": match.ref_id,
+                    "icon": _default_icon_ref(ctx),
+                    "label": f"{label_prefix} {_trait_gate_label(match.ref_id)}",
+                    "alternative": match.alternative,
+                    "appliesToEmpireTypes": None,
                 })
             else:  # "technology"
                 # Every real has_technology gate target is itself rendered in the FULL corpus
@@ -790,11 +843,23 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
                 # never a guess beyond what that established precedent already does.
                 target_name = resolved_names.get(match.ref_id) or _resolve_off_tree_prerequisite_name(match.ref_id, ctx)
                 icon = ctx.icon_refs.get(match.ref_id, _default_icon_ref(ctx))
+                # Item 4: reuse pipeline.edge_constraints' own per-edge axis constraint, computed
+                # from the exact same has_technology leaf via the underlying potential-gate edge
+                # -- e.g. tech_torpedoes_1/tech_missiles_1's Riddle Escort gate is genuinely only
+                # relevant for shipset=[biological] profiles (non-bio-ship empires already qualify
+                # via a completely different OR branch, so the gate shouldn't present as a
+                # requirement for them at all). Only meaningful for an alternative gate -- an
+                # AND-required gate applies to every profile by construction (if the constraint
+                # ever fired there it would mean the technology itself is axis-locked, a
+                # different, already-handled case via availability, not this field).
+                applies_to = ctx.edge_constraints.get((match.ref_id, owner_key, "potential-gate")) if match.alternative else None
                 gates.append({
                     "kind": "technology",
                     "refId": match.ref_id,
                     "icon": icon,
-                    "label": f"Needs {target_name}",
+                    "alternative": match.alternative,
+                    "appliesToEmpireTypes": applies_to,
+                    "label": f"{label_prefix} {target_name}",
                 })
         return gates
 
@@ -825,7 +890,7 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
         area_assignment = _field(defn.block, "area")
         area = _scalar_text(area_assignment.value) if area_assignment else "physics"
 
-        availability_results = evaluate_technology_for_profiles(_field(defn.block, "potential") and _field(defn.block, "potential").value, ctx.profiles)
+        availability_results = evaluate_technology_for_profiles(ctx.expanded_potentials.get(key), ctx.profiles)
         matrix = [availability_results[i].state for i in range(len(ctx.profiles))]
 
         requires_mods = [defn.source] if defn.source in ("ACOT", "AoT") else _potential_mod_requirements(defn.block)
@@ -846,7 +911,7 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
             "dangerous": _bool_flag(defn.block, "is_dangerous"),
             "repeatable": ({"levels": levels, "costPerLevel": cost_per_level} if repeatable else None),
             "requiresMods": requires_mods,
-            "gates": _build_gates(defn),
+            "gates": _build_gates(key, defn),
             "availabilityMatrix": matrix,
             "labelPriority": _label_priority(key, reverse_prereq_count, defn),
         })
@@ -983,8 +1048,7 @@ def build_empire_overlay(ctx: BuildContext, profile: dict) -> dict:
         costs[key] = _resolve_cost(cost_assignment.value if cost_assignment else None, ctx.variable_table) or 0.0
         tiers[key] = resolve_declared_tier(key, defn.block, ctx.variable_table)
 
-        potential = _field(defn.block, "potential")
-        result = evaluate_technology_for_profiles(potential.value if potential else None, [profile])[0]
+        result = evaluate_technology_for_profiles(ctx.expanded_potentials.get(key), [profile])[0]
         reason, _needs_warning = resolve_lock_reason(key, result, lock_reason_overrides)
         availability_json[key] = {
             "state": result.state,
@@ -1185,7 +1249,7 @@ def build_search_index(ctx: BuildContext, base_dataset: dict, detail_payloads: d
 
 
 def build_diagnostics(ctx: BuildContext) -> dict:
-    technologies_for_survey = {k: (_field(d.block, "potential").value if _field(d.block, "potential") else None) for k, d in ctx.rendered_defs.items()}
+    technologies_for_survey = ctx.expanded_potentials
     survey = survey_uncertainty(technologies_for_survey, ctx.profiles)
     d10_section = build_d10_diagnostics_section(survey, ctx.profiles)
 
@@ -1224,10 +1288,9 @@ def build_diagnostics(ctx: BuildContext) -> dict:
 
     lock_reason_overrides = load_lock_reason_overrides()
     missing_lock_reasons: set[str] = set()
-    for key, defn in ctx.rendered_defs.items():
-        potential = _field(defn.block, "potential")
+    for key in ctx.rendered_defs:
         for profile in ctx.profiles:
-            result = evaluate_technology_for_profiles(potential.value if potential else None, [profile])[0]
+            result = evaluate_technology_for_profiles(ctx.expanded_potentials.get(key), [profile])[0]
             if result.state == LOCKED:
                 _reason, needs_warning = resolve_lock_reason(key, result, lock_reason_overrides)
                 if needs_warning:
