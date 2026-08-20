@@ -3043,3 +3043,167 @@ sync test extended from a strict equality (`GATE_LEAF_KEYS == EXCLUDED_KEYS`) to
 every excluded key gets a badge. Real dataset rebuilt (`tools/build_dataset.py`) and client built
 (`npm run build`) against it for the verification pass, not left as a stale on-disk artefact from
 before this session's changes.
+
+## "Commit + close the loop" follow-up session
+
+**Item 0 — the prior session's work was staged but never committed, again.** Committed in five
+logical groups (pipeline+schema, tests, client, docs, then this session's own standing-instruction
+addition) instead of one giant commit — see `git log`. Added a standing Rule to CLAUDE.md: commit
+at the end of every session, in logical groups, never left staged. This is the second time
+bisectability was lost to accumulated uncommitted work across sessions; the fix from the first time
+had already drifted back.
+
+**Item 1 — the corpus-wide uncertain count is now a pinned, structural test invariant.**
+`tests/test_availability_corpus.py::test_uncertain_count_and_per_profile_breakdown_pinned` pins the
+union uncertain-technology count (any technology UNCERTAIN for ≥1 of 12 profiles — a number no
+earlier test computed at all) and the full per-profile breakdown, at the same grain the
+unconditional/category figures were already pinned at (`test_real_rates_against_projections`).
+Proven capable of failing, not just passing: temporarily removing `country_uses_bio_ships` from
+`pipeline.scripted_triggers._ALREADY_RESOLVED_KEYS` (this project's own historical bug, reintroduced
+by hand, then reverted) made the assertion fail loudly — union count jumped 127 → 213. D-10's
+existing ratchet mechanism (`build_profile_dependent_diagnostics`/`build_unconditional_diagnostic`'s
+`regressed` flag) was already unit-tested synthetically; no further work needed there.
+
+**Item 2 — the crisis/story-progression flag CLASS, applied by pattern rather than one flag at a
+time.** `pipeline.trigger_text._looks_like_story_progress` (previously private, used only for
+DISPLAY categorisation) is now public (`looks_like_story_progress`) and also consumed by
+`pipeline.availability` to RESOLVE matching `has_country_flag`/`has_global_flag` names TRUE — the
+same evidence-basis and treatment already user-approved for the `colossus_project` precedent
+(`PROGRESSION_FLAGS_TRUE`): the survey found every sampled real setting site is a genuine
+`is_triggered_only` country event with no empire-type restriction. Real corpus: 64 distinct flag
+names, 73 technologies move UNCONDITIONALLY uncertain → AVAILABLE for all 12 profiles at once (none
+became merely profile-dependent — the worst profile-dependent rate is UNCHANGED at 1.54%).
+Unconditional uncertainty: 107 → 34/973 (3.49%). Union uncertain-for-≥1-profile: 127 → 54/973.
+
+Two real pattern matches are deliberately EXCLUDED from this resolution
+(`pipeline.availability.PROGRESSION_PATTERN_EXCLUDED_FLAGS`) despite matching the naming pattern:
+`l_cluster_opened` and `encountered_first_lgate` are VANILLA Stellaris L-Gate storyline flags whose
+setting sites live in vanilla's `events`/`decisions`, which this project does not vendor — unlike
+every Gigastructures match, there is no corpus text to verify them against, so resolving them would
+rest on outside-corpus knowledge, not evidence gathered this project's own way. They remain the
+sole surviving `crisis_or_story_progress` unconditional-uncertain member (count 1) plus a
+profile-dependent contribution from the other excluded flag.
+
+Six outliers the survey found NOT matching the pattern (reported, not resolved, per the session's
+explicit instruction): `can_build_star_eaters`, `acot_databank_sophia_agreed`,
+`advanced_identity_creation`, `has_arcane_generator`, `has_quantum_catapult_insight`,
+`has_encountered_psionic_auras`. Two more of the same non-matching shape turned up during this
+session's own direct corpus walk and are reported the same way: `finish_shroud_forged_liberation_flag`
+(2 technologies, `tech_pk_godray`/`tech_pk_neutron`), `machine_subspecies` (6 technologies, the
+`is_individual_machine`-adjacent robotics family).
+
+**Item 3 — `founder_species`/`has_authority`: already closed by prior work, not a new gap.**
+Direct corpus inspection found `founder_species = { is_archetype = MACHINE }` never appears
+directly in any rendered technology's `potential` block — the only real corpus wrapper containing
+it, vanilla's `is_individual_machine` (`00_scripted_triggers.txt`'s
+`02_scripted_triggers_machine_age.txt:62`), was already added to `EXCLUDED_KEYS` AND to
+`pipeline.gate_patterns.NOT_GATE_CLASSIFIED_EXCLUDED_KEYS` by an EARLIER session's own Item 3
+(ethics/civic/origin display gates). 21 rendered technologies reference `is_individual_machine`
+(mostly `OR = { is_machine_empire = yes, is_individual_machine = yes }`), all already resolve
+without ever reaching UNCERTAIN. Identical story for `has_authority = auth_corporate` via
+`is_megacorp` (2 technologies: `tech_executive_retreat`, `tech_xeno_tourism_agency`) — already
+excluded from availability and deliberately NOT gate-badged, for exactly the reasoning this
+session's Item 3b would otherwise have had to work out from scratch (MegaCorp is a real 4th
+authority value the 3-axis model doesn't carry; adding it as an axis would double
+`EmpireProfileAxes`' cardinality — 12 → 24 profiles, doubling every per-profile emitted array — to
+serve 2 technologies, not worth it against the display-gate alternative already shipped). No code
+change made; this item's only output is the corrected understanding, recorded here and in CLAUDE.md
+so a future session doesn't re-open it as if it were still a gap.
+
+**Item 4 — the `@giga_amb_flag` config-toggle pattern: investigated, reported, NOT applied.**
+`vendor/mods/gigastructures/common/scripted_variables/giga_amb_variables.txt:5`'s own comment
+(`@giga_amb_flag = giga_buildcap_j # menu option variable name, checked for feature activation`)
+confirms the MECHANISM matches `_capped_r` — a Gigastructures options-menu toggle, checked via
+`has_global_flag`. But it differs from `_capped_r` in two ways that matter, either one enough to
+withhold the pattern-match on its own:
+1. `_capped_r`'s resolution to FALSE rests on an explicit USER confirmation that no core
+   Gigastructures preset sets that specific mode. There is no equivalent confirmation for
+   `giga_buildcap_j`'s default state, and unlike `_forbidden`/`_disabled`/`_OFF`, its name carries
+   no self-describing suffix that the general "unset = feature not active" modding convention
+   could be inferred from.
+2. The corpus value is a `VariableReference` (`@giga_amb_flag`), not a literal `Identifier`/
+   `StringLiteral` — `pipeline.availability._flag_value_name` only resolves the latter two today.
+   Even with a confirmed default, applying it would require threading a `variable_table` through
+   `evaluate_trigger_block`/`_evaluate_leaf`, a real (if scoped) signature change not attempted
+   this session pending the confirmation that would make it worth doing.
+
+Real corpus: **10 technologies**, not the originally-scoped 7 — a direct walk of the whole
+`common/technology` corpus (not just `giga_17_alternative_mega_build.txt`, where the pattern was
+first noticed) found `giga_tech_fe_megaworkshop_1`, `giga_tech_fe_megaworkshop_2`, and
+`giga_tech_orbital_ring_supertensiles_mine_hub` also reference the same variable. Left unresolved,
+folded into the residue reported in Item 5.
+
+**Item 5 — remaining residue after Items 2-4, real corpus counts (973 rendered, 54 union
+uncertain, 34 unconditional):**
+
+| Leaf construct | Techs affected | Classification |
+| --- | --- | --- |
+| `has_country_flag`/`has_global_flag` one-off names (`acot_databank_sophia_agreed`, `advanced_identity_creation`, `can_build_star_eaters`, `finish_shroud_forged_liberation_flag`, `has_arcane_generator`, `has_encountered_psionic_auras`, `has_quantum_catapult_insight`, `machine_subspecies`) | 16 (some names shared across 2+ techs) | Genuinely unknowable runtime/player-choice state — no single resolvable pattern, matches HANDOFF's original CHECK 2 finding |
+| `@giga_amb_flag` (`giga_buildcap_j`) | 10 | Item 4's config-toggle candidate — needs user confirmation of default state, see above |
+| `giga_rings_beh`/`giga_rings_gar`/`giga_rings_tit` | 5 | On CLAUDE.md's existing surveyed-but-unconfirmed `PROGRESSION_FLAGS_TRUE` candidate list — same "ask one at a time" rule as `colossus_project`, not yet asked |
+| `l_cluster_opened`/`encountered_first_lgate` | 2 | Vanilla L-Gate storyline flags, deliberately excluded from Item 2's resolution (events/decisions not vendored) |
+| `if = { limit = {...} }` conditional-effect blocks | 4 (`tech_luxuries_1`/`_2`, `tech_consumer_good_refinement_1`/`_2`) | Relaxable by evaluator thoroughness (user explicitly offered this for `count_country`/`resource_expenses_compare`-shaped constructs) — not attempted this session, scoped follow-up |
+| `has_tradition` | 4 (`tech_missiles_1`, `tech_torpedoes_1`, `giga_tech_shroud_conduit`, `giga_tech_psychic_hypersiphon`) | Genuinely unknowable live tradition-tree state |
+| `exists` (scope-existence checks) | 4 (`tech_gravity_wells`, `tech_holographic_rituals`, `tech_consecration_fields`, `tech_transcendent_faith`) | Not previously catalogued by this project — worth a follow-up survey of what these actually check |
+| `check_variable` on `ehof_phase` | 3 | Live EHOF crisis-chain progression counter, genuinely unknowable |
+| `has_policy_flag` | 1 (`tech_neural_implants`) | Genuinely unknowable live policy-choice state |
+| `has_menace_perk` | 1 (`tech_xeno_linguistics`) | Genuinely unknowable live menace-tree state |
+| `has_active_tradition` | 1 (`giga_tech_the_vat`) | Genuinely unknowable live tradition state, distinct construct from `has_tradition` |
+| `has_dna` | 1 (`tech_controlled_mutations`) | Not previously catalogued, needs its own look |
+| `days_passed` | 1 (`tech_federation_code`) | Genuinely unknowable elapsed-game-time state |
+| `always` | 1 (`tech_ring_world`) | Needs individual inspection — `always = no/yes` combined with other unresolved branches, not obviously a new construct on its own |
+| `is_country_type = acot_phanon_base` | 1 (`tech_dark_matter_power_core_se`) | **Needs a domain answer, not a technical one — see below.** |
+
+**`is_country_type = acot_phanon_base` — a genuine open question for the user, not decided.**
+`tech_dark_matter_power_core_se`'s `potential` is `NOR = { is_fallen_empire = yes, is_country_type
+= acot_phanon_base } AND has_country_flag = stellarite_tech_enable`
+(`acot_03_stellarite_components_tech.txt:709-715`). `acot_phanon_base` appears widely across ACOT's
+`common/armies`, `common/buildings`, `common/districts`, `common/bombardment_stances`,
+`common/game_rules`, and `common/scripted_effects` — always alongside `is_fallen_empire` or a
+`COUNTRY_TYPE = acot_phanon_base` scoped-effect target, and `acot_03_phanon_components_tech.txt`
+defines `damage_vs_country_type_acot_phanon_base_mult` weapon modifiers, the same shape as a damage
+multiplier against Marauders or a Fallen Empire. This is consistent with `acot_phanon_base` being
+an AI/event-only country type (an NPC "Phanon" faction, not a selectable player empire type) —
+meaning no player empire could ever satisfy this technology's `NOR`, a genuine
+PERMANENT-IMPOSSIBILITY case this project's model has no state for (distinct from `uncertain`,
+`locked`, or `config-gated` — those all describe conditions a player empire COULD satisfy under
+different facts; this would describe a condition no player empire can ever satisfy). Not resolved
+here — this rests on domain knowledge of ACOT's country-type system this project's vendored corpus
+cannot itself confirm (there's no ACOT `common/country_types`/equivalent directory vendored to
+check against). Asked of the user in this session's own report rather than guessed at.
+
+**The realistic floor and its cost.** Of the 54 union-uncertain technologies: ~26 are genuinely
+unknowable runtime/story state no static analysis will ever resolve (has_tradition,
+has_active_tradition, has_policy_flag, has_menace_perk, check_variable/ehof_phase, days_passed, the
+8 one-off has_country_flag names, is_country_type pending the domain answer above) — this is the
+real floor, not a gap to close. ~19 are pending EITHER a user confirmation this session didn't have
+(giga_buildcap_j's default state, 10; giga_rings_beh/gar/tit, 5) OR a scoped evaluator-thoroughness
+relaxation the user already pre-approved but this session didn't implement (if/limit blocks, 4).
+~5 (`exists`, `has_dna`, `always`) haven't been individually surveyed at all and may turn out to
+belong in either bucket. Reaching the confirmable floor costs: one round of user confirmations
+(giga_buildcap_j default state, giga_rings_beh/gar/tit, is_country_type=acot_phanon_base) plus one
+small implementation pass (VariableReference resolution in `_flag_value_name`/`_evaluate_leaf` for
+giga_buildcap_j, plus whatever `PROGRESSION_FLAGS_TRUE`/similar entries the confirmations produce);
+reaching the true floor beyond that requires only surveying `exists`/`has_dna`/`always`, not more
+user confirmation.
+
+**Three-state availability is unaffected and not up for revision.** `uncertain` remains a real,
+reachable state regardless of how small its population gets (54 today, was 973's full complement
+before this project's evaluator existed at all) — this session's resolutions each removed a
+specific, evidenced, resolvable case, never widened what counts as resolvable, and the floor above
+is explicitly NOT zero. A future corpus refresh introducing a genuinely new undecidable construct
+must surface as UNCERTAIN, not be quietly guessed into AVAILABLE/LOCKED to make the count look
+better.
+
+**Verification**: full `pytest tests/` (1495 passed), `tsc --noEmit` and `npm run build` both
+clean. Real dataset rebuilt (`tools/build_dataset.py`) and matches the pinned test figures exactly
+(diagnostics.json: `unconditionalUncertainty.count` 34, `uncertainTechnologies` length 54, worst
+`profileDependentUncertainty` rate 0.015416). Layout invariants
+(`test_no_row_overlaps_and_every_card_within_its_own_row_bounds` and siblings in
+`tests/test_layout_corpus.py`/`tests/test_layout.py`, plus `tests/test_edge_constraints.py`) all
+green — this session touched no layout/geometry code, so this is a confirmation, not new coverage.
+**No headless-Chromium screenshots this session** — this environment has no browser-automation tool
+available (`claude-in-chrome` not connected) and no Playwright installation, and this session made
+no client-visible UI changes (no new gate kind, no new card affordance) that would need one; the
+`?dev` monitor's content was verified directly from the rebuilt `diagnostics.json` instead. Flagged
+honestly rather than claimed.

@@ -300,6 +300,63 @@ uncertainty further but, in the SAME move, pushed the worst profile-dependent ra
 paragraph for why. See the "Availability evaluator" bullet in Open Items/BUILD-LOG for the full
 before/after category breakdown.
 
+**Unconditional figure moved again, a later session ("commit + close the loop" follow-up, Item 2):
+176 → 107 (already recorded below at "Gates") → 34/973 (3.49%), while worst profile-dependent
+stayed exactly 15/973 (1.54%), unmoved.** `pipeline.trigger_text.looks_like_story_progress`'s
+naming pattern (crisis-faction fragments; `_possible`/`_solved`/`_unlocked`/`_happened`/`_complete`/
+`_aborted`/`_knowledge`/`_opened` suffixes; `encountered_`/`completed_` prefixes) — previously used
+only for DISPLAY categorisation — now also RESOLVES matching `has_country_flag`/`has_global_flag`
+names TRUE as a class, the same treatment already user-approved for `colossus_project`
+(`pipeline.availability.PROGRESSION_FLAGS_TRUE`). Every sampled real setting site is a genuine
+`is_triggered_only` country event with no empire-type restriction. Real corpus: 64 distinct flag
+names, 73 technologies move UNCONDITIONALLY uncertain → AVAILABLE for all 12 profiles; none became
+merely profile-dependent, which is why the worst profile-dependent rate is unchanged. Union
+uncertain-for-≥1-profile count: 127 → 54.
+Two real pattern matches are DELIBERATELY EXCLUDED (`pipeline.availability.
+PROGRESSION_PATTERN_EXCLUDED_FLAGS`) despite matching the naming pattern: `l_cluster_opened` and
+`encountered_first_lgate` are VANILLA Stellaris L-Gate storyline flags whose setting sites live in
+vanilla's `events`/`decisions`, which this project does not vendor — resolving them would rest on
+outside-corpus knowledge, not evidence, unlike every Gigastructures match. Six outliers the survey
+found NOT matching the pattern, reported but not resolved: `can_build_star_eaters`,
+`acot_databank_sophia_agreed`, `advanced_identity_creation`, `has_arcane_generator`,
+`has_quantum_catapult_insight`, `has_encountered_psionic_auras`, plus two more of the same
+non-matching shape found this session: `finish_shroud_forged_liberation_flag`,
+`machine_subspecies`. **The corpus-wide uncertain count is now a pinned, structural test invariant**
+(`tests/test_availability_corpus.py::test_uncertain_count_and_per_profile_breakdown_pinned`,
+Item 1 of the same session) — pins both the union count and the full per-profile breakdown, proven
+capable of failing by temporarily reintroducing the historical `country_uses_bio_ships` collision
+(union count jumped 127 → 213 before the reintroduction was reverted).
+
+**Founder-species/authority axis gaps (Item 3 of the same session): already closed by prior work,
+not a new gap.** `founder_species = { is_archetype = MACHINE }` never appears directly in any
+rendered technology's `potential` — the only real corpus wrapper containing it, vanilla's
+`is_individual_machine`, was already added to `EXCLUDED_KEYS` AND to
+`pipeline.gate_patterns.NOT_GATE_CLASSIFIED_EXCLUDED_KEYS` by a prior session's Item 3 (ethics/
+civic/origin display gates) — 21 rendered technologies reference it, all already resolve
+AVAILABLE with no gate badge, never UNCERTAIN. Same story for `has_authority = auth_corporate`
+via `is_megacorp` (2 technologies, `tech_executive_retreat`/`tech_xeno_tourism_agency`) — already
+excluded from availability and deliberately not gate-badged for the exact reason this session's
+Item 3b would have recommended (MegaCorp is a real 4th authority value outside the 3-axis model;
+adding it as an axis would double `EmpireProfileAxes`' cardinality — 12 → 24 profiles, doubling
+every per-profile emitted array — for 2 technologies, not worth it against the display-gate
+alternative already in place).
+
+**`@giga_amb_flag` config-toggle pattern (Item 4 of the same session): investigated, NOT applied
+— reported instead, differs from `_capped_r` in a way that matters.** `vendor/mods/gigastructures/
+common/scripted_variables/giga_amb_variables.txt:5`'s own comment (`@giga_amb_flag =
+giga_buildcap_j # menu option variable name, checked for feature activation`) confirms the
+MECHANISM matches `_capped_r` (a Gigastructures options-menu toggle, `has_global_flag`-checked) —
+but unlike `_capped_r`, which the user explicitly confirmed defaults unset in every core preset,
+there is no equivalent confirmation for `giga_buildcap_j`'s default state, and the flag name
+carries no self-describing suffix (`_forbidden`/`_disabled`/`_OFF`) the way the general convention
+does. A second, purely mechanical gap: the value is a `VariableReference` (`@giga_amb_flag`), and
+`pipeline.availability._flag_value_name` only resolves `Identifier`/`StringLiteral` today — even
+with a confirmed default, resolving it would need `evaluate_trigger_block`'s variable_table
+threaded through, not done here. Real corpus: 10 technologies (not 7 — the earlier scoping only
+counted `giga_17_alternative_mega_build.txt`'s obvious cases; `giga_tech_fe_megaworkshop_1/2` and
+`giga_tech_orbital_ring_supertensiles_mine_hub` also reference it). Left unresolved pending user
+confirmation — see the same session's report.
+
 **`has_ancrel` fix (a later session, "path to zero uncertain" Item 1) — the FIFTH instance of this
 project's recurring defect class**: `pipeline/trigger_text.py` carried a comment asserting
 `has_ancrel` was "not a scripted_trigger definition anywhere in the vendored corpus" and was a

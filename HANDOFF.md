@@ -1132,8 +1132,29 @@ reason, not by default.
 
 ## Next prompt to paste into Claude Code
 
-**Stale as of a later session — keep this current every time it's touched.** Current as of the
-session that: built the `?dev` uncertainty health monitor (Item 1); resolved four classes of
+**Most recent session ("commit + close the loop" follow-up): committed the previously-staged
+has_ancrel/scripted-trigger-expansion/gate-extension work (Item 0, five logical commits); pinned
+the corpus-wide uncertain count as a structural test invariant, proven capable of failing
+(Item 1); resolved the crisis/story-progression flag naming pattern as a class, same treatment as
+the user-approved `colossus_project` precedent — 73 technologies move unconditionally uncertain →
+available, unconditional 107 → 34/973, union uncertain 127 → 54/973, worst profile-dependent rate
+UNCHANGED at 1.54% (Item 2); confirmed `founder_species`/`has_authority` are already fully closed
+by an earlier session's ethics/civic/origin gate work, no code change needed (Item 3); investigated
+and reported (not applied) the `@giga_amb_flag` config-toggle candidate, pending user confirmation
+of its default state (Item 4); catalogued the remaining 54-technology residue by classification,
+with one genuine domain question flagged for the user (`is_country_type = acot_phanon_base` on
+`tech_dark_matter_power_core_se` — may be a permanent-impossibility case this model has no state
+for) (Item 5). See `docs/BUILD-LOG.md`'s "commit + close the loop" section for the full writeup,
+real numbers, and the residue table. **Open follow-ups from this session, not yet resolved:**
+user confirmation needed on `giga_buildcap_j`'s default state (10 technologies),
+`giga_rings_beh`/`_gar`/`_tit` (5 technologies, already on CLAUDE.md's older unconfirmed
+candidate list), and the `acot_phanon_base` domain question above; a scoped evaluator-thoroughness
+relaxation for `if = { limit = {...} }` blocks (4 technologies) the user already pre-approved in
+principle but this session didn't implement; `exists`/`has_dna`/`always` leaf constructs not yet
+individually surveyed.
+
+**Stale as of an earlier session — kept for history.** Current as of the session that: built the
+`?dev` uncertainty health monitor (Item 1); resolved four classes of
 user-confirmed uncertainty (Item 2a-d — DLC/mod-presence/progression-flag resolution rules plus
 the `always = no` exclusion, 977 → 973 rendered nodes); surveyed (not implemented)
 ascension-perk `add_research_option` grants (Item 3); fixed gate-label collisions and enlarged
