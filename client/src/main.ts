@@ -138,6 +138,14 @@ const BADGE_GUTTER_WIDTH = 34;
 const BADGE_HEIGHT = 16;
 const BADGE_GAP = 2;
 const BADGE_GUTTER_X = CARD_WIDTH - ICON_MARGIN - BADGE_GUTTER_WIDTH;
+// Item 4 (later session): the gate icon was rendered at BADGE_HEIGHT (16px, sized for a square
+// text badge's glyph, e.g. "T5"/"★") -- too small to actually identify which perk it depicts. It
+// is always the LAST gutter-stack item claimed for a card (nothing else is added after it), so
+// enlarging it can only ever push into unclaimed space below its own slot, never into another
+// badge's territory -- verified against the real corpus (window.__tt.checkIndicatorBounds) rather
+// than assumed safe from the stacking order alone. Fits inside BADGE_GUTTER_WIDTH (34px) with
+// margin to spare.
+const GATE_ICON_SIZE = 24;
 
 // Card name text (defect fix): clamped to a fixed line count, never shrunk, never overflowing the
 // card. p95 rendered-name length is 39 chars -- pipeline/layout.py's own CARD_WIDTH/CARD_HEIGHT
@@ -1186,9 +1194,10 @@ async function render(): Promise<void> {
       if (gateSheetTexture) {
         const gateFrame = new Rectangle(primaryGate.icon.x, primaryGate.icon.y, primaryGate.icon.width, primaryGate.icon.height);
         gateIconSprite = new Sprite(new Texture({ source: gateSheetTexture.source, frame: gateFrame }));
-        gateIconSprite.width = BADGE_HEIGHT;
-        gateIconSprite.height = BADGE_HEIGHT;
-        gateIconSprite.position.set(x + BADGE_GUTTER_X + (BADGE_GUTTER_WIDTH - BADGE_HEIGHT) / 2, nextGutterSlot());
+        gateIconSprite.width = GATE_ICON_SIZE;
+        gateIconSprite.height = GATE_ICON_SIZE;
+        const slotY = nextGutterSlot();
+        gateIconSprite.position.set(x + BADGE_GUTTER_X + (BADGE_GUTTER_WIDTH - GATE_ICON_SIZE) / 2, slotY);
         world.addChild(gateIconSprite);
       } else {
         nextGutterSlot(); // keep stack accounting consistent even if the icon itself failed to resolve
@@ -1213,13 +1222,49 @@ async function render(): Promise<void> {
       //     need this care (they live entirely inside the gutter column, never overlapping the
       //     name's horizontal territory the way this label deliberately does). Clamped to never
       //     start above where the name text block actually ends.
+      //  3. Item 4 (later session): that name-only clamp still collided with the COST line for a
+      //     2-line name on a short card -- both the gate label's Y (nameText bottom + 2) and the
+      //     cost line's own `belowNameY` fallback (nameText bottom + 4, used whenever the
+      //     bottom-anchored position would sit ABOVE where the name ends) are independently
+      //     derived from the exact same `nameText.height`, landing within 2px of each other
+      //     whenever the name is long enough to push both off their preferred anchors. Real
+      //     corpus examples: "Phased Hyperenergetics", "Planetary-Scale Fabrication". Fixed by
+      //     also clamping below the cost line's own bottom edge, the same defensive pattern
+      //     already used for the name -- `nodeCosts[i]` is already populated by this point in the
+      //     per-node loop (the cost line is built earlier in the same iteration).
       const gateLabelFontCss = "11px system-ui, sans-serif";
       const gateLabelText = wrapAndClampName(measureCtx, primaryGate.label, NAME_MAX_WIDTH_PX, 1, "tail", gateLabelFontCss);
       const gateLabel = new Text({ text: gateLabelText, style: gateLabelStyle });
-      const gateLabelY = Math.max(gateIconSprite ? gateIconSprite.y : y, nameText.y + nameText.height + 2);
-      gateLabel.position.set(x + BADGE_GUTTER_X - ICON_MARGIN - gateLabel.width, gateLabelY);
-      world.addChild(gateLabel);
-      nodeGateLabels.push(gateLabel);
+      let gateLabelY = Math.max(gateIconSprite ? gateIconSprite.y : y, nameText.y + nameText.height + 2);
+      // Item 4: only push further down when the name-driven position would actually reach the
+      // cost line's own rect -- a REAL overlap check, not an unconditional clamp, so the common
+      // case (short name, cost safely bottom-anchored) keeps the label at its natural position
+      // right under the name instead of being dragged down to the card's bottom edge for no
+      // reason. `gateLabel.height` is already valid here (PixiJS computes Text metrics
+      // synchronously on construction, before this line runs).
+      const costTextForThisCard = nodeCosts[i];
+      if (costTextForThisCard) {
+        const overlapsY = gateLabelY < costTextForThisCard.y + costTextForThisCard.height
+          && costTextForThisCard.y < gateLabelY + gateLabel.height;
+        if (overlapsY) gateLabelY = costTextForThisCard.y + costTextForThisCard.height + 2;
+      }
+      // Item 4: a 2-line name + a real cost line + a gate badge can leave NO room at all for the
+      // label between the (correctly cost-clamped) position and the card's own bottom edge --
+      // real corpus examples: giga_tech_alderson_disk and 49 others, all 2-line-name cards with a
+      // real (non-null) cost. Per this session's own instruction, the fix is NOT to shrink the
+      // font or let it overflow -- it's to drop the label text entirely and keep only the icon
+      // (still identifies the gate; full "Needs X" text remains available in the popup's Gates
+      // section, which always lists every gate regardless of card-level space). Checked against
+      // the card's bottom edge, not an arbitrary threshold, so this only fires when there is
+      // truly no room, never as a blanket simplification.
+      const fitsOnCard = gateLabelY + gateLabel.height <= y + CARD_HEIGHT;
+      if (fitsOnCard) {
+        gateLabel.position.set(x + BADGE_GUTTER_X - ICON_MARGIN - gateLabel.width, gateLabelY);
+        world.addChild(gateLabel);
+        nodeGateLabels.push(gateLabel);
+      } else {
+        nodeGateLabels.push(null);
+      }
     } else {
       nodeGateIcons.push(null);
       nodeGateLabels.push(null);
@@ -2148,6 +2193,22 @@ async function render(): Promise<void> {
     cardRenderedName: (techId: string) => {
       const idx = techIndexById.get(techId);
       return idx === undefined ? null : nodeNames[idx]?.text ?? null;
+    },
+    debugGateGeometry: (techId: string) => {
+      const idx = techIndexById.get(techId);
+      if (idx === undefined) return null;
+      const cardY = nodePositions[idx * 2 + 1]!;
+      const label = nodeGateLabels[idx];
+      const icon = nodeGateIcons[idx];
+      const cost = nodeCosts[idx];
+      const name = nodeNames[idx];
+      return {
+        cardY, cardBottom: cardY + CARD_HEIGHT,
+        label: label ? { y: label.y, height: label.height, bottom: label.y + label.height, text: label.text } : null,
+        icon: icon ? { y: icon.y, height: icon.height, bottom: icon.y + icon.height } : null,
+        cost: cost ? { y: cost.y, height: cost.height, bottom: cost.y + cost.height } : null,
+        name: name ? { y: name.y, height: name.height, bottom: name.y + name.height } : null,
+      };
     },
     currentSwapMap: () => Object.fromEntries(currentSwapMap),
     empireProfileIndex: (profile: EmpireProfile) => empireProfileIndex(profile),
