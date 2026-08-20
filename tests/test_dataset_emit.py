@@ -80,30 +80,35 @@ def test_base_dataset_gates_match_the_gate_classification_survey(base_dataset):
     """P-3 (gate-classification session): real per-mechanism counts, pinned so a future corpus
     change is caught rather than silently drifting. 45 ascension_perk-kind gate instances (22
     has_ascension_perk + 9 has_gigastructural_constructs + 14 has_galactic_wonders), unaffected by
-    Item 5. technology-kind gate instances: 25 raw `has_technology`-in-`potential` occurrences
-    (== the 25 potential-gate edges, one-to-one), minus 4 excluded by Item 5 (later session) --
-    `giga_tech_amb_supertensiles_acot_alpha/sigma/delta/phanon` each redundantly encode the same
-    ACOT/AoT dependency as BOTH a true `prerequisites` entry AND a `has_technology` check in
-    `potential` (CLAUDE.md's documented "4 real pairs are both a formal prerequisite and a
-    potential-gate"); displaying the latter as gate-badge text duplicated the former, already
-    shown via the edge/popup, so `_build_gates` now excludes a "technology"-kind match whose
-    target is also a true prerequisite of the same technology -- a DISPLAY-layer exclusion only,
-    the underlying `potential-gate` edges are untouched (still 25, asserted separately below).
-    21 technology-kind + 45 ascension_perk-kind = 66 total, over 56 technologies (was 60 -- the 4
-    excluded technologies each had exactly one gate, this one, so they drop to zero gates
-    entirely), 10 of which carry more than one gate INSTANCE (7 crossing two distinct mechanism
-    types -- 6 tech_lathe_* + giga_tech_the_vat -- plus 3 more carrying two has_technology targets
-    each -- giga_tech_disco_moon, tech_qnm_disruptors, tech_sm_autocannons -- unaffected by Item
-    5, since none of those 3 is one of the 4 redundant-prerequisite technologies)."""
+    Item 5 or the "path to zero uncertain" follow-up.
+
+    **"path to zero uncertain" follow-up, Item 3 (ethics/civic/origin display gates) added two
+    NEW kinds** -- 45 origin-kind and 24 ethics_or_civic-kind instances, real, measured, not
+    estimated (see `pipeline.gate_patterns`' own registry comment for which leaf keys feed each).
+    technology-kind gate instances: 25 raw `has_technology`-in-`potential` occurrences (== the 25
+    potential-gate edges, one-to-one) plus 1 new `can_research_technology` occurrence (Item 3's
+    engine-builtin alias -- NOT part of P-14's `potential-gate` edge extraction, which only ever
+    looked for the literal `has_technology` key; extending edge extraction to cover
+    `can_research_technology` too is out of this item's scope and not done here), minus 4 excluded
+    by Item 5 (`giga_tech_amb_supertensiles_acot_alpha/sigma/phanon` and
+    `giga_tech_arkship_neutronium_harvester`, each redundantly encoding the same dependency as
+    BOTH a true `prerequisites` entry AND a `has_technology` check in `potential` -- CLAUDE.md's
+    documented "4 real pairs are both a formal prerequisite and a potential-gate"; displaying the
+    latter duplicated the former, already shown via the edge/popup) = 22 technology-kind gates.
+
+    45 + 45 + 24 + 22 = 136 total, over 109 technologies, 24 of which carry more than one gate
+    instance."""
     from collections import Counter
 
     doc, _node_bytes, _edge_bytes = base_dataset
     gated = [t for t in doc["technologies"] if t["gates"]]
     all_gates = [g for t in doc["technologies"] for g in t["gates"]]
-    assert len(all_gates) == 66
-    assert dict(Counter(g["kind"] for g in all_gates)) == {"ascension_perk": 45, "technology": 21}
-    assert len(gated) == 56
-    assert sum(1 for t in gated if len(t["gates"]) > 1) == 10
+    assert len(all_gates) == 136
+    assert dict(Counter(g["kind"] for g in all_gates)) == {
+        "ascension_perk": 45, "origin": 45, "ethics_or_civic": 24, "technology": 22,
+    }
+    assert len(gated) == 109
+    assert sum(1 for t in gated if len(t["gates"]) > 1) == 24
 
     for key in [
         "giga_tech_amb_supertensiles_acot_alpha", "giga_tech_amb_supertensiles_acot_sigma",
@@ -113,15 +118,19 @@ def test_base_dataset_gates_match_the_gate_classification_survey(base_dataset):
         tech = next(t for t in doc["technologies"] if t["id"] == key)
         assert tech["gates"] == []
 
-    # Every technology-kind gate instance is one of the 25 potential-gate edges (still 25 --
-    # Item 5 only filters the CARD-DISPLAY gate list, never the edge extraction itself), but no
-    # longer a 1:1 match: the 4 excluded gate instances are a strict subset of the edges.
+    # Every "has_technology"-sourced gate instance is one of the 25 potential-gate edges (still
+    # 25 -- Item 5 only filters the CARD-DISPLAY gate list, never the edge extraction itself),
+    # but no longer a 1:1 match: the 4 excluded gate instances are a strict subset of the edges,
+    # PLUS one extra pair from `can_research_technology` (a distinct engine trigger P-14's edge
+    # extraction was never scoped to cover), so the two sets are no longer strictly nested either
+    # direction -- asserted precisely below rather than as a subset relationship.
     potential_gate_pairs = {(e["from"], e["to"]) for e in doc["edges"] if e["kind"] == "potential-gate"}
     assert len(potential_gate_pairs) == 25
     gate_tech_pairs = {
         (g["refId"], t["id"]) for t in doc["technologies"] for g in t["gates"] if g["kind"] == "technology"
     }
-    assert gate_tech_pairs < potential_gate_pairs  # strict subset, not equal (Item 5)
+    assert len(gate_tech_pairs) == 22
+    assert gate_tech_pairs - potential_gate_pairs == {("tech_genome_mapping", "tech_alien_cloning")}
     # 4 real exclusions, not the 4 amb_supertensiles technologies as originally assumed --
     # `giga_tech_amb_supertensiles_acot_delta`'s own `potential` has no `has_technology` leaf at
     # all (only `has_acot`/`has_global_flag`), so it was never a potential-gate owner to begin
@@ -139,9 +148,42 @@ def test_base_dataset_gates_match_the_gate_classification_survey(base_dataset):
     vat = next(t for t in doc["technologies"] if t["id"] == "giga_tech_the_vat")
     assert [g["kind"] for g in vat["gates"]] == ["ascension_perk", "ascension_perk"]
     assert {g["refId"] for g in vat["gates"]} == {"ap_galactic_wonders", "ap_mechromancy"}
+    # Item 4 ("path to zero uncertain" follow-up): real corpus finding, not limited to
+    # technology-kind gates -- giga_tech_the_vat's own potential has has_galactic_wonders at the
+    # AND top level (unconditional) but ap_mechromancy inside a genuine OR alongside
+    # has_genetically_ascended/has_active_tradition ("robots go brrt" -- an alternative path, not
+    # a strict requirement). The fix generalises correctly across gate kinds.
     for g in vat["gates"]:
-        assert g["label"].startswith("Needs ")
+        if g["refId"] == "ap_galactic_wonders":
+            assert g["alternative"] is False
+            assert g["label"] == "Needs Galactic Wonders"
+        else:
+            assert g["refId"] == "ap_mechromancy"
+            assert g["alternative"] is True
+            assert g["label"] == "or: Mechromancy"
         assert g["icon"]["width"] > 1  # not the degenerate 1x1 placeholder
+
+
+def test_riddle_escort_gate_is_an_alternative_constrained_to_biological_shipset(base_dataset):
+    """Item 4 ("path to zero uncertain" follow-up): the exact real bug the user reported --
+    tech_torpedoes_1 displayed 'Needs Riddle Escort' (tech_cosmogenesis_escort) as an
+    unconditional requirement, when it's really one of FOUR independent OR branches in the real
+    potential block (country_uses_bio_ships=no OR has_tradition=tr_nanotech_4 OR
+    has_crisis_level=crisis_level_2 OR has_technology=tech_cosmogenesis_escort) -- non-bio-ship
+    empires (8/12 profiles) already qualify via the first branch alone, unrelated to this gate.
+    tech_missiles_1 shares the exact same shape. Both must render as an alternative, both must
+    carry the real per-axis constraint (pipeline.edge_constraints already computes
+    shipset=[biological] for this exact edge -- reused here, not recomputed)."""
+    doc, _node_bytes, _edge_bytes = base_dataset
+    for key in ("tech_torpedoes_1", "tech_missiles_1"):
+        tech = next(t for t in doc["technologies"] if t["id"] == key)
+        assert len(tech["gates"]) == 1
+        gate = tech["gates"][0]
+        assert gate["refId"] == "tech_cosmogenesis_escort"
+        assert gate["kind"] == "technology"
+        assert gate["alternative"] is True
+        assert gate["label"] == "or: Riddle Escort"  # never "Needs Riddle Escort" -- not unconditional
+        assert gate["appliesToEmpireTypes"] == {"shipset": ["biological"]}
 
 
 def test_gate_ordering_puts_ascension_perk_gates_first(base_dataset):
@@ -168,9 +210,33 @@ def test_gate_classification_leaves_d10_uncertainty_unchanged(ctx, base_dataset)
     that baseline in the single worst profile) -- the latter is what the 3%/10% thresholds
     govern, per CLAUDE.md's "Trigger evaluation" section. Was 33/977 (3.37%); Item 2's four
     resolution rules (later session -- DLC-check/progression-flag/mod-requirement resolution plus
-    the always-no exclusion shrinking the denominator) moved this to 28/973 (2.88%), a real
-    IMPROVEMENT (lower rate against a smaller corpus) -- the ratchet only fails on an increase, so
-    this is not a regression to explain away."""
+    the always-no exclusion shrinking the denominator) moved this to 28/973 (2.88%). A later
+    session's has_ancrel fix (the "path to zero uncertain" follow-up's Item 1 -- has_ancrel is a
+    DLC-ownership check, not a story-progression flag, see CLAUDE.md's "Availability evaluator"
+    defect-class writeup) moved this again to 27/973 (2.77%).
+
+    **27 -> 34, the SAME session's Item 2 (`pipeline.scripted_triggers`' general expansion) -- a
+    real, measured, and NOT a straightforward improvement.** Recursively expanding a technology's
+    `potential` block against real scripted-trigger bodies (`giga_can_use_habitables`,
+    `is_wilderness_empire`, ...) lets Kleene short-circuiting resolve some profiles where it
+    couldn't before -- but the profiles it resolves are typically the ones an axis fact ALREADY
+    ruled out (e.g. `is_wilderness_empire` requires hive authority, so 8/12 non-hive profiles now
+    resolve LOCKED where they used to be UNCERTAIN), while the REMAINING axis-consistent profiles
+    (hive-mind ones, for that example) stay genuinely UNCERTAIN on the real, still-unresolvable
+    origin question. The net effect: `unconditionalUncertainty` genuinely improves (183 -> 176,
+    7 technologies moved from "uncertain for everyone" to "uncertain only for the profiles that
+    actually could have it"), but those SAME 7 (plus others) move INTO the profile-dependent
+    bucket instead of staying unconditional, so the worst profile-dependent rate rises even though
+    total uncertainty and information quality both improved. This is a considered, reported
+    tradeoff, not a regression to hide -- see CLAUDE.md's "Availability evaluator" section for the
+    full writeup and the specific 3%-warn-threshold consequence.
+
+    **34 -> 15, the SAME session's Item 3 (ethics/civic/origin as display gates).** Once
+    `is_wilderness_empire`'s own inner `has_origin` leaf (and 18 more ethics/civic/origin leaves)
+    are ALSO excluded from availability the same way ascension perks already are, the hive-mind
+    profiles that Item 2 alone left genuinely uncertain resolve too -- there's no real origin
+    question left for availability to answer once origin itself is a display gate, not a profile
+    fact. Real, dramatic drop: 34 -> 15, comfortably back under the 3% warn threshold (~1.54%)."""
     doc, _node_bytes, _edge_bytes = base_dataset
     per_profile_uncertain_counts = [
         sum(1 for t in doc["technologies"] if t["availabilityMatrix"][index] == "uncertain")
@@ -180,8 +246,8 @@ def test_gate_classification_leaves_d10_uncertainty_unchanged(ctx, base_dataset)
         1 for t in doc["technologies"] if all(state == "uncertain" for state in t["availabilityMatrix"])
     )
     worst_profile_dependent = max(per_profile_uncertain_counts) - unconditional
-    assert worst_profile_dependent == 28
-    assert round(worst_profile_dependent / len(doc["technologies"]), 4) == 0.0288  # 28/973
+    assert worst_profile_dependent == 15
+    assert round(worst_profile_dependent / len(doc["technologies"]), 4) == 0.0154  # 15/973
 
 
 def test_edge_constraints_leave_d10_uncertainty_unchanged(ctx, base_dataset):
@@ -198,7 +264,7 @@ def test_edge_constraints_leave_d10_uncertainty_unchanged(ctx, base_dataset):
         1 for t in doc["technologies"] if all(state == "uncertain" for state in t["availabilityMatrix"])
     )
     worst_profile_dependent = max(per_profile_uncertain_counts) - unconditional
-    assert worst_profile_dependent == 28
+    assert worst_profile_dependent == 15
 
 
 def test_active_edge_ids_are_not_identical_across_all_twelve_profiles(ctx):
@@ -568,10 +634,21 @@ def test_diagnostics_validates_and_reports_the_unconditional_uncertain_finding(c
     # shrinking the denominator 977 -> 973) moved unconditionalUncertainty 209 -> 205 and the
     # worst profile-dependent rate 0.033777 (33/977) -> 0.028777 (28/973) -- both real
     # IMPROVEMENTS (lower counts against a smaller corpus), not something the ratchet flags.
-    assert diagnostics["unconditionalUncertainty"]["count"] == 205
+    # A later session's has_ancrel fix (see tests/test_availability_corpus.py's own writeup) moved
+    # unconditionalUncertainty 205 -> 183 and the worst profile-dependent rate 0.028777 -> 0.027749.
+    # A later session's Item 2 (`pipeline.scripted_triggers` general expansion) moved
+    # unconditionalUncertainty 183 -> 176 (a real improvement) but the worst profile-dependent
+    # rate 0.027749 -> 0.034944 (a real, reported tradeoff -- see
+    # test_gate_classification_leaves_d10_uncertainty_unchanged's own writeup for why: previously
+    # unconditional technologies became genuinely profile-dependent instead, which is more
+    # informative but counts against this specific metric). The SAME session's Item 3 (ethics/
+    # civic/origin as display gates) then moved unconditionalUncertainty 176 -> 107 and the worst
+    # profile-dependent rate 0.034944 -> 0.015416 -- both real improvements, in the SAME direction
+    # this time (see test_gate_classification_leaves_d10_uncertainty_unchanged's own writeup).
+    assert diagnostics["unconditionalUncertainty"]["count"] == 107
     assert len(diagnostics["profileDependentUncertainty"]) == 12
     worst = max(d["rate"] for d in diagnostics["profileDependentUncertainty"])
-    assert worst == pytest.approx(0.028777, abs=1e-5)
+    assert worst == pytest.approx(0.015416, abs=1e-5)
 
     cap_keys = {k for k in ctx.rendered_keys if k.startswith("giga_tech_repeatable_") and k.endswith("_cap")}
     assert len(cap_keys) == 50

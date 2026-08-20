@@ -69,8 +69,12 @@ def test_sensitivity_would_have_wrongly_reported_this_case_as_never_active():
     unresolvable leaf with an OR containing the has_technology leaf."""
     from pipeline.availability import evaluate_trigger_block, _State
 
+    # has_country_flag (unlike has_valid_civic, a later session's Item 3 addition to
+    # EXCLUDED_KEYS -- see pipeline.availability's own comment) stays genuinely unresolvable,
+    # which is exactly the shape this test needs: an UNMODELLED sibling leaf, not an excluded
+    # (gate) one.
     pot = _potential_block(
-        "{ some_unmodeled_civic_check = yes OR = { has_technology = tech_a has_valid_civic = whatever } }"
+        "{ some_unmodeled_civic_check = yes OR = { has_technology = tech_a has_country_flag = some_unconfirmed_flag } }"
     )
 
     def naive_sensitivity(target, profiles):

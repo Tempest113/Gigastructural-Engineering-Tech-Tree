@@ -6,8 +6,13 @@ from pipeline.availability import EXCLUDED_KEYS
 from pipeline.clausewitz import parse_text
 from pipeline.gate_patterns import (
     GATE_KIND_ASCENSION_PERK,
+    GATE_KIND_ETHICS_OR_CIVIC,
+    GATE_KIND_ORIGIN,
     GATE_KIND_TECHNOLOGY,
     GATE_LEAF_KEYS,
+    NOT_GATE_CLASSIFIED_EXCLUDED_KEYS,
+    WRAPPER_TO_ETHIC,
+    WRAPPER_TO_ORIGIN,
     WRAPPER_TO_PERK,
     classify_gates,
     order_gates,
@@ -39,6 +44,99 @@ def test_has_technology_produces_a_technology_gate():
     assert len(matches) == 1
     assert matches[0].kind == GATE_KIND_TECHNOLOGY
     assert matches[0].ref_id == "tech_dark_matter_power_core_ae"
+    assert matches[0].alternative is False  # AND-context (the only condition) -- unconditional
+
+
+# ---------------------------------------------------------------------------
+# Item 4 ("path to zero uncertain" follow-up): OR-context vs. AND-context gates
+# ---------------------------------------------------------------------------
+
+
+def test_has_technology_inside_an_or_is_marked_alternative():
+    # Real shape: tech_torpedoes_1's potential -- country_uses_bio_ships=no OR has_tradition=...
+    # OR has_crisis_level=... OR has_technology=tech_cosmogenesis_escort ("Riddle Escort").
+    block = _block(
+        "{ potential = { OR = { country_uses_bio_ships = no has_technology = tech_cosmogenesis_escort } } }"
+    )
+    matches = classify_gates(block)
+    assert len(matches) == 1
+    assert matches[0].ref_id == "tech_cosmogenesis_escort"
+    assert matches[0].alternative is True
+
+
+def test_has_technology_at_the_and_top_level_is_not_alternative():
+    block = _block("{ potential = { AND = { has_technology = tech_a is_nomadic = yes } } }")
+    matches = classify_gates(block)
+    assert len(matches) == 1
+    assert matches[0].alternative is False
+
+
+def test_has_technology_inside_and_nested_in_or_is_still_alternative():
+    # An OR ancestor anywhere in the chain marks the leaf alternative, even if a nearer AND
+    # ancestor exists between it and the leaf.
+    block = _block(
+        "{ potential = { OR = { AND = { has_technology = tech_a is_nomadic = yes } has_technology = tech_b } } }"
+    )
+    matches = classify_gates(block)
+    assert len(matches) == 2
+    assert all(m.alternative for m in matches)
+
+
+def test_has_technology_inside_nor_is_still_alternative():
+    block = _block("{ potential = { NOR = { has_technology = tech_a is_nomadic = yes } } }")
+    matches = classify_gates(block)
+    # NOR negates -- has_technology becomes a negated match, excluded entirely (module docstring),
+    # so this asserts zero matches rather than an alternative one.
+    assert matches == []
+
+
+def test_has_origin_produces_an_origin_gate():
+    block = _block("{ potential = { has_origin = origin_mindwardens } }")
+    matches = classify_gates(block)
+    assert len(matches) == 1
+    assert matches[0].kind == GATE_KIND_ORIGIN
+    assert matches[0].ref_id == "origin_mindwardens"
+    assert matches[0].source_leaf == "has_origin"
+
+
+def test_is_wilderness_empire_maps_to_its_wrapped_origin():
+    block = _block("{ potential = { is_wilderness_empire = yes } }")
+    matches = classify_gates(block)
+    assert len(matches) == 1
+    assert matches[0].kind == GATE_KIND_ORIGIN
+    assert matches[0].ref_id == "origin_wilderness"
+    assert matches[0].source_leaf == "is_wilderness_empire"
+
+
+def test_has_valid_civic_and_has_civic_both_produce_ethics_or_civic_gates():
+    block = _block("{ potential = { has_valid_civic = civic_machine_assimilator has_civic = civic_dystopian_society } }")
+    matches = classify_gates(block)
+    assert len(matches) == 2
+    assert {m.ref_id for m in matches} == {"civic_machine_assimilator", "civic_dystopian_society"}
+    assert all(m.kind == GATE_KIND_ETHICS_OR_CIVIC for m in matches)
+
+
+def test_is_fanatic_spiritualist_maps_to_its_wrapped_ethic():
+    block = _block("{ potential = { is_fanatic_spiritualist = yes } }")
+    matches = classify_gates(block)
+    assert len(matches) == 1
+    assert matches[0].kind == GATE_KIND_ETHICS_OR_CIVIC
+    assert matches[0].ref_id == "ethic_fanatic_spiritualist"
+
+
+def test_can_research_technology_produces_a_technology_gate():
+    block = _block("{ potential = { can_research_technology = tech_genome_mapping } }")
+    matches = classify_gates(block)
+    assert len(matches) == 1
+    assert matches[0].kind == GATE_KIND_TECHNOLOGY
+    assert matches[0].ref_id == "tech_genome_mapping"
+
+
+def test_compound_excluded_key_produces_no_gate_match():
+    # is_megacorp is availability-excluded but deliberately NOT gate-classified (compound/
+    # non-origin-civic-ethic shaped) -- see NOT_GATE_CLASSIFIED_EXCLUDED_KEYS's own comment.
+    block = _block("{ potential = { is_megacorp = yes } }")
+    assert classify_gates(block) == []
 
 
 def test_has_gigastructural_constructs_maps_to_its_wrapped_perk():
@@ -138,15 +236,19 @@ def test_order_gates_is_stable_within_a_kind():
 
 
 # ---------------------------------------------------------------------------
-# Cross-module consistency: the four registered gate keys must be exactly the four keys
-# pipeline.availability already excludes from boolean combination (an identity-element state
-# predating this module) -- if either list changes without the other, gate classification and
-# availability evaluation silently diverge on what counts as a gate vs. a real uncertain leaf.
+# Cross-module consistency: every key pipeline.availability excludes from boolean combination (an
+# identity-element state) must be accounted for HERE too -- either as a real, badge-classified
+# gate (GATE_LEAF_KEYS) or as a deliberately-excluded-but-not-badged compound trigger
+# (NOT_GATE_CLASSIFIED_EXCLUDED_KEYS, "path to zero uncertain" follow-up, Item 3 -- see that
+# constant's own comment for why each one there has no single clean gate target). If either list
+# changes without a matching change here, gate classification and availability evaluation silently
+# diverge on what counts as a gate vs. a real uncertain leaf vs. an availability-only exclusion.
 # ---------------------------------------------------------------------------
 
 
-def test_gate_leaf_keys_matches_availabilitys_excluded_keys_exactly():
-    assert GATE_LEAF_KEYS == EXCLUDED_KEYS
+def test_gate_leaf_keys_plus_not_classified_matches_availabilitys_excluded_keys_exactly():
+    assert GATE_LEAF_KEYS | NOT_GATE_CLASSIFIED_EXCLUDED_KEYS == EXCLUDED_KEYS
+    assert GATE_LEAF_KEYS.isdisjoint(NOT_GATE_CLASSIFIED_EXCLUDED_KEYS)
 
 
 def test_detector_catches_a_deliberately_diverged_key_set():
@@ -154,7 +256,7 @@ def test_detector_catches_a_deliberately_diverged_key_set():
     this project's own standing rule ('a clean run proves nothing until the detector is shown
     capable of a dirty one')."""
     diverged = GATE_LEAF_KEYS - {"has_technology"}
-    assert diverged != EXCLUDED_KEYS
+    assert diverged | NOT_GATE_CLASSIFIED_EXCLUDED_KEYS != EXCLUDED_KEYS
 
 
 def test_wrapper_to_perk_has_exactly_the_two_confirmed_wrappers():

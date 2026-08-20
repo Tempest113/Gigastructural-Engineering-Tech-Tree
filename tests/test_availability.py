@@ -142,6 +142,17 @@ def test_dlc_assumed_owned():
     assert evaluate_trigger_block(block, REGULAR_MECH_SEDENTARY).state == AVAILABLE
 
 
+def test_has_ancrel_resolves_true_as_a_dlc_ground_fact():
+    # has_ancrel is `host_has_dlc = "Ancient Relics Story Pack"` (vendor/stellaris/common/
+    # scripted_triggers/00_scripted_triggers.txt:2678) -- a DLC-ownership check, not a
+    # Gigastructures relic-questline flag as a previous, never-verified comment claimed. See
+    # CLAUDE.md's "Availability evaluator" defect-class writeup.
+    block = _block("{ has_ancrel = yes }")
+    assert evaluate_trigger_block(block, REGULAR_MECH_SEDENTARY).state == AVAILABLE
+    block2 = _block("{ has_ancrel = no }")
+    assert evaluate_trigger_block(block2, REGULAR_MECH_SEDENTARY).state == LOCKED
+
+
 def test_not_fallen_empire_ground_fact():
     block = _block("{ is_fallen_empire = yes }")
     result = evaluate_trigger_block(block, REGULAR_MECH_SEDENTARY)
@@ -164,6 +175,32 @@ def test_has_technology_alone_does_not_make_potential_uncertain():
 
 def test_has_technology_does_not_suppress_a_real_sibling_condition():
     block = _block("{ has_technology = tech_lasers is_nomadic = yes }")
+    result = evaluate_trigger_block(block, REGULAR_MECH_SEDENTARY)
+    assert result.state == LOCKED
+    assert result.reason == "is_nomadic = yes"
+
+
+# ---------------------------------------------------------------------------
+# Item 3, "path to zero uncertain" follow-up: ethics/civic/origin display gates
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("leaf_key", [
+    "has_origin", "giga_has_frameworld_origin", "is_wilderness_empire", "is_void_dweller_empire",
+    "has_void_dweller_origin", "is_giga_one_planet_origin", "has_ethic", "has_valid_civic",
+    "has_civic", "is_fanatic_spiritualist", "is_fanatic_pacifist", "is_spiritualist",
+    "is_natural_design_empire", "is_beastmasters_empire", "is_world_forger_empire", "is_megacorp",
+    "is_individual_machine", "has_genetically_ascended", "is_infernal_empire",
+    "can_research_technology",
+])
+def test_ethics_civic_origin_leaf_alone_does_not_make_potential_uncertain(leaf_key):
+    block = _block(f"{{ {leaf_key} = some_value }}")
+    result = evaluate_trigger_block(block, REGULAR_MECH_SEDENTARY)
+    assert result.state == AVAILABLE  # excluded leaf (display gate) -> no trigger-level constraint
+
+
+def test_ethics_civic_origin_leaf_does_not_suppress_a_real_sibling_condition():
+    block = _block("{ has_origin = origin_wilderness is_nomadic = yes }")
     result = evaluate_trigger_block(block, REGULAR_MECH_SEDENTARY)
     assert result.state == LOCKED
     assert result.reason == "is_nomadic = yes"

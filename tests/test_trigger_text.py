@@ -134,11 +134,16 @@ def test_completely_unseen_leaf_is_unclassified():
     assert categorize_leaf(_leaf("brand_new_trigger_nobody_has_seen = yes")) == ReasonCategory.UNCLASSIFIED
 
 
-def test_has_ancrel_is_crisis_or_story_progress():
-    # Confirmed via giga_relics.txt's ancrel.NNNN event-id namespace -- a relic/precursor
-    # questline, not a guess by name pattern alone (see the residue audit in CLAUDE.md).
-    assert categorize_leaf(_leaf("has_ancrel = yes")) == ReasonCategory.CRISIS_OR_STORY_PROGRESS
-    assert categorize_leaf(_leaf("has_ancrel = no")) == ReasonCategory.CRISIS_OR_STORY_PROGRESS
+def test_has_ancrel_is_no_longer_classified_as_crisis_or_story_progress():
+    # Corrected (later session): has_ancrel is `host_has_dlc = "Ancient Relics Story Pack"`
+    # (vendor/stellaris/common/scripted_triggers/00_scripted_triggers.txt:2678), a DLC-ownership
+    # check -- not a relic/precursor questline flag as an earlier, never-verified comment here
+    # claimed. It's now resolved directly by pipeline.availability.GROUND_FACT_BOOL and never
+    # reaches this categoriser as UNCERTAIN in the real pipeline (see
+    # tests/test_availability.py's has_ancrel coverage), so it has no dedicated entry here any
+    # more -- categorize_leaf's honest fallback for an unrecognised key is UNCLASSIFIED.
+    assert categorize_leaf(_leaf("has_ancrel = yes")) == ReasonCategory.UNCLASSIFIED
+    assert categorize_leaf(_leaf("has_ancrel = no")) == ReasonCategory.UNCLASSIFIED
 
 
 def test_world_forger_and_genetically_ascended_are_ethics_or_civic():

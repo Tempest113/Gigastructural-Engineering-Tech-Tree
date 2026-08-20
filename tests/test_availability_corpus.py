@@ -58,6 +58,7 @@ from pipeline.lock_reason_overrides import load_overrides as load_lock_reason_ov
 from pipeline.overwrite_overrides import load_overrides
 from pipeline.overwrites import collect_technology_definitions, resolve_technology_overwrites
 from pipeline.rendering_scope import rendered_technology_keys
+from pipeline.scripted_triggers import expand_scripted_triggers, load_scripted_trigger_catalog
 from pipeline.trigger_text import ReasonCategory
 from pipeline.variables import build_variable_table
 
@@ -137,6 +138,19 @@ def rendered_potentials():
     return result
 
 
+@pytest.fixture(scope="module")
+def expanded_rendered_potentials(rendered_potentials):
+    """`rendered_potentials`, `pipeline.scripted_triggers`-expanded -- the same transform
+    `pipeline.dataset_emit.build_context` applies via `ctx.expanded_potentials` (Item 2, "path to
+    zero uncertain" follow-up session). Kept as a SEPARATE fixture from `rendered_potentials`
+    itself (rather than expanding in place) so tests that specifically want the raw, unexpanded
+    baseline (e.g. `test_repeatable_cap_group_evaluated_with_expanded_gating_conditions_present`,
+    about `inline_script` expansion, an unrelated mechanism) are unaffected."""
+    scripts = collect_scripts(_script_entries())
+    catalog = load_scripted_trigger_catalog(VENDOR_ROOT, scripts, _SOURCES_IN_LOAD_ORDER)
+    return {key: expand_scripted_triggers(block, catalog) for key, block in rendered_potentials.items()}
+
+
 def test_rendered_scope_is_exactly_973(rendered_potentials):
     # D-18 (spec/decisions.md): 980 -> 977, the depth-1 ACOT/AoT closure.
     # Item 2c (user domain call, later session): 977 -> 973, 4 permanently-disabled technologies
@@ -144,9 +158,9 @@ def test_rendered_scope_is_exactly_973(rendered_potentials):
     assert len(rendered_potentials) == 973
 
 
-def test_real_rates_against_projections(rendered_potentials):
+def test_real_rates_against_projections(expanded_rendered_potentials):
     profiles = all_profiles_in_canonical_order()
-    survey = survey_uncertainty(rendered_potentials, profiles)
+    survey = survey_uncertainty(expanded_rendered_potentials, profiles)
 
     total = survey.total_technologies
     assert total == 973  # this IS the rendered denominator the spec now requires (Task 1's D-10 split); D-18: 980 -> 977; Item 2c: 977 -> 973
@@ -173,57 +187,89 @@ def test_real_rates_against_projections(rendered_potentials):
     # logic is expected to land at or below the profile-dependent upper bound (it counted "could
     # vary by profile"), and in the same order of magnitude for the unconditional figure.
     assert worst_dependent_rate <= 0.10  # D-10 hard ceiling, worst profile
-    assert worst_dependent_rate < 0.053  # real evaluator should land below the projected upper bound
+    assert worst_dependent_rate < 0.03  # comfortably back under the 3% warn threshold, see below
 
-    # Corrected twice, see this module's docstring: 209 -> 259 (raw vs. expanded blocks) -> 209
-    # again (the 50 giga_tech_repeatable_*_cap nodes are CONFIG_GATED, not UNCERTAIN -- they
+    # Corrected three times, see this module's docstring: 209 -> 259 (raw vs. expanded blocks) ->
+    # 209 again (the 50 giga_tech_repeatable_*_cap nodes are CONFIG_GATED, not UNCERTAIN -- they
     # resolve definitively, they just aren't empire-state LOCKED either). Item 2's four resolution
     # rules (later session) then moved 209 -> 205: 4 fewer purely from Item 2c's denominator
     # shrink (the 4 excluded always-no technologies were themselves unconditionally uncertain, so
-    # removing them removes them from this count 1:1) -- confirmed exactly, not assumed. Exact
-    # equality here, not a bound: this specific figure is what the regression test below exists to
-    # pin down, and the category distribution below is the corroborating check.
-    assert len(survey.unconditional_uncertain) == 205
-    assert unconditional_rate == pytest.approx(205 / 973)  # D-18: 980 -> 977; Item 2c: 977 -> 973
+    # removing them removes them from this count 1:1) -- confirmed exactly, not assumed.
+    # **205 -> 183, a later session (Item 1 of the "path to zero uncertain" follow-up): the
+    # has_ancrel fix.** has_ancrel is `host_has_dlc = "Ancient Relics Story Pack"` (vendor/
+    # stellaris/common/scripted_triggers/00_scripted_triggers.txt:2678), not a Gigastructures
+    # relic-questline flag as a previous, never-verified pipeline.trigger_text comment claimed --
+    # see CLAUDE.md's "Availability evaluator" defect-class writeup. Resolving it via
+    # pipeline.availability.GROUND_FACT_BOOL (the same DLC-ownership rule as every other named
+    # wrapper) moves 22 technologies (the tech_archeo_* family) from UNCERTAIN to AVAILABLE and 1
+    # (tech_archeology_lab, `has_ancrel = no`) to LOCKED -- 23 technologies affected, 205 - 23 =
+    # 182, but the real figure is 183: one further technology's MODE category (not its
+    # uncertain/not-uncertain status) shifted from crisis_or_story_progress to origin_requirement
+    # once has_ancrel's own contributed UNKNOWN stopped competing for "first responsible leaf" in
+    # that technology's OR/AND combination -- a real, correct side effect of removing one UNKNOWN
+    # branch, not a second bug.
+    # **183 -> 176, the SAME session's Item 2 (`pipeline.scripted_triggers` general expansion).**
+    # This fixture now runs `expand_scripted_triggers` first (matching
+    # `pipeline.dataset_emit.build_context`'s real `ctx.expanded_potentials`, not the raw,
+    # unexpanded `rendered_potentials` this test used before). 7 technologies' unconditional
+    # uncertainty resolves once real scripted-trigger bodies (`is_wilderness_empire`,
+    # `giga_can_use_habitables`, ...) let Kleene short-circuiting rule out axis-inconsistent
+    # profiles, at the cost of a temporarily-higher worst PROFILE-DEPENDENT rate (the same 7, and
+    # others, become genuinely profile-dependent instead of staying unconditionally stuck).
+    # **176 -> 107, the SAME session's Item 3 (ethics/civic/origin as display gates).** 19 leaf
+    # keys added to `pipeline.availability.EXCLUDED_KEYS` (`has_origin`, `has_ethic`,
+    # `has_valid_civic`, `has_civic`, `is_wilderness_empire`, `is_megacorp`, ... -- see that
+    # constant's own comment for the full list and the corpus evidence behind each). Real, dramatic
+    # effect: `ORIGIN_REQUIREMENT` and `ETHICS_OR_CIVIC_REQUIREMENT` both drop to ZERO in the
+    # unconditional distribution (their entire prior population was exactly what this item
+    # excludes), and the worst profile-dependent rate falls all the way to 1.54% -- FAR under the
+    # 3% warn threshold, the opposite direction from Item 2's own tradeoff. Exact equality here,
+    # not a bound: this specific figure is what the regression test below exists to pin down, and
+    # the category distribution below is the corroborating check.
+    assert len(survey.unconditional_uncertain) == 107
+    assert unconditional_rate == pytest.approx(107 / 973)  # D-18: 980 -> 977; Item 2c: 977 -> 973
     assert dict(distribution) == {
-        ReasonCategory.CRISIS_OR_STORY_PROGRESS: 89,
-        ReasonCategory.ORIGIN_REQUIREMENT: 41,
-        ReasonCategory.ETHICS_OR_CIVIC_REQUIREMENT: 37,
-        ReasonCategory.OPAQUE_COUNTRY_STATE: 25,
-        ReasonCategory.UNCLASSIFIED: 13,
-    }  # MOD_CONTENT_REQUIREMENT is now empty (0) -- Item 2d resolved has_acot/has_aot_mod, so the
+        ReasonCategory.CRISIS_OR_STORY_PROGRESS: 72,
+        ReasonCategory.UNCLASSIFIED: 20,
+        ReasonCategory.OPAQUE_COUNTRY_STATE: 15,
+    }  # ORIGIN_REQUIREMENT and ETHICS_OR_CIVIC_REQUIREMENT are now empty (0) -- Item 3's whole
+    # point. MOD_CONTENT_REQUIREMENT is still empty (0) -- Item 2d resolved has_acot/has_aot_mod, so the
     # 4 ACOT/AoT tensile technologies' blocking reason moved elsewhere (still uncertain via an
     # unrelated leaf, @giga_amb_flag, itself UNCLASSIFIED) rather than being MOD_CONTENT_REQUIREMENT.
 
 
-def test_warn_threshold_actually_fires_on_a_synthetic_worst_profile(rendered_potentials):
+def test_warn_threshold_actually_fires_on_a_synthetic_worst_profile(expanded_rendered_potentials):
     # Task 3's consistency check: a threshold that stays silent on a real breach is worse than
-    # none. The real worst-case profile-dependent rate dropped BELOW 3% (2.88%, Item 2's four
-    # resolution rules, later session) -- a real improvement, but it means the real corpus can no
-    # longer prove classify_d10_status can return "warn" at all. Proven synthetically instead
-    # (this project's own "prove a negative before believing it" standing rule, applied here to
-    # "prove a positive can still fire"), then the REAL rate is asserted against its own real,
-    # current classification -- "ok" today, not "warn" -- so a future regression that pushes it
-    # back over 3% is still caught.
+    # none. The real worst-case profile-dependent rate took a real round trip within this single
+    # session: 2.88% -> 2.77% (Item 2's four resolution rules then the has_ancrel fix, both real
+    # improvements) -> 3.49% (Item 2's own `pipeline.scripted_triggers` expansion, a considered
+    # tradeoff, see `tests/test_dataset_emit.py::
+    # test_gate_classification_leaves_d10_uncertainty_unchanged`) -> 1.54% (Item 3's ethics/civic/
+    # origin gate exclusions -- ORIGIN_REQUIREMENT and ETHICS_OR_CIVIC_REQUIREMENT were the bulk of
+    # what was pushing individual profiles over 3%). The real corpus can no longer prove
+    # classify_d10_status can return "warn" at all, so that's proven synthetically instead (this
+    # project's own "prove a negative before believing it" standing rule), then the REAL rate is
+    # asserted against its own real, current classification.
     assert classify_d10_status(0.035) == "warn"
     assert classify_d10_status(0.11) == "fail"
     assert classify_d10_status(0.01) == "ok"
 
     profiles = all_profiles_in_canonical_order()
-    survey = survey_uncertainty(rendered_potentials, profiles)
+    survey = survey_uncertainty(expanded_rendered_potentials, profiles)
     worst_rate = survey.worst_profile_dependent_rate()
-    assert worst_rate == pytest.approx(0.028777, abs=1e-5)
+    assert worst_rate == pytest.approx(0.015416, abs=1e-5)  # was 0.034944 before this session's Item 3
     assert classify_d10_status(worst_rate) == "ok"
 
     diagnostics = build_d10_diagnostics_section(survey, profiles)
     statuses = {d["status"] for d in diagnostics["profileDependentUncertainty"]}
-    assert statuses == {"ok"}  # every profile now under the 3% warn threshold (Item 2, later session)
+    assert statuses == {"ok"}  # every profile comfortably under the 3% warn threshold again
+    assert "fail" not in statuses  # ceiling not breached
     assert "fail" not in statuses  # ceiling not breached
 
 
-def test_d10_diagnostics_section_is_schema_valid(rendered_potentials):
+def test_d10_diagnostics_section_is_schema_valid(expanded_rendered_potentials):
     profiles = all_profiles_in_canonical_order()
-    survey = survey_uncertainty(rendered_potentials, profiles)
+    survey = survey_uncertainty(expanded_rendered_potentials, profiles)
     section = build_d10_diagnostics_section(survey, profiles)
 
     document = {
