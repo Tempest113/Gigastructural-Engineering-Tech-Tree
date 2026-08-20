@@ -17,6 +17,21 @@ export const AREA_COLORS: Record<string, number> = {
   engineering: 0xc97a2b,
 };
 
+// Badges slice (reconciliation session): rare/dangerous outline + badge colours. S-1 pins
+// "dangerous red" by name only, and says nothing at all about a rare colour beyond "badge, not a
+// warning treatment" -- both values below are this session's own first concrete pick, same
+// unresolved-spec-colour status as AREA_COLORS above, not yet checked against the ΔE2000/WCAG
+// acceptance criteria. DANGEROUS_COLOR is a clear warning red, distinct from EDGE_COLOR/
+// HOVER_COLOR and every AREA_COLORS/CRISIS_FACTION_COLORS value. RARE_COLOR is a gold/amber,
+// chosen for the conventional "rare = valuable" association and checked by eye against every
+// other token here for basic distinguishability -- not yet run through the mechanical ΔE2000
+// check S-1 requires.
+export const DANGEROUS_COLOR = 0xd7373f;
+export const RARE_COLOR = 0xd4af37;
+// Mod-requirement badge (ACOT/AoT chip) -- a neutral, non-classification colour, since the
+// requirement itself is informational (P-16), not a rarity/danger signal.
+export const MOD_REQUIREMENT_BADGE_COLOR = 0x4a5568;
+
 // CLAUDE.md's "Colour and pattern" section, signed-off palette -- these are the faction's own
 // identity colours, used for a faction row's header chip (D-16: the row, not the card, carries
 // faction colour now -- see below for the card-neutral change).
@@ -194,6 +209,43 @@ export const EDGE_STROKE_WIDTH = 1.4; // thinner, cleaner trace stroke -- was 2
 // exactly a hover/selection-shaped use, not a default-state one. Do not wire this into the
 // default edge draw call -- see the EDGE_COLOR comment above for why.
 export const HOVER_COLOR = 0x5cc9e6;
+
+// Hover/selection slice (reconciliation session 3): HOVER_COLOR above is now actually consumed
+// (a hovered card's outline and its directly-incident edges). Selection needs two FURTHER
+// colours, distinct from HOVER_COLOR and from each other, so a selected node's ANCESTRY
+// (technologies required to reach it) reads as visually different from its DEPENDENTS
+// (technologies that require it) -- "distinguishably from each other" per this session's own
+// instruction. Both are first concrete picks (same unresolved-spec-colour status as every other
+// token in this file), chosen to sit clearly apart from HOVER_COLOR/RARE_COLOR/DANGEROUS_COLOR/
+// every AREA_COLORS value by eye: ANCESTRY_COLOR a cool violet (things BEHIND/BELOW the
+// selection, prerequisite direction), DEPENDENT_COLOR a warm amber-orange (things AHEAD/beyond
+// the selection, dependent direction) -- an intentional warm/cool split so the two directions
+// read apart even for a colour-blind user relying on hue temperature rather than exact hue.
+export const ANCESTRY_COLOR = 0x8a6fd6;
+export const DEPENDENT_COLOR = 0xe0932e;
+export const SELECTED_COLOR = 0xf2f2f2; // the selected node's OWN outline -- neutral bright white, distinct from both directions
+
+// Empire-profile switching slice (reconciliation session 4): per-profile availability treatment.
+// CLAUDE.md: availability is three-state (available/locked/uncertain) NEVER boolean, plus D-10's
+// CONFIG_GATED fourth state. "Do not use colour alone if that would collide with the row/faction
+// colour system" -- the dim overlay below is a NEUTRAL DARKENING (alpha over the card's own
+// fill/outline), not a new hue, so it never competes with the row-axis colour channel; the actual
+// state identity is carried by a distinct glyph badge (a non-colour channel), matching this
+// project's own established "colour is never the sole carrier" discipline (S-1) applied to a
+// fourth classification the original S-1 write-up never anticipated. `available` gets NEITHER
+// treatment -- the common case stays exactly as today's neutral render.
+export const AVAILABILITY_DIM_COLOR = 0x000000; // pure darken, no hue
+export const LOCKED_DIM_ALPHA = 0.55;
+export const UNCERTAIN_DIM_ALPHA = 0.3;
+export const CONFIG_GATED_DIM_ALPHA = 0.45;
+export const LOCKED_BADGE_COLOR = 0xb0433d; // muted red -- "cannot reach this"
+export const UNCERTAIN_BADGE_COLOR = 0x9a8b5a; // muted amber -- "might reach this"
+export const CONFIG_GATED_BADGE_COLOR = 0x4a7a9e; // muted blue -- "a game OPTION, not your empire, is the obstacle"
+
+// Search slice (reconciliation session 4): matches highlight IN PLACE on the canvas -- never a
+// filter, per this session's own instruction ("hiding nodes breaks the reading of prerequisite
+// chains"). A colour distinct from every other outline/highlight colour in this file.
+export const SEARCH_MATCH_COLOR = 0x4ade80;
 
 // DEFECT 3 (this session): P-08's "rounded corners" acceptance criterion was skipped as a scoped
 // simplification in the original edge slice (sharp H-V-H joins) -- closed now. Corner radius is

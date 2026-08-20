@@ -1,43 +1,66 @@
 // Level-of-detail tiers, driven by zoom percentage. spec/S-03-tier-differentiation.md's
 // "Level-of-detail shedding table" is the single, shared definition of what sheds at what zoom
-// threshold. This slice's card carries icon, name, cost and a tier badge (rare/dangerous/gate/
-// repeatable/mod-requirement badges are still the NEXT slice's work, per this slice's own scope
-// note) -- folded into this one shared ladder rather than a parallel one:
-//   - Name text AND cost text shed together at S-03's "Tertiary badges" boundary (< 20%) -- at
-//     that screen size both are already illegible, and it's the same boundary S-03 sheds its own
-//     tertiary badges at.
-//   - The tier badge sheds at the same < 20% boundary, per S-03's table (tier badge is one of the
-//     badges shed at the "Tertiary badges" stage).
-//   - The icon sheds (and the card becomes a flat coloured block) at S-03's "Minimal card" stage
-//     (< 10%), not the literal "Coloured block" row's 5% -- with rare/dangerous/gate/repeatable/
-//     mod-requirement badges not yet built, there is nothing left to shed between 10% and 5% for
-//     this card, so flattening at 10% is a conservative simplification, not a new threshold.
-// Replace this file's ladder with the real 7-stage table once the remaining badges are built.
+// threshold. Badges slice (reconciliation session): replaces the previous 3-tier simplification
+// (which existed only because rare/dangerous/gate/repeatable/mod-requirement badges didn't exist
+// yet to hang the real table on -- see git history of this file) with S-03's real 7-stage table,
+// verbatim:
+//
+//   | Stage              | Threshold | Sheds |
+//   | Full detail        | >= 60%    | nothing |
+//   | Label shedding      | < 60%    | gate label (icon remains); repeatable indicator |
+//   | Secondary badges    | < 35%    | rare badge; mod requirement badge |
+//   | Tertiary badges     | < 20%    | gate icon; tier badge |
+//   | Minimal card        | < 10%    | dangerous badge (kept longest, safety-critical) |
+//   | Pattern degradation | < 7%     | crisis-faction pattern -> solid fill |
+//   | Coloured block      | < 5%     | everything remaining: icon, name, cost -> flat block |
+//
+// Real correction from the old simplification: the previous ladder shed the ICON (and reduced to
+// a flat block) at < 10%, documented at the time as "a conservative simplification... nothing
+// left to shed between 10% and 5%" since no real badges existed to occupy that gap. Under the
+// REAL table, the icon/name/cost are NOT named at any stage before "Coloured block" -- they are
+// exactly the "everything remaining" that stage sheds at < 5%, one stage later than the old
+// simplification had it. The dangerous badge (< 10%) is the only thing between the tertiary-badge
+// stage and the coloured-block stage now that real badges fill that gap.
 
 export type LodTier = "full" | "reduced" | "minimal";
 
-export const NAME_SHED_THRESHOLD = 0.20; // reuses S-03's "Tertiary badges" boundary
-export const COST_SHED_THRESHOLD = NAME_SHED_THRESHOLD; // sheds with the name, per this file's own table
-export const TIER_BADGE_SHED_THRESHOLD = NAME_SHED_THRESHOLD; // S-03: tier badge is a tertiary badge
-export const ICON_SHED_THRESHOLD = 0.10; // reuses S-03's "Minimal card" boundary
+// Card CONTENT (icon, name, cost) sheds only at the final "Coloured block" stage -- see the
+// correction note above.
+export const CONTENT_SHED_THRESHOLD = 0.05;
+export const NAME_SHED_THRESHOLD = CONTENT_SHED_THRESHOLD;
+export const COST_SHED_THRESHOLD = CONTENT_SHED_THRESHOLD;
+export const ICON_SHED_THRESHOLD = CONTENT_SHED_THRESHOLD;
+
+// Per-indicator thresholds, named exactly after S-03's own stage names.
+export const GATE_LABEL_SHED_THRESHOLD = 0.60; // "Label shedding" -- gate icon remains
+export const REPEATABLE_SHED_THRESHOLD = 0.60; // "Label shedding"
+export const RARE_BADGE_SHED_THRESHOLD = 0.35; // "Secondary badges"
+export const MOD_REQUIREMENT_BADGE_SHED_THRESHOLD = 0.35; // "Secondary badges"
+export const GATE_ICON_SHED_THRESHOLD = 0.20; // "Tertiary badges"
+export const TIER_BADGE_SHED_THRESHOLD = 0.20; // "Tertiary badges"
+export const DANGEROUS_BADGE_SHED_THRESHOLD = 0.10; // "Minimal card" -- kept longest
 
 // S-03's pattern-degradation row: faction row-backing patterns go solid (accent motif dropped,
-// flat base colour only) below 7% zoom -- unrelated to the node-card ladder above, but the same
-// shared-table discipline: reuse S-03's own named boundary rather than inventing one.
+// flat base colour only) below 7% zoom.
 export const PATTERN_SOLID_THRESHOLD = 0.07;
 
+// `LodTier`/`tierForScale` remain as a coarse three-bucket status-line summary (used only by
+// `updateStatusLine`'s human-readable report), NOT as what actually drives per-indicator
+// visibility any more -- each indicator now checks its own named threshold above directly. "full"
+// now means "content + at least the longest-surviving badge visible" (>= 10%, since that's the
+// last badge threshold), "reduced" the pattern-degradation band, "minimal" the flat-block stage.
 export function tierForScale(scale: number): LodTier {
-  if (scale >= NAME_SHED_THRESHOLD) return "full";
-  if (scale >= ICON_SHED_THRESHOLD) return "reduced";
+  if (scale >= DANGEROUS_BADGE_SHED_THRESHOLD) return "full";
+  if (scale >= CONTENT_SHED_THRESHOLD) return "reduced";
   return "minimal";
 }
 
 export function tierLabel(tier: LodTier): string {
   switch (tier) {
     case "full":
-      return "full (rect+icon+name)";
+      return "full (content + surviving badges)";
     case "reduced":
-      return "reduced (rect+icon)";
+      return "reduced (rect+icon+name, badges shed)";
     case "minimal":
       return "minimal (flat block)";
   }

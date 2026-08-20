@@ -5,14 +5,92 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Gigastructural Engineering Tech Tree</title>
   <meta name="robots" content="noindex" />
+  <!-- Inline data-URI favicon -- closes a known cosmetic gap (HANDOFF.md: a bare favicon.ico
+       404 was the only anomaly found in an earlier headless-browser verification pass). A plain
+       coloured square, not a real icon design; Stage 3 has no branding/iconography task yet. -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%232e6fb0'/%3E%3C/svg%3E" />
   <style>
     html, body { margin: 0; height: 100%; background: #111; color: #eee; font-family: system-ui, sans-serif; }
-    #report { position: fixed; inset: 0; overflow: auto; padding: 1rem; white-space: pre-wrap; font: 13px/1.4 ui-monospace, monospace; }
+    #report {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 1;
+      padding: 0.5rem 0.75rem; white-space: pre-wrap; font: 12px/1.4 ui-monospace, monospace;
+      background: rgba(0, 0, 0, 0.6);
+    }
+    #report[data-status="failed"] { color: #ff8080; }
     #pixi-root { position: fixed; inset: 0; }
+
+    /* Hover/selection slice (reconciliation session 3): the detail popup is a DOM overlay per
+       CLAUDE.md's Stack ("PixiJS with a DOM overlay for popups and controls"), a fixed right-side
+       panel -- never anchored to the selected card's own screen position, so it structurally
+       cannot obscure it (main.ts's `focusOnNode` additionally pans the selected card into the
+       viewport area LEFT of this panel on selection, so the card is also never left hidden
+       behind it off-screen). */
+    #detail-popup {
+      position: fixed; top: 0; right: 0; bottom: 0; width: 360px; z-index: 2;
+      background: rgba(17, 19, 24, 0.97); border-left: 1px solid #333a45;
+      overflow-y: auto; padding: 1rem 1.1rem; font: 13px/1.5 system-ui, sans-serif; color: #d8dee8;
+      display: none;
+    }
+    #detail-popup[data-open="true"] { display: block; }
+    #detail-popup h2 { font-size: 17px; margin: 0 0 0.3rem; color: #f0f0f0; }
+    #detail-popup .close-btn {
+      position: absolute; top: 0.6rem; right: 0.7rem; background: none; border: none;
+      color: #9fb3c8; font-size: 18px; cursor: pointer; line-height: 1;
+    }
+    #detail-popup .field-label { color: #7f8ea3; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 0.8rem; }
+    #detail-popup .field-value { margin-top: 0.15rem; white-space: pre-line; }
+    #detail-popup ul { margin: 0.2rem 0 0; padding-left: 1.1rem; }
+    #detail-popup .badge-row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.3rem; }
+    #detail-popup .chip { display: inline-block; padding: 0.1rem 0.45rem; border-radius: 4px; font-size: 11px; font-weight: 700; }
+    #detail-popup .off-tree-note { color: #c8b98a; font-style: italic; }
+    #detail-popup .gate-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.3rem; }
+    #detail-popup .gate-icon { display: inline-block; flex: none; image-rendering: pixelated; }
+
+    /* Empire-profile switching + search slice (reconciliation session 4): a single top-left
+       control panel -- profile selector (three axes, independently, never a flat 12-item list)
+       above search, so both stay clear of the right-side detail popup. */
+    #control-panel {
+      position: fixed; top: 0.75rem; left: 0.75rem; z-index: 2; width: 300px;
+      background: rgba(17, 19, 24, 0.92); border: 1px solid #333a45; border-radius: 6px;
+      padding: 0.7rem 0.8rem; font: 12px/1.4 system-ui, sans-serif; color: #d8dee8;
+    }
+    #control-panel .section-label { color: #7f8ea3; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.25rem; }
+    #profile-selector { display: flex; gap: 0.4rem; margin-bottom: 0.6rem; }
+    /* Item 2 fix (screenshot-review session): a <select>'s flex-item default is `min-width: auto`,
+       which resolves to its longest OPTION's intrinsic content width (e.g. "Machine
+       Intelligence") -- that overrides `flex: 1`'s shrink behaviour entirely, so the three
+       selects' combined intrinsic width could exceed the 300px panel regardless of flex-shrink.
+       `min-width: 0` is the standard override; `text-overflow: ellipsis` (with the `overflow`/
+       `white-space` it requires) gives a graceful degradation for whichever select is still
+       tightest after an equal three-way split, rather than a hard native-UA clip. */
+    #profile-selector select { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: #1a1d24; color: #d8dee8; border: 1px solid #333a45; border-radius: 4px; padding: 0.2rem; font-size: 11px; }
+    #search-box { width: 100%; box-sizing: border-box; background: #1a1d24; color: #d8dee8; border: 1px solid #333a45; border-radius: 4px; padding: 0.35rem 0.5rem; font-size: 12px; }
+    #search-results { max-height: 260px; overflow-y: auto; margin-top: 0.4rem; }
+    #search-results .result { padding: 0.3rem 0.4rem; border-radius: 4px; cursor: pointer; }
+    #search-results .result:hover { background: rgba(255,255,255,0.08); }
+    #search-results .result-name { color: #f0f0f0; }
+    #search-results .result-meta { color: #7f8ea3; font-size: 10px; }
+    #search-status { color: #7f8ea3; font-size: 11px; margin-top: 0.3rem; }
   </style>
 </head>
 <body>
   <div id="pixi-root"></div>
+  <div id="control-panel">
+    <div class="section-label">Empire profile</div>
+    <div id="profile-selector">
+      <select id="profile-authority"></select>
+      <select id="profile-shipset"></select>
+      <select id="profile-nomadic"></select>
+    </div>
+    <div class="section-label">Search</div>
+    <input id="search-box" type="text" placeholder="Search technologies…" autocomplete="off" />
+    <div id="search-status"></div>
+    <div id="search-results"></div>
+  </div>
+  <div id="detail-popup" data-open="false">
+    <button class="close-btn" id="detail-popup-close" aria-label="Close">✕</button>
+    <div id="detail-popup-content"></div>
+  </div>
   <pre id="report">loading…</pre>
   <script type="module" src="/src/main.ts"></script>
 </body>

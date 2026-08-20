@@ -3,7 +3,7 @@
 // spike's synthetic data). No rendering logic here; Stage 3's real loader design (caching,
 // per-profile overlay switching, lazy detail-payload fetch batching) is future work.
 
-import type { BaseDataset, EmpireOverlay, GeometryRef } from "../../schema/generated/dataset-types";
+import type { BaseDataset, DetailPayload, EmpireOverlay, GeometryRef, SearchIndex } from "../../schema/generated/dataset-types";
 
 const DATASET_BASE = "./dataset/";
 
@@ -45,13 +45,45 @@ export async function fetchBaseDataset(): Promise<BaseDataset> {
   return fetchViaManifest<BaseDataset>(manifest.baseDataset);
 }
 
+// Empire-profile switching slice (reconciliation session 4): a small in-memory cache, same
+// pattern as `fetchDetailPayload` below -- switching back to a previously-viewed profile costs
+// no re-fetch.
+const overlayCache = new Map<string, Promise<EmpireOverlay>>();
+
 export async function fetchEmpireOverlay(profileKey: string): Promise<EmpireOverlay> {
-  const manifest = await fetchManifest();
-  const path = manifest.overlays[profileKey];
-  if (!path) {
-    throw new Error(`manifest.json has no overlay entry for profile key "${profileKey}"`);
-  }
-  return fetchViaManifest<EmpireOverlay>(path);
+  const cached = overlayCache.get(profileKey);
+  if (cached) return cached;
+  const promise = (async () => {
+    const manifest = await fetchManifest();
+    const path = manifest.overlays[profileKey];
+    if (!path) {
+      throw new Error(`manifest.json has no overlay entry for profile key "${profileKey}"`);
+    }
+    return fetchViaManifest<EmpireOverlay>(path);
+  })();
+  overlayCache.set(profileKey, promise);
+  return promise;
+}
+
+// Hover/selection slice (reconciliation session 3): the detail payload is chunked and lazily
+// fetched (spec/00-overview.md), one per technology -- fetched only when the popup actually
+// opens for that technology, per-id, never prefetched in bulk. A tiny in-memory cache avoids a
+// re-fetch if the same technology is selected again in one session.
+const detailPayloadCache = new Map<string, Promise<DetailPayload>>();
+
+export async function fetchDetailPayload(technologyId: string): Promise<DetailPayload> {
+  const cached = detailPayloadCache.get(technologyId);
+  if (cached) return cached;
+  const promise = (async () => {
+    const manifest = await fetchManifest();
+    const path = manifest.details[technologyId];
+    if (!path) {
+      throw new Error(`manifest.json has no detail-payload entry for technology id "${technologyId}"`);
+    }
+    return fetchViaManifest<DetailPayload>(path);
+  })();
+  detailPayloadCache.set(technologyId, promise);
+  return promise;
 }
 
 const TYPED_ARRAY_CTORS = {
@@ -91,4 +123,17 @@ export async function fetchGeometry(ref: GeometryRef): Promise<InstanceType<(typ
  * `GeometryRef.file`) -- resolved relative to `dataset/`, same as everything else here. */
 export function atlasUrl(relativePath: string): string {
   return `${DATASET_BASE}${relativePath}`;
+}
+
+// Search slice (reconciliation session 4): P-6's own spec -- "fetched lazily on first search-box
+// focus, not during initial load" -- a fourth, separately-fetched artefact, never part of the
+// base dataset. Cached after the first fetch since it never changes within a session.
+let searchIndexPromise: Promise<SearchIndex> | null = null;
+
+export async function fetchSearchIndex(): Promise<SearchIndex> {
+  searchIndexPromise ??= (async () => {
+    const manifest = await fetchManifest();
+    return fetchViaManifest<SearchIndex>(manifest.searchIndex);
+  })();
+  return searchIndexPromise;
 }
