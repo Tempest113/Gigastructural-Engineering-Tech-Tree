@@ -1132,135 +1132,65 @@ reason, not by default.
 
 ## Next prompt to paste into Claude Code
 
-**Stale as of a later session — keep this current every time it's touched; don't let it drift into
-a pointer at completed work (that happened seven times already, see git history of this
-section).** Current as of **"Hard regression fix session — row-overlap bug in the Item 4
-vertical-centring change, plus the missing row-overlap invariant"** (`docs/BUILD-LOG.md`'s
-rendering section — read that entry first, then the screenshot-review entry before it).
+**Stale as of a later session — keep this current every time it's touched.** Current as of the
+session that: built the `?dev` uncertainty health monitor (Item 1); resolved four classes of
+user-confirmed uncertainty (Item 2a-d — DLC/mod-presence/progression-flag resolution rules plus
+the `always = no` exclusion, 977 → 973 rendered nodes); surveyed (not implemented)
+ascension-perk `add_research_option` grants (Item 3); fixed gate-label collisions and enlarged
+the gate icon (Item 4); stopped the ACOT/AoT tensile technologies from showing a redundant
+prerequisite as gate text (Item 5); rebalanced sub-grid centring to fix top-heavy row padding
+(Item 6); and clarified (without changing) hover-vs-selection scope (Item 7). All of Items 1-6 are
+implemented, tested, and headless-verified; Item 3 and Item 7 are surveys only, per instruction.
+See `docs/BUILD-LOG.md` for the full session writeup (real numbers, screenshots, every reasoning
+step) and the immediately-prior session's writeup for the `activeEdgeIds`/tech-swap/prerequisite-
+popup-list work this one built on top of.
 
-**READ THIS BEFORE TOUCHING `pipeline/layout.py` AGAIN.** The immediately-prior session's Item 4
-(short-sub-grid-column vertical centring) shipped with a real, user-reported hard regression:
-`column_member_count` was keyed by `(row_id, col)` alone, and `col` is BAND-RELATIVE (resets to 0
-per band), so two different bands' columns sharing a local index had their member counts silently
-summed, which could drive the centring offset negative and shift cards up into the row above —
-real corpus example, `giga_tech_birch_world_1` landed at row **−16**. Fixed by keying on
-`(row_id, band_index, col)`, the actually-unique triple, plus a same-file `assert centre_offset >=
-0` as a second line of defence. **The existing test suite stayed fully green through the entire
-regression** — nothing asserted the actual invariant (no two rows' card extents may intersect).
-Two new tests close that gap: `tests/test_layout_corpus.py::
-test_no_row_overlaps_and_every_card_within_its_own_row_bounds` (real corpus) and
-`tests/test_layout.py::test_no_row_overlaps_when_the_same_row_spans_multiple_bands` (fast
-synthetic case) — both proven to fail against the actual broken code before being trusted on the
-fix. See CLAUDE.md's Rules section for the full record, including why this is a plain dict-keying
-bug and NOT a recurrence of the parallel-geometry defect class (the client's row-panel derivation
-from real node positions is unaffected and was never the problem — it correctly, faithfully
-reproduced whatever the pipeline emitted, bug included). Canvas dimensions were unaffected by both
-the bug and the fix (29,670 × 13,448px, unchanged) — explained now, not just asserted: row HEIGHT
-comes from `row_row_counts`, set in a first pass the bug never touched; only individual cards'
-position WITHIN their already-correctly-sized row was corrupted, which is exactly why "canvas
-dimensions unchanged" didn't catch it and shouldn't have been read as reassurance on its own.
+**Next prompt should point at the research path (P-12.9) implementation.** The design was surveyed
+against the real corpus in a still-earlier session and **approved by the user** — do not
+re-litigate the design (per-profile, cheapest-total-cost `OR`-branch resolution, `uncertain`-
+stays-in-estimate with the total marked an ESTIMATE, config-gated-target-only, unavailable-as-
+one-state) — but three of the spec's own recorded validation figures are now stale against how far
+the corpus has moved since they were measured, and **correcting them is part of the same
+implementation pass, not a separate follow-up**:
+- The "2 of 980 impossible" headline count is now **203 technologies / 1,270 (key, profile)
+  pairs** — real, expected content growth (many more technologies are directly axis-gated than
+  when this was last measured), not a bug. Re-verify the "dangerous" sub-case the spec's entire
+  `status: "unavailable"` simplification rests on — an ancestor chain broken while the target
+  itself stays `available`/`uncertain` — is still exactly zero before trusting the simplification;
+  it was as of this session's survey, but re-check against whatever corpus state exists when you
+  implement, don't assume it's still true.
+- `tech_mega_engineering`'s nomadic total is now **76,250** (was 99,750 in the spec) — the
+  regular/mechanical (**74,750**) and regular/biological (**73,750**) totals still reproduce
+  exactly, so this is a real, narrow content-length change in the Arkship Mastery chain
+  specifically, not an algorithm problem.
+- The `OR`-group tie-break's "0 disagreements between cheapest-total-cost and fewest-steps" is now
+  **12 disagreements** (out of 72 genuine 2+-viable-candidate choices, unchanged count) — cheapest-
+  total-cost is genuinely load-bearing now, not a distinction without a difference the way the spec
+  currently frames it.
 
-**Everything else from the screenshot-review session remains intact and correctly verified** —
-audited specifically for this, since the regression's dataset build was also used for some of
-that session's own verification screenshots. Confirmed unaffected: name truncation (Item 1a,
-pure per-card text logic, no Y-position dependency), the gate-label font/overlap fix (Item 1b,
-card-relative positioning, correct regardless of the card's absolute row placement), the profile
-selector CSS fix (Item 2, no pipeline dependency at all), LOD shedding (Item 5, zoom-threshold
-based, not row-Y based), and the swap/`activeEdgeIds`/prerequisite-pooling SURVEY findings (Item
-3 — read-only queries against availability/edges/gates data, which the layout bug never touched;
-layout is computed independently of and after those fields in `pipeline/dataset_emit.py`). One
-screenshot from that session (`final_row_padding_centered.png`, the "after" shot for Item 4
-itself) WAS built against the regression and has been superseded by fresh, verified screenshots
-this session showing zero row overlap at fit-to-viewport and at both same-area and
-cross-area-group row boundaries.
+Re-run the survey's own reproduction script (or equivalent) against whatever corpus state exists
+at implementation time before trusting these three numbers verbatim — they were measured once,
+this session, and the corpus does keep moving.
 
-**Gate classification (P-3), empire-profile switching, search, and the whole badges slice are
-DONE** (prior sessions) **and the screenshot-review session fixed five real defects found from
-real screenshots** (all confirmed intact above, now re-verified against the regression fix too):
-name truncation defaults back to plain tail-ellipsis (middle-ellipsis now used only on the
-minimal set of names that would otherwise collide — 18/977, not "every long name"); the gate
-label's font-measurement mismatch (measured at the 20px name font, rendered at 11px) and its
-vertical collision with a 2-line card name are both fixed; the profile selector's `<select>`s no
-longer overflow their panel (`min-width: 0` — the classic flex-item default that overrides
-`flex-shrink`); a short sub-grid column is now vertically CENTRED within its row's shared height
-instead of top-anchored with 100% of the slack below it (`pipeline/layout.py`, canvas dimensions
-UNCHANGED — 29,670 × 13,448px, this only redistributes space that already existed). LOD text
-shedding was verified CORRECT against S-03's real table (name/cost/icon shed together at the
-`<5%` "Coloured block" stage — the only stage that names them — not a bug, just imperceptible
-since the card is already unreadable by then). The one reported defect NOT reproduced: a
-"garbled" AoT mod-requirement badge — checked across multiple zooms, direct load, and
-search-then-click, always rendered cleanly; real counts confirmed (ACOT 3, AoT 1); flagged, not
-silently dropped, in case it recurs.
-
-**Two real, evidenced findings from the screenshot-review session's surveys, not yet acted on —
-read `docs/BUILD-LOG.md`'s full writeup before starting either:**
-
-1. **Tech-swap display substitution (`swapMappings`, D-14) is emitted but consumed nowhere in the
-   client**, and **the popup's Prerequisites/Dependents lists pool all three edge kinds
-   unlabelled and unfiltered by profile** — both confirmed directly against the real corpus (see
-   CLAUDE.md's Open Items for the full detail: `tech_zero_point_power`/`tech_bio_zero_point_power`
-   as the swap example, `tech_mega_engineering`'s 4-member `alternative` group as the pooling
-   example). The alternative-branch filtering piece does NOT need the unbuilt
-   `appliesToEmpireTypes` edge extractor — each branch's own `availabilityMatrix` entry already
-   reflects per-profile reachability correctly, confirmed by direct measurement.
-2. **The research path (P-12.9)** — v1's real second reported failure (profile-blind traversal +
-   `OR`-branch flattening, see this file's own "Research path" section above for the full
-   diagnosis) — is specced (`spec/P-12.9-research-path.md`) but not implemented.
-   `pipeline.dataset_emit`'s existing `researchPaths`/`_ancestor_research_path` IS real and
-   already shipping in every empire overlay today, but is a simplified BFS-over-`prerequisite`-
-   edges-only placeholder, not P-12.9's cheapest-`OR`-branch algorithm.
-
-**Recommendation, given explicitly to the user this session and worth restating so it isn't
-re-litigated: these should be TWO slices, sequenced, not one.** Swap-aware display and
-kind-labelled/profile-filtered prerequisite lists are the smaller, lower-risk, independently
-valuable slice — AND a real prerequisite for P-12.9, since a correct research-path step display
-needs the same profile-correct technology name lookup this slice would build. Do the
-swap/prerequisite-display slice first, then P-12.9.
-
-**Start both with a survey, not an implementation, same discipline as gate classification.**
-For the swap/prerequisite-display slice: confirm the exact shape of a shared "resolve this
-technology's profile-correct display name/icon" client utility (consumed by the card, the popup,
-and eventually a research-path step), and decide whether alternative-branch filtering belongs in
-the popup's existing Prerequisites section or a new labelled sub-section (kind-pooling is a
-readability bug either way, but "hide locked branches" vs "show all four, mark which is active"
-are different UX calls worth surfacing to the user before building). For P-12.9: read
-`spec/P-12.9-research-path.md` in full (every design decision is already settled there — per-
-profile computation, v1's flat-list-with-running-total shape kept as-is, cheapest-total-cost
-`OR`-branch selection, uncertain steps stay in the path with the total marked an estimate,
-config-gated steps excluded from the total and explained separately, triggered by selecting a
-technology, no pinned goal); establish precisely what `_ancestor_research_path` is missing
-(per-profile `alternative`-branch selection, cheapest-cost not just BFS, config-gated/uncertain
-step handling, and how a `Gate` should read in a path step now that P-3 is real data); reproduce
-the validation the spec's design was checked against — `tech_mega_engineering`'s path for
-regular/mechanical/non-nomadic should reproduce v1's own reported **74,750** exactly, nomadic
-should route through Arkship Mastery (**99,750**), bio-shipset through Stingers (**73,750**) with
-Battleships excluded as locked — confirm these still hold against the CURRENT 977-node corpus (not
-980) before treating them as a settled baseline. Report both surveys; stop before implementing
-either.
-
-Stay out of, still: pattern fills as real traced art (procedural placeholders are fine for now),
-ΔE2000/WCAG mechanical colour checks (S-1's own CI-enforced criterion, still unbuilt), URL-encoded
-shareable state (CLAUDE.md's Rules: "empire type, filters, search, open popup" — not built yet;
-profile selection, search query and popup open/close all currently reset on page reload),
-secondary gate badges for a technology with more than one gate (spec's "where space permits" —
-only the primary gate renders on the card today; 10/977 real technologies have a second gate
-instance and would benefit, but this wasn't asked for this session), middle-click isolation (P-7,
-fully specced in `spec/P-07-isolation.md`, confirmed entirely unbuilt this session — a real,
-scoped, ready-to-build feature the user asked about but explicitly did not ask to build yet).
-
-One smaller, independently-shippable item is also sitting unbuilt:
-- No `pytest` CI workflow exists yet (only `tsc --noEmit` runs in CI — the deploy workflow
-  doesn't build anything at all now, per D-15) — a real, flagged gap.
-
-One item is prepared but deliberately not executed: `tools/deploy_local.sh` (D-15) is ready to
-publish a real build to a GitHub Release and trigger the first real deploy, but doing so is a
-live, visible action a human should trigger deliberately, not something run automatically.
+**Also still open, not part of the P-12.9 work but real and scoped:**
+- Item 3's `add_research_option` finding (CLAUDE.md's Open Items has the full corpus table) —
+  3 technologies (`tech_ring_world`, `tech_dyson_sphere`, `tech_matter_decompressor`) are
+  structurally unreachable via the normal weighted tech draw and are ENTIRELY invisible to this
+  pipeline's gate/availability machinery; recommended fix is extending P-3's gate registry to read
+  ascension-perk `on_enabled` blocks, not yet built.
+- Middle-click isolation (P-7, fully specced, confirmed entirely unbuilt across every session
+  asked about it).
+- No `pytest` CI workflow exists yet (only `tsc --noEmit` runs in CI).
+- Hover/selection discoverability (Item 7) — the right behaviour already exists, nothing surfaces
+  it to the user; a cheap, optional follow-up, not asked for yet.
 
 **Prerequisite, same as every session**: `client/public/dataset/` is gitignored (D-15) and won't
 exist in a fresh checkout — run `tools/build_dataset.py` locally (needs `vendor/` populated)
 before `npm run dev`/`build` in `client/`. Re-run it fresh rather than assume any on-disk build is
-current; the real node/edge counts are 977/984 under D-18, canvas is 29,670 × 13,448px under
-`subgrid_width=6`, 70 gate instances over 60 technologies under P-3's now-closed classification.
+current; the real node/edge counts are **973/977** as of this session (D-18 then Item 2c), canvas
+is 29,670 × 13,332px, 66 gate instances over 56 technologies under Item 5's display-layer fix.
+
+---
 
 ## Part-0 reconciliation session (stopped here per explicit instruction)
 
