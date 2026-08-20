@@ -662,13 +662,25 @@ def compute_layout(
     # Second pass: re-express each node's `row` as its column-count-aware, row-height-centred
     # position -- `column_member_count` and `row_row_counts` are both only final once every
     # (row_id, band_index) group above has been visited, hence the separate pass rather than
-    # computing this inline above. `// 2` (floor) puts any single odd leftover unit of slack
-    # below rather than above -- "symmetric" here means "not 100% on one side," not a claim that
-    # every column's slack is perfectly bisectable to the half-pixel.
+    # computing this inline above.
+    #
+    # Item 6 (later session, user domain call): the original `// 2` (true 50/50 centring) read as
+    # "a large gap at the top, cards touching the bottom" for a sparsely-populated column in a
+    # tall row -- confirmed against a real screenshot, not assumed. This is NOT the D-17/
+    # column-keying regression above (that one produced NEGATIVE offsets from a real dict-keying
+    # bug; this is correctly-computed, genuinely symmetric slack that still reads as top-heavy
+    # once compounded with ROW_HEADER_HEIGHT's own header-strip space sitting immediately above
+    # row 0 -- the header's real content (chip + cell label) makes the already-symmetric slack
+    # above a sparse column look larger than the equal slack below it, which has no comparable
+    # content of its own to visually break up the gap). Fixed by putting a QUARTER of the slack
+    # above and three-quarters below (`// 4` instead of `// 2`) -- directly halves the ABOVE-row-0
+    # portion of the gap relative to the old formula, matching the user's explicit "roughly half
+    # the current top gap" instruction, with the freed slack going below rather than being
+    # discarded (removing it would just shrink the row, not rebalance it).
     for key, (band_index, col, local_row) in placements.items():
         row_id = nodes[key].row_id
         column_key = (row_id, band_index, col)
-        centre_offset = (row_row_counts[row_id] - column_member_count[column_key]) // 2
+        centre_offset = (row_row_counts[row_id] - column_member_count[column_key]) // 4
         assert centre_offset >= 0, (
             f"{key}: centre_offset {centre_offset} < 0 -- column_member_count[{column_key}]="
             f"{column_member_count[column_key]} exceeds row_row_counts[{row_id!r}]="

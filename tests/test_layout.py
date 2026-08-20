@@ -279,15 +279,21 @@ def test_subgrid_ordering_within_a_cell_no_longer_uses_category():
 
 
 def test_short_column_is_vertically_centred_within_the_row_height():
-    # voidcraft-shaped case: one dense column (4 unrelated, same-depth technologies -- fills all 4
-    # rows under subgrid_width=4, setting the row's own height) and one short column elsewhere in
+    # voidcraft-shaped case: one dense column (8 unrelated, same-depth technologies -- fills all 8
+    # rows under subgrid_width=8, setting the row's own height) and one short column elsewhere in
     # the SAME row (2 members, via a different same-band depth so they land in a separate column,
-    # not wrapped into the dense one). The short column's 2 members must NOT sit at rows {0, 1}
-    # (the old top-anchored behaviour) -- centred within 4 rows, 2 members should sit at rows
-    # {1, 2}, an equal 1-row gap above and below.
+    # not wrapped into the dense one).
+    #
+    # Item 6 (user domain call, later session): a true 50/50 split (this test's original version)
+    # read as "a large gap above a sparse column, cards touching the row's bottom edge" once
+    # compounded with the header strip's own content sitting immediately above row 0 -- see
+    # pipeline/layout.py's own comment on the `// 4` change. This test now pins the NEW ratio: a
+    # QUARTER of the slack above, three-quarters below. diff = 8 - 2 = 6; offset = 6 // 4 = 1 -- the
+    # short column's 2 members sit at rows {1, 2}: 1 blank row above, 5 blank rows below (was
+    # {3, 4}, 3 blank above/3 blank below, under the old `// 2` split).
     graph = {
         f"tech_dense_{i}": _input(f"tech_dense_{i}", "{ tier = 5 prerequisites = { } category = { voidcraft } }")
-        for i in range(4)
+        for i in range(8)
     }
     # Two UNRELATED siblings, both depth 1 (a same-band prerequisite on the dense group, but not
     # on each other) -- same-band depth determines the column, so both land in the same depth-1
@@ -298,18 +304,19 @@ def test_short_column_is_vertically_centred_within_the_row_height():
     graph["tech_short_1"] = _input(
         "tech_short_1", '{ tier = 5 prerequisites = { "tech_dense_1" } category = { voidcraft } }'
     )
-    result = compute_layout(graph, _vt(), subgrid_width=4)
+    result = compute_layout(graph, _vt(), subgrid_width=8)
 
     dense_col = result.nodes["tech_dense_0"].col
-    assert {result.nodes[f"tech_dense_{i}"].col for i in range(4)} == {dense_col}
-    assert {result.nodes[f"tech_dense_{i}"].row for i in range(4)} == {0, 1, 2, 3}
+    assert {result.nodes[f"tech_dense_{i}"].col for i in range(8)} == {dense_col}
+    assert {result.nodes[f"tech_dense_{i}"].row for i in range(8)} == set(range(8))
 
     short_col = result.nodes["tech_short_0"].col
     assert short_col != dense_col  # same-band depth ordering (D-17) puts it in its own column
     short_rows = {result.nodes["tech_short_0"].row, result.nodes["tech_short_1"].row}
     assert short_rows == {1, 2}, (
-        f"expected the 2-member short column centred within the row's 4-row height (rows {{1, 2}}), "
-        f"got {short_rows} -- {{0, 1}} would mean it's still top-anchored, the bug this test guards against"
+        f"expected the 2-member short column at rows {{1, 2}} (1/4 of the 6-row slack above, per "
+        f"Item 6's // 4 split), got {short_rows} -- {{0, 1}} would mean it's still top-anchored "
+        f"(no slack above at all), {{3, 4}} would mean it's still the old 50/50 split"
     )
 
 
