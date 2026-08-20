@@ -131,10 +131,42 @@ def test_capped_r_flag_resolves_config_gated_not_locked():
 
 
 def test_non_toggle_global_flag_is_undecidable():
-    block = _block("{ has_global_flag = compound_invasion_happened }")
+    # herculean_built: real corpus mid-game player-state flag (HANDOFF.md's CHECK 2), matches
+    # neither the mod-config-toggle suffix set nor Item 2's story-progression pattern.
+    block = _block("{ has_global_flag = herculean_built }")
     result = evaluate_trigger_block(block, REGULAR_MECH_SEDENTARY)
     assert result.state == UNCERTAIN
-    assert result.reason == "has_global_flag = compound_invasion_happened"
+    assert result.reason == "has_global_flag = herculean_built"
+
+
+def test_story_progression_pattern_flags_resolve_true():
+    # Item 2 ("commit + close the loop" follow-up session): flags matching
+    # pipeline.trigger_text.looks_like_story_progress resolve TRUE, same treatment as the
+    # user-approved colossus_project precedent -- confirmed by direct inspection that every
+    # sampled real setting site is an is_triggered_only country event with no empire-type
+    # restriction.
+    block = _block("{ has_country_flag = blokkat_laser_possible }")
+    assert evaluate_trigger_block(block, REGULAR_MECH_SEDENTARY).state == AVAILABLE
+
+    block2 = _block("{ has_global_flag = ehof_code_3_complete }")
+    assert evaluate_trigger_block(block2, REGULAR_MECH_SEDENTARY).state == AVAILABLE
+
+
+def test_vanilla_lgate_flags_excluded_from_story_progression_resolution():
+    # l_cluster_opened / encountered_first_lgate match the naming pattern (`_opened` suffix,
+    # `encountered_` prefix) but are vanilla Stellaris storyline flags whose setting sites live in
+    # vanilla's events/decisions -- not vendored, so unlike every Gigastructures match, there is no
+    # corpus text to verify them against. Deliberately excluded (PROGRESSION_PATTERN_EXCLUDED_FLAGS),
+    # stay UNCERTAIN.
+    block = _block("{ has_global_flag = l_cluster_opened }")
+    result = evaluate_trigger_block(block, REGULAR_MECH_SEDENTARY)
+    assert result.state == UNCERTAIN
+    assert result.category == ReasonCategory.CRISIS_OR_STORY_PROGRESS
+
+    block2 = _block("{ has_country_flag = encountered_first_lgate }")
+    result2 = evaluate_trigger_block(block2, REGULAR_MECH_SEDENTARY)
+    assert result2.state == UNCERTAIN
+    assert result2.category == ReasonCategory.CRISIS_OR_STORY_PROGRESS
 
 
 def test_dlc_assumed_owned():
@@ -352,7 +384,11 @@ def test_survey_splits_unconditional_from_profile_dependent():
 def test_survey_records_category_for_unconditional_technologies():
     profiles = _profiles_2x2()
     technologies = {
-        "tech_crisis_locked": _block("{ has_country_flag = blokkat_laser_possible }"),
+        # l_cluster_opened, not blokkat_laser_possible: Item 2 now resolves blokkat_laser_possible
+        # TRUE, so it can no longer illustrate an unconditionally-UNCERTAIN crisis/story-progress
+        # technology. l_cluster_opened is deliberately excluded from that resolution (vanilla
+        # L-Gate flag, see test_vanilla_lgate_flags_excluded_from_story_progression_resolution).
+        "tech_crisis_locked": _block("{ has_global_flag = l_cluster_opened }"),
         "tech_opaque_locked": _block("{ has_country_flag = has_arcane_generator }"),
     }
     survey = survey_uncertainty(technologies, profiles)
@@ -492,7 +528,7 @@ def test_build_d10_diagnostics_section_matches_schema_shape():
     profiles = _profiles_2x2()
     technologies = {
         "tech_a": _block("{ AND = { is_nomadic = yes has_country_flag = mystery } }"),
-        "tech_b": _block("{ has_country_flag = blokkat_laser_possible }"),
+        "tech_b": _block("{ has_global_flag = l_cluster_opened }"),
     }
     survey = survey_uncertainty(technologies, profiles)
     section = build_d10_diagnostics_section(survey, profiles)

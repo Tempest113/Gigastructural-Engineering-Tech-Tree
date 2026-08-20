@@ -645,7 +645,16 @@ def test_diagnostics_validates_and_reports_the_unconditional_uncertain_finding(c
     # civic/origin as display gates) then moved unconditionalUncertainty 176 -> 107 and the worst
     # profile-dependent rate 0.034944 -> 0.015416 -- both real improvements, in the SAME direction
     # this time (see test_gate_classification_leaves_d10_uncertainty_unchanged's own writeup).
-    assert diagnostics["unconditionalUncertainty"]["count"] == 107
+    # **107 -> 34, a later session ("commit + close the loop" follow-up, Item 2): the
+    # story-progression flag CLASS.** Flags matching `pipeline.trigger_text.
+    # looks_like_story_progress`'s naming pattern (verified real setting sites, same evidence shape
+    # as the already-approved `colossus_project` precedent) resolve TRUE as a class -- 73
+    # technologies move UNCONDITIONALLY uncertain -> AVAILABLE. Worst profile-dependent rate is
+    # UNCHANGED (0.015416): every one of the 73 was unconditionally stuck before, none merely
+    # profile-dependent, so none had anywhere to "move to" on that axis. See
+    # tests/test_availability_corpus.py's own writeup for the full accounting, including the two
+    # vanilla L-Gate flags deliberately excluded from this resolution.
+    assert diagnostics["unconditionalUncertainty"]["count"] == 34
     assert len(diagnostics["profileDependentUncertainty"]) == 12
     worst = max(d["rate"] for d in diagnostics["profileDependentUncertainty"])
     assert worst == pytest.approx(0.015416, abs=1e-5)

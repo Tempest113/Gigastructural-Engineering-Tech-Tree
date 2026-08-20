@@ -226,16 +226,102 @@ def test_real_rates_against_projections(expanded_rendered_potentials):
     # 3% warn threshold, the opposite direction from Item 2's own tradeoff. Exact equality here,
     # not a bound: this specific figure is what the regression test below exists to pin down, and
     # the category distribution below is the corroborating check.
-    assert len(survey.unconditional_uncertain) == 107
-    assert unconditional_rate == pytest.approx(107 / 973)  # D-18: 980 -> 977; Item 2c: 977 -> 973
+    # **107 -> 34, a later session ("commit + close the loop" follow-up, Item 2): the
+    # story-progression flag CLASS.** `pipeline.trigger_text.looks_like_story_progress`'s naming
+    # pattern (crisis-faction fragments; `_possible`/`_solved`/`_unlocked`/`_happened`/`_complete`/
+    # `_aborted`/`_knowledge`/`_opened` suffixes; `encountered_`/`completed_` prefixes) was applied
+    # to RESOLUTION, not just display categorisation -- every sampled real setting site is a
+    # genuine `is_triggered_only` country event with no empire-type restriction, the same evidence
+    # shape as the already-approved `colossus_project` precedent
+    # (`pipeline.availability.PROGRESSION_FLAGS_TRUE`). Real corpus: 64 distinct flag names (73
+    # technologies) move UNCONDITIONALLY UNCERTAIN -> AVAILABLE for all 12 profiles -- none become
+    # merely profile-dependent, which is why the worst profile-dependent rate below is UNCHANGED
+    # (still 1.54%) even though the unconditional figure drops sharply.
+    # Two real pattern matches are DELIBERATELY EXCLUDED from this resolution and stay UNCERTAIN:
+    # `l_cluster_opened` and `encountered_first_lgate` are vanilla Stellaris L-Gate storyline
+    # flags whose setting sites live in vanilla's `events`/`decisions`, which this project does not
+    # vendor -- unlike every Gigastructures match, there is no corpus text to verify them against,
+    # so resolving them would rest on outside-corpus knowledge rather than evidence. See
+    # `pipeline.availability.PROGRESSION_PATTERN_EXCLUDED_FLAGS`'s own comment.
+    # Six outliers the survey found NOT matching the pattern, and NOT resolved by it (reported for
+    # user confirmation, not decided here): `can_build_star_eaters`, `acot_databank_sophia_agreed`,
+    # `advanced_identity_creation`, `has_arcane_generator`, `has_quantum_catapult_insight`,
+    # `has_encountered_psionic_auras`. Two more of the same non-matching shape turned up during
+    # this pass and are reported the same way, not resolved: `finish_shroud_forged_liberation_flag`,
+    # `machine_subspecies`.
+    assert len(survey.unconditional_uncertain) == 34
+    assert unconditional_rate == pytest.approx(34 / 973)  # D-18: 980 -> 977; Item 2c: 977 -> 973
     assert dict(distribution) == {
-        ReasonCategory.CRISIS_OR_STORY_PROGRESS: 72,
         ReasonCategory.UNCLASSIFIED: 20,
-        ReasonCategory.OPAQUE_COUNTRY_STATE: 15,
-    }  # ORIGIN_REQUIREMENT and ETHICS_OR_CIVIC_REQUIREMENT are now empty (0) -- Item 3's whole
-    # point. MOD_CONTENT_REQUIREMENT is still empty (0) -- Item 2d resolved has_acot/has_aot_mod, so the
-    # 4 ACOT/AoT tensile technologies' blocking reason moved elsewhere (still uncertain via an
-    # unrelated leaf, @giga_amb_flag, itself UNCLASSIFIED) rather than being MOD_CONTENT_REQUIREMENT.
+        ReasonCategory.OPAQUE_COUNTRY_STATE: 13,
+        ReasonCategory.CRISIS_OR_STORY_PROGRESS: 1,
+    }  # crisis_or_story_progress falls from 72 to 1 -- the sole survivor is a technology whose
+    # ONLY unconditional blocker is one of the two excluded vanilla L-Gate flags above; the other
+    # excluded flag's technologies became profile-dependent instead (still 1.54% worst rate).
+    # ORIGIN_REQUIREMENT and ETHICS_OR_CIVIC_REQUIREMENT are still empty (0) -- Item 3's earlier
+    # result, unaffected by this item. MOD_CONTENT_REQUIREMENT is still empty (0) -- unchanged from
+    # before, for the same reason as before (Item 2d resolved has_acot/has_aot_mod already).
+
+
+def test_uncertain_count_and_per_profile_breakdown_pinned(expanded_rendered_potentials):
+    """Item 1 of the "commit + close the loop" follow-up session: makes the corpus-wide uncertain
+    count a STRUCTURAL invariant rather than something only a manual re-survey catches.
+
+    The precedent this closes: the `country_uses_bio_ships`/`exists=this` collision (this
+    module's own docstring, Item 2 of the "path to zero uncertain" session) silently moved 110
+    technologies to UNCERTAIN. Every mechanism-level unit test in `tests/test_scripted_triggers.py`
+    stayed green throughout -- each tested the expansion rule faithfully in isolation, which is
+    exactly why none of them could catch that the rule's OWN skip-list was wrong for one real,
+    heavily-used key. Only a manual `test_real_rates_against_projections`-style re-run caught it,
+    and only because a human remembered to re-run it. This test exists so that stops being
+    optional: it pins BOTH the union count (any technology UNCERTAIN for >=1 of the 12 profiles --
+    a number no earlier test computes at all) and the full per-profile breakdown, at the same
+    grain as `test_real_rates_against_projections`'s unconditional/category pins, so a future
+    collision of the same shape (a scripted-trigger skip-list gap, an axis-fact regression,
+    anything that silently shifts which leaves resolve) fails an ordinary `pytest tests/` run
+    instead of needing a human to remember to re-survey.
+
+    Proven capable of failing, not just passing: temporarily removing `country_uses_bio_ships`
+    from `pipeline.scripted_triggers._ALREADY_RESOLVED_KEYS` (this project's own historical bug,
+    reintroduced by hand, then reverted) made this exact assertion fail loudly -- union count
+    jumped 127 -> 213 -- before the removal was reverted. Not kept as a permanent mutation test
+    (that bug's shape is already covered by `tests/test_scripted_triggers_corpus.py`'s
+    zero-residual-`is_ai`-leaves guard and its own regression tests); this docstring records that
+    the proof was done, per this project's "prove a negative result before believing it" rule.
+    """
+    profiles = all_profiles_in_canonical_order()
+    survey = survey_uncertainty(expanded_rendered_potentials, profiles)
+
+    union = set(survey.unconditional_uncertain)
+    for indices in survey.profile_dependent_uncertain_by_profile_index.values():
+        union |= set(indices)
+    # 127 -> 54, Item 2 of the "commit + close the loop" follow-up session (this file's own
+    # test_real_rates_against_projections docstring below has the full writeup): flags matching
+    # pipeline.trigger_text.looks_like_story_progress's naming pattern now resolve TRUE as a
+    # class, the same treatment already approved for colossus_project. All 73 technologies this
+    # removed were previously UNCONDITIONALLY uncertain (true for all 12 profiles) and are now
+    # AVAILABLE for all 12 -- none moved to profile-dependent, which is why the per-profile
+    # breakdown below is UNCHANGED by this item.
+    assert len(union) == 54  # any technology UNCERTAIN for at least one of the 12 profiles
+
+    per_profile_counts = {
+        i: len(survey.profile_dependent_uncertain_by_profile_index.get(i, []))
+        for i in range(len(profiles))
+    }
+    assert per_profile_counts == {
+        0: 12,  # regular / mechanical / non-nomadic
+        1: 5,  # regular / mechanical / nomadic
+        2: 14,  # regular / biological / non-nomadic
+        3: 7,  # regular / biological / nomadic
+        4: 13,  # hive_mind / mechanical / non-nomadic
+        5: 6,  # hive_mind / mechanical / nomadic
+        6: 15,  # hive_mind / biological / non-nomadic (worst profile, 1.54%)
+        7: 8,  # hive_mind / biological / nomadic
+        8: 7,  # machine_intelligence / mechanical / non-nomadic
+        9: 0,  # machine_intelligence / mechanical / nomadic
+        10: 9,  # machine_intelligence / biological / non-nomadic
+        11: 2,  # machine_intelligence / biological / nomadic
+    }
 
 
 def test_warn_threshold_actually_fires_on_a_synthetic_worst_profile(expanded_rendered_potentials):

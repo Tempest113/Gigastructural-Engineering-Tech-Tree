@@ -90,7 +90,19 @@ _STORY_PROGRESS_SUFFIXES = (
 _STORY_PROGRESS_PREFIXES = ("encountered_", "completed_")
 
 
-def _looks_like_story_progress(flag_name: str) -> bool:
+def looks_like_story_progress(flag_name: str) -> bool:
+    """Public (later session, "commit + close the loop" Item 2): this predicate was previously
+    used only for DISPLAY categorisation (`categorize_leaf` below). `pipeline.availability` now
+    also imports it to RESOLVE matching flags TRUE outright -- verified by direct inspection of
+    every sampled setting site: 100% are set in `is_triggered_only` country events with no
+    empire-type restriction, the same shape as the user-approved `colossus_project` precedent
+    (`PROGRESSION_FLAGS_TRUE`). See `pipeline.availability`'s own comment at the call site for the
+    two flags deliberately excluded from that resolution (`l_cluster_opened`,
+    `encountered_first_lgate` -- both match this pattern by name but are vanilla Stellaris
+    storyline flags; vanilla's `events/`/`decisions/` are not vendored, so their setting sites
+    cannot be inspected the way every Gigastructures flag's can -- resolving them would rest on
+    outside-corpus knowledge, not corpus evidence, and this project's own rule is evidence before
+    design)."""
     lowered = flag_name.lower()
     if any(fragment in lowered for fragment in _CRISIS_FACTION_FRAGMENTS):
         return True
@@ -189,7 +201,7 @@ def categorize_leaf(assignment: Assignment) -> ReasonCategory:
         flag_name = _flag_value_name(assignment.value) or ""
         if key == "has_global_flag" and flag_name.endswith(MOD_CONFIG_TOGGLE_SUFFIXES):
             return ReasonCategory.MOD_CONFIGURATION
-        if _looks_like_story_progress(flag_name):
+        if looks_like_story_progress(flag_name):
             return ReasonCategory.CRISIS_OR_STORY_PROGRESS
         return ReasonCategory.OPAQUE_COUNTRY_STATE if key == "has_country_flag" else ReasonCategory.UNCLASSIFIED
 

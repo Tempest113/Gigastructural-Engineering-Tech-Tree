@@ -65,7 +65,13 @@ from .clausewitz.nodes import (
     StringLiteral,
     VariableReference,
 )
-from .trigger_text import MOD_CONFIG_TOGGLE_SUFFIXES, ReasonCategory, categorize_leaf, describe_condition
+from .trigger_text import (
+    MOD_CONFIG_TOGGLE_SUFFIXES,
+    ReasonCategory,
+    categorize_leaf,
+    describe_condition,
+    looks_like_story_progress,
+)
 
 AVAILABLE = "available"
 LOCKED = "locked"
@@ -272,6 +278,27 @@ MOD_PRESENCE_FLAGS_TRUE = {"has_aot_mod"}
 # the full candidate list and which remain open.
 PROGRESSION_FLAGS_TRUE = {"colossus_project"}
 
+# Item 2 of the "commit + close the loop" follow-up session: `pipeline.trigger_text.
+# looks_like_story_progress`'s naming pattern (crisis-faction fragments; `_possible`/`_solved`/
+# `_unlocked`/`_happened`/`_complete`/`_aborted`/`_knowledge`/`_opened` suffixes;
+# `encountered_`/`completed_` prefixes), applied as a CLASS rather than one flag at a time, on the
+# same evidence basis as `colossus_project` above: every sampled setting site is a real
+# `is_triggered_only` country event with no empire-type restriction, confirmed by direct
+# inspection, not inferred from the name alone. Real corpus: 64 distinct flag names (72
+# technologies once `l_cluster_opened`/`encountered_first_lgate` below are set aside) move
+# UNCERTAIN -> AVAILABLE.
+#
+# Two real matches are DELIBERATELY EXCLUDED from this class-wide resolution, even though their
+# names fit the pattern (`_opened` suffix, `encountered_` prefix respectively) --
+# `l_cluster_opened` and `encountered_first_lgate` are VANILLA Stellaris L-Gate storyline flags.
+# Every other pattern match here is a Gigastructures flag whose setting site lives in vendored
+# `common/`-adjacent script this project can and did inspect; vanilla's `events/`/`decisions/` are
+# NOT vendored (CLAUDE.md's required-directories list), so there is no corpus text to check these
+# two against -- resolving them would rest on outside-corpus knowledge of the base game, not
+# evidence gathered the way this project requires. They stay UNCERTAIN, unresolved by the
+# pattern, and are reported separately rather than silently swept in with the rest.
+PROGRESSION_PATTERN_EXCLUDED_FLAGS = {"l_cluster_opened", "encountered_first_lgate"}
+
 # has_country_flag: deliberately NOT resolved. The survey (HANDOFF.md CHECK 2) found no single
 # resolvable pattern across 131 occurrences / 82 distinct names -- confirmed mid-game player
 # state (herculean_built) and a plausible-but-unconfirmed ascension-perk redundancy
@@ -371,11 +398,23 @@ def _evaluate_leaf(assignment: Assignment, profile: dict) -> _Eval:
             return _bool_eval(False, negate, assignment)  # unset default: content not forbidden
         if flag_name is not None and (flag_name in PROGRESSION_FLAGS_TRUE or flag_name in MOD_PRESENCE_FLAGS_TRUE):
             return _bool_eval(True, negate, assignment)
+        if (
+            flag_name is not None
+            and flag_name not in PROGRESSION_PATTERN_EXCLUDED_FLAGS
+            and looks_like_story_progress(flag_name)
+        ):
+            return _bool_eval(True, negate, assignment)
         return _Eval(_State.UNKNOWN, assignment)
 
     if key == "has_country_flag":
         flag_name = _flag_value_name(assignment.value)
         if flag_name is not None and flag_name in PROGRESSION_FLAGS_TRUE:
+            return _bool_eval(True, negate, assignment)
+        if (
+            flag_name is not None
+            and flag_name not in PROGRESSION_PATTERN_EXCLUDED_FLAGS
+            and looks_like_story_progress(flag_name)
+        ):
             return _bool_eval(True, negate, assignment)
         return _Eval(_State.UNKNOWN, assignment)  # everything else: real per-playthrough state, deliberately unresolved
 
