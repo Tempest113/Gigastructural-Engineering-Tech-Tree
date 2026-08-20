@@ -33,7 +33,9 @@ dataset").
   anchors resolve" needs network access this offline build doesn't have).
 - `description` strips `§...§!` colour codes and `£...£` icon tokens to bare text rather than
   resolving them to real markup spans; P-12.1's fuller "resolved or safely stripped" contract
-  chooses the stripped half only.
+  chooses the stripped half only for MARKUP specifically. Separately (later session), `$key$`
+  loc-variable tokens embedded in description text ARE now fully resolved, same as `name` — see
+  `_resolve_loc_tokens`/`_require_resolved` and PART 2's survey in this session's writeup.
 - `researchPaths` is a plain BFS ancestor set over `prerequisite` edges only (matching P-12.9's
   "prerequisite-edges-only" contract), cumulative cost summed from each technology's own `cost`
   field, `shortestChain` computed by total cost — correct for what it claims, but does not yet
@@ -64,10 +66,16 @@ from .availability import (
 )
 from .clausewitz import parse_file
 from .clausewitz.nodes import Assignment, Block, Identifier, NumberLiteral, StringLiteral, VariableReference
-from .crisis_faction import classify_crisis_factions
+from .crisis_faction import CRISIS_FACTIONS, classify_crisis_factions
+from .crisis_faction_flags import load_flag_overrides as load_crisis_flag_overrides
 from .crisis_faction_overrides import load_overrides as load_crisis_overrides
-from .dataset_schema.empire_profile import all_profiles_in_canonical_order, empire_profile_index
+from .dataset_schema.empire_profile import (
+    all_profiles_in_canonical_order,
+    build_empire_profile_axes,
+    empire_profile_index,
+)
 from .edges import compute_typed_edges
+from .gate_patterns import classify_gates, order_gates
 from .geometry import pack_edge_polylines, pack_node_positions
 from .icons.build import build_atlases, decode_resolved_icons
 from .icons.overrides import load_overrides as load_icon_overrides
@@ -85,6 +93,7 @@ from .localisation import parse_file as parse_loc_file
 from .localisation.sources import default_source_configs as default_loc_source_configs
 from .localisation.table import LocalisationTable, build_table
 from .lock_reason_overrides import load_overrides as load_lock_reason_overrides
+from .name_overrides import load_name_overrides
 from .overwrite_overrides import load_overrides as load_overwrite_overrides
 from .overwrites import (
     TechnologyDefinition,
@@ -94,12 +103,54 @@ from .overwrites import (
     resolve_technology_overwrites,
     resolve_variable_overwrites,
 )
-from .rendering_scope import compute_alternative_only_gaps, rendered_technology_keys
+from .rendering_scope import compute_alternative_only_gaps, compute_off_tree_prerequisites, rendered_technology_keys
 from .technology_swaps import TechnologySwap, collect_swaps
 from .trigger_text import describe_condition, describe_trigger_block
 from .variables import build_variable_table
 
 SCHEMA_VERSION = "1.0.0"
+
+
+class UnresolvedLocalisationTokenError(Exception):
+    """CLAUDE.md's Rules: 'the build fails rather than emitting a partial dataset... missing
+    localisation for displayed strings.' Raised when a displayed string still contains a literal
+    `$...$` token after `_resolve_loc_tokens` -- e.g. a token absent from every loaded source's
+    loc table, or a chain deeper than `_LOC_TOKEN_MAX_HOPS` -- OR when a technology's `name`
+    resolves to the exact same string as its own raw technology key with no override on file
+    (found this session, by reviewing a real rendered screenshot: `giga_tech_aeternite_weaponry`'s
+    loc entry genuinely exists, but its VALUE is verbatim its own KEY -- the mod author never
+    wrote a real display name. Previously silently rendered the internal key as if it were the
+    technology's name, since it contains no `$...$` token for the OTHER check above to catch --
+    see `pipeline.name_overrides` for the reviewed-override mechanism this now requires instead).
+    Never silently emitted raw (that was the previous, undetected behaviour that let
+    `$PLANET_LANCE_BLOKKAT$`/`$waystation_plural$`-shaped strings, and separately a bare
+    key-as-name, reach the rendered card -- see this session's survey). Exactly 1 real occurrence
+    across all 980 rendered technologies' names at time of writing (`giga_tech_aeternite_weaponry`,
+    covered by `config/name_overrides.txt`) -- this is a tripwire for a future corpus change on
+    every OTHER technology, not a check expected to fire for any of them today."""
+
+    def __init__(self, technology_key: str, field_name: str, raw_text: str):
+        self.technology_key = technology_key
+        self.field_name = field_name
+        self.raw_text = raw_text
+        super().__init__(
+            f"{technology_key}: {field_name} still contains an unresolved localisation token "
+            f"after resolution: {raw_text!r}"
+        )
+
+
+def _require_resolved(text: str, technology_key: str, field_name: str, ctx: "BuildContext") -> str:
+    """Resolves `text` via `_resolve_loc_tokens` and hard-fails (`UnresolvedLocalisationTokenError`)
+    rather than emitting it with a raw `$...$` token still inside -- the check PART 2 of this
+    session's prompt asked for. Deliberately proven capable of firing before being trusted: see
+    `tests/test_dataset_emit.py::test_unresolved_localisation_token_in_a_name_fails_the_build`,
+    which feeds this a token absent from the loc table and asserts the raise, not just a clean run
+    on the real corpus (CLAUDE.md's rule: 'a clean run proves nothing until the detector is shown
+    capable of a dirty one')."""
+    resolved = _resolve_loc_tokens(text, ctx)
+    if resolved is None:
+        raise UnresolvedLocalisationTokenError(technology_key, field_name, text)
+    return resolved
 
 _SOURCES_IN_LOAD_ORDER = ["Vanilla", "Gigastructural Engineering", "ACOT", "AoT"]
 _SOURCE_DIRS = {
@@ -113,32 +164,36 @@ _FLAG_FIELDS = ("is_rare", "is_dangerous")
 
 # Hand-verified against the full (all-four-sources) corpus, NOT dynamically derivable from a
 # reduced build that's missing ACOT and/or AoT -- that's exactly the point of these two lists.
-# `PLACEHOLDER_TECHNOLOGIES_REQUIRING_ACOT_AOT`: the 7 real technologies whose `requiresMods`
-# names ACOT/AoT in the full build (spec/decisions.md's vendoring-automation investigation).
-# These are Gigastructures' own "supertensile alternate" content (`giga_17_alternative_mega_
-# build.txt`) -- the actual reason ACOT/AoT are vendored at all: they show the TRUE prerequisites
-# of those alternates, not a cosmetic extra. 4 of the 7 are directly referenced by key in
-# Gigastructures' own files (confirmed by direct grep); the other 3
-# (`tech_dark_matter_power_core_enig`, `tech_mine_dark_energy`, `tech_precursor_design`) are
-# reached only via ACOT's OWN internal prerequisite chains, invisible without ACOT loaded --
-# which is exactly why this list must be a maintained constant rather than computed from
-# whatever's currently loaded. Re-verified by
+# `PLACEHOLDER_TECHNOLOGIES_REQUIRING_ACOT_AOT`: the real technologies whose `requiresMods` names
+# ACOT/AoT in the full build (spec/decisions.md's vendoring-automation investigation). These are
+# Gigastructures' own "supertensile alternate" content (`giga_17_alternative_mega_build.txt`) --
+# the actual reason ACOT/AoT are vendored at all: they show the TRUE prerequisites of those
+# alternates, not a cosmetic extra.
+#
+# D-18 (spec/decisions.md, this session): narrowed from 7 to 4. The original 7 included 3
+# technologies (`tech_dark_matter_power_core_enig`, `tech_mine_dark_energy`,
+# `tech_precursor_design`) reached only via ACOT's OWN internal prerequisite chains -- under the
+# ORIGINAL full-transitive-closure rule these rendered whenever ACOT was loaded, so removing ACOT
+# made them disappear, exactly the "placeholder absent" shape this list exists to report. D-18's
+# depth-1 closure means those 3 are no longer in P-16's rendering scope AT ALL, regardless of
+# whether ACOT is loaded -- there is no "placeholder absent" transition to report for them any
+# more, since they're never present to begin with. Only the 4 depth-1 members remain in this
+# list. Re-verified by
 # `tests/test_dataset_emit.py::test_placeholder_technologies_constant_matches_full_corpus`
 # whenever the full corpus is available.
 PLACEHOLDER_TECHNOLOGIES_REQUIRING_ACOT_AOT: dict[str, str] = {
     "tech_dark_matter_power_core_ae": "ACOT",
     "tech_dark_matter_power_core_dm": "ACOT",
-    "tech_dark_matter_power_core_enig": "ACOT",
     "tech_dark_matter_power_core_se": "ACOT",
-    "tech_mine_dark_energy": "ACOT",
-    "tech_precursor_design": "ACOT",
     "tech_civil_phanon_application": "AoT",
 }
 
 # `VANILLA_TECHNOLOGIES_ACOT_OVERWRITES`: the 4 vanilla technology keys ACOT redefines in the
 # full build (P-15). Without ACOT loaded, these revert to their vanilla content and REAPPEAR in
 # the rendered set -- P-16's closure had excluded their ACOT-overwritten form, not their vanilla
-# one (spec/decisions.md's vendoring-automation investigation: 980 - 7 + 4 = 977, not 973). User-
+# one (pre-D-18 figures, spec/decisions.md's vendoring-automation investigation: 980 - 7 + 4 = 977,
+# not 973; see `_reduced_vendor_diagnostics` for the post-D-18 reduced-build arithmetic, which
+# lands on 977 again by a different, unrelated computation). User-
 # supplied domain context, recorded so the diagnostic's wording doesn't imply all four differ
 # equally: ACOT's overwrite of `tech_adaptive_combat_algorithms` and `tech_biomechanics` ONLY adds
 # modifiers -- invisible to this tool's display either way, so reverting to vanilla is a
@@ -234,6 +289,31 @@ def _resolve_numeric(value, variable_table) -> float | None:
     return None
 
 
+def _resolve_cost(value, variable_table) -> float | None:
+    """`cost` specifically -- a superset of `_resolve_numeric` that also handles the real corpus's
+    third shape (10/980 rendered nodes, all vanilla 'cosmic storm' technologies, e.g.
+    `tech_storm_manipulation`): `cost = { factor = @variable  inline_script = { ... } }`, a Block,
+    where `_resolve_numeric` previously saw a Block and returned None unconditionally -- silently
+    treating a real, resolvable cost as unresolvable (the same mechanism as the Stage 1
+    tier-source bug: the field exists, in a shape the reader doesn't recognise, and the failure is
+    silent). Survey (this session): all 10 block-form occurrences share the identical shape --
+    `factor` is always present and always a plain `@variable` reference that resolves cleanly; the
+    `inline_script`-expanded sibling field (a `modifier` block, in every real case) is a set of
+    Galactic Community resolution-conditional multipliers (0.2x-1.8x, checked against
+    `technologies/cosmic_storms_technologies_cost_modifiers.txt`) -- live diplomatic state, not
+    statically resolvable, and deliberately NOT folded in here: per D-4/this project's existing
+    cost-display rationale, `factor` (the base/declared cost) is the one figure the card can state
+    truthfully regardless of which resolutions are active, the same reasoning already applied to
+    `costPerLevel` for repeatables. A Block with no resolvable `factor` (none exist in the real
+    corpus today, but the policy is never to guess) still resolves to `None`, same as before."""
+    if isinstance(value, Block):
+        factor_assignment = _field(value, "factor")
+        if factor_assignment is None:
+            return None
+        return _resolve_numeric(factor_assignment.value, variable_table)
+    return _resolve_numeric(value, variable_table)
+
+
 _MARKUP_RE = re.compile(r"§.|£[^£]*£")
 
 
@@ -246,7 +326,12 @@ def strip_markup(raw: str) -> str:
 
 _MANAGEMENT_PROTOCOLS_SUFFIX = " Management Protocols"
 _LOC_TOKEN_RE = re.compile(r"\$([^$]+)\$")
-_LOC_TOKEN_MAX_HOPS = 3
+# Measured real max (later session, once every displayed string -- not just configGatedSubject --
+# started going through this resolver): true nesting depth across all 980 rendered technology
+# NAMES is 3 hops, across all 980 DESCRIPTIONS is 4 hops, both under the per-pass "resolve every
+# sibling token, not just the first" algorithm below. 6 is that measured max plus headroom, not a
+# guess.
+_LOC_TOKEN_MAX_HOPS = 6
 
 
 def _resolve_loc_tokens(text: str, ctx: "BuildContext") -> str | None:
@@ -254,20 +339,42 @@ def _resolve_loc_tokens(text: str, ctx: "BuildContext") -> str | None:
     full cross-source `ctx.loc_table` (vanilla, Gigastructures, ACOT, AoT, in load order) --
     ordinary static string substitution, corrected from an earlier, uncorrected assumption that
     a `$...$` token in a technology's own name was an unresolvable Stellaris runtime name-pool
-    reference (see `_config_gated_subject`'s docstring for the corpus evidence). Bounded to
-    `_LOC_TOKEN_MAX_HOPS` hops (a token's own value can itself be another token, e.g. vanilla's
-    `dyson_swarm_1: "$dyson_swarm_3$: Array"` chains one level deep in the real corpus) so a
-    cyclic or unexpectedly deep reference can't loop forever. Returns None -- never a partial or
-    guessed string -- if a token can't be found in the loc table, or the text still contains an
-    unresolved token after the hop limit."""
+    reference (see `_config_gated_subject`'s docstring for the corpus evidence).
+
+    **Resolves every sibling token in the current text on each pass, not just the first**
+    (corrected, later session, from an earlier version of this function that replaced only the
+    first `$...$` match per hop). That earlier version silently needed one extra hop per SIBLING
+    token at the same nesting level, not just per level of real nesting depth -- invisible while
+    this function's only caller was `_config_gated_subject` (every one of its 50 real chains
+    happens to carry at most one token per level), but a real bug once technology NAMES started
+    resolving through this same function: `tech_civilian_arkship`'s name chains
+    `$civilian_arkship_tier_1_plural$` -> `$civilian_arkship_name_plural$` ->
+    `$civilian_arkship_class$ $arkship_cap_plural$` -- two SIBLING tokens on the same line, at the
+    same nesting level -- which the old first-match-only algorithm could not resolve within any
+    reasonable hop budget (it would need one extra hop per sibling, forever, for a string with N
+    siblings at one level). Every occurrence in the current text is substituted in one `re.sub`
+    pass instead, so hop count now tracks real nesting depth only.
+
+    Bounded to `_LOC_TOKEN_MAX_HOPS` hops so a cyclic or unexpectedly deep reference can't loop
+    forever. Returns None -- never a partial or guessed string -- if any token in the text can't
+    be found in the loc table, or the text still contains an unresolved token after the hop
+    limit."""
     for _ in range(_LOC_TOKEN_MAX_HOPS):
-        match = _LOC_TOKEN_RE.search(text)
-        if match is None:
+        if _LOC_TOKEN_RE.search(text) is None:
             return text
-        token_entry = ctx.loc_table.get(match.group(1))
-        if token_entry is None:
+        missing = False
+
+        def repl(match: re.Match) -> str:
+            nonlocal missing
+            entry = ctx.loc_table.get(match.group(1))
+            if entry is None:
+                missing = True
+                return match.group(0)
+            return strip_markup(entry.value.raw)
+
+        text = _LOC_TOKEN_RE.sub(repl, text)
+        if missing:
             return None
-        text = text[:match.start()] + strip_markup(token_entry.value.raw) + text[match.end():]
     return None if _LOC_TOKEN_RE.search(text) else text
 
 
@@ -346,6 +453,16 @@ class BuildContext:
     vendor_root: Path
     rendered_keys: set[str]
     rendered_defs: dict[str, TechnologyDefinition]
+    # D-18 off-tree-prerequisite surfacing (Item 3, reconciliation session 3): technology key ->
+    # list of off-tree prerequisite KEYS it names (never rendered as a node under D-18's depth-1
+    # closure). Empty list for the 974/977 unaffected technologies. Grouped once here rather than
+    # re-scanning `compute_off_tree_prerequisites`'s flat pair list per technology in
+    # `build_detail_payload`.
+    off_tree_prerequisites: dict[str, list[str]]
+    # Full (all-source, not just rendered) technology history -- needed to resolve an off-tree
+    # prerequisite's own localised NAME, since it has no TechnologyDefinition in `rendered_defs`
+    # (that dict is rendered-keys-only by construction).
+    history: dict[str, list[TechnologyDefinition]]
     variable_table: object
     crisis: dict[str, str | None]
     layout: object
@@ -360,6 +477,11 @@ class BuildContext:
     icon_refs: dict
     swap_icon_refs: dict
     inherited_swap_icons: list
+    # P-3 gate classification: ascension-perk id -> IconRef dict, same shape/lookup pattern as
+    # `icon_refs` (technology key -> IconRef) but over the unfiltered perk atlas sheets -- see
+    # `pipeline/icons/build.py`'s `filter_result_to_rendered_scope` docstring for why the perk
+    # atlas is deliberately never filtered by P-16's technology rendering-scope closure.
+    perk_icon_refs: dict
     sources_present: list[str]
 
 
@@ -383,10 +505,10 @@ def build_context(vendor_root: Path) -> BuildContext:
     rendered_keys = rendered_technology_keys(history)
     rendered_defs = {k: history[k][-1] for k in rendered_keys}
 
-    crisis = classify_crisis_factions(rendered_defs, load_crisis_overrides())
+    crisis = classify_crisis_factions(rendered_defs, load_crisis_overrides(), load_crisis_flag_overrides())
 
     technologies = {
-        key: TechnologyLayoutInput(key=key, block=defn.block, lane=crisis[key])
+        key: TechnologyLayoutInput(key=key, block=defn.block, faction=crisis[key])
         for key, defn in rendered_defs.items()
     }
     layout = compute_layout(technologies, variable_table, subgrid_width=DEFAULT_SUBGRID_WIDTH)
@@ -412,6 +534,16 @@ def build_context(vendor_root: Path) -> BuildContext:
 
     icon_refs = _icon_ref_map(tech_icon_result, tech_sheets)
     swap_icon_refs, inherited_swap_icons = _swap_icon_ref_map(tech_icon_result, tech_sheets, icon_refs)
+    # P-3 gate classification: `_icon_ref_map`'s logic (candidate.key -> tile location, swap
+    # candidates excluded) is not actually technology-specific -- reused as-is for the
+    # ascension-perk atlas so a gate badge's icon comes from the same already-atlased sheets a
+    # rendered technology's icon comes from, never a manually-maintained path (P-3's acceptance
+    # criteria).
+    perk_icon_refs = _icon_ref_map(perk_icon_result, perk_sheets)
+
+    off_tree_prerequisites: dict[str, list[str]] = {}
+    for owner_key, prereq_key in compute_off_tree_prerequisites(history):
+        off_tree_prerequisites.setdefault(owner_key, []).append(prereq_key)
 
     return BuildContext(
         vendor_root=vendor_root, rendered_keys=rendered_keys, rendered_defs=rendered_defs,
@@ -420,7 +552,8 @@ def build_context(vendor_root: Path) -> BuildContext:
         tech_icon_result=tech_icon_result, perk_icon_result=perk_icon_result,
         tech_sheets=tech_sheets, perk_sheets=perk_sheets, typed_edges=typed_edges,
         icon_refs=icon_refs, swap_icon_refs=swap_icon_refs, inherited_swap_icons=inherited_swap_icons,
-        sources_present=sources_present,
+        perk_icon_refs=perk_icon_refs,
+        sources_present=sources_present, off_tree_prerequisites=off_tree_prerequisites, history=history,
     )
 
 
@@ -527,13 +660,85 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
         forward.setdefault(e.to_key, {}).setdefault(e.kind, []).append(i)
         reverse.setdefault(e.from_key, {}).setdefault(e.kind, []).append(i)
 
+    name_overrides = load_name_overrides()
+
+    def _resolve_technology_name(key: str) -> str:
+        name_entry = ctx.loc_table.get(key)
+        raw_name = strip_markup(name_entry.value.raw) if name_entry else key
+        name = _require_resolved(raw_name, key, "name", ctx)
+        if name == key:
+            override = name_overrides.get(key)
+            if override is None:
+                raise UnresolvedLocalisationTokenError(
+                    key, "name", f"resolves to its own raw key {key!r} -- no real localisation exists; "
+                    f"see config/name_overrides.txt"
+                )
+            name = override.name
+        return name
+
+    # Resolved once, up front, for every rendered technology -- reused both for the technology's
+    # own "name" field below AND for a technology-kind gate's label (P-3: a has_technology gate's
+    # target is always itself a rendered technology, 17/17 real distinct targets confirmed by the
+    # gate-classification survey, so it already goes through this exact resolution path; a second,
+    # independent resolution during gate-building would risk drifting from the target's own
+    # displayed name).
+    resolved_names: dict[str, str] = {key: _resolve_technology_name(key) for key in key_order}
+
+    def _perk_gate_label(perk_id: str) -> str:
+        entry = ctx.loc_table.get(perk_id)
+        raw = strip_markup(entry.value.raw) if entry else perk_id
+        name = _require_resolved(raw, perk_id, "gate label (ascension perk)", ctx)
+        if name == perk_id:
+            raise UnresolvedLocalisationTokenError(
+                perk_id, "gate label (ascension perk)",
+                f"resolves to its own raw id {perk_id!r} -- no real localisation exists"
+            )
+        return name
+
+    def _build_gates(defn: "TechnologyDefinition") -> list[dict]:
+        matches = order_gates(classify_gates(defn.block))
+        gates: list[dict] = []
+        for match in matches:
+            if match.kind == "ascension_perk":
+                # Same graceful-degradation convention `_default_icon_ref` already establishes
+                # for a technology's own icon -- never observed to trigger for a real gate target
+                # in the survey (7 distinct has_ascension_perk ids, plus
+                # ap_gigastructural_constructs/ap_galactic_wonders, all resolved cleanly), kept
+                # only so the schema's required `icon` field is never missing.
+                icon = ctx.perk_icon_refs.get(match.ref_id, _default_icon_ref(ctx))
+                gates.append({
+                    "kind": "ascension_perk",
+                    "refId": match.ref_id,
+                    "icon": icon,
+                    "label": f"Needs {_perk_gate_label(match.ref_id)}",
+                })
+            else:  # "technology"
+                # Every real has_technology gate target is itself rendered in the FULL corpus
+                # (confirmed by the survey), but a reduced build (D-14: ACOT/AoT optionally
+                # absent is a supported build mode, not an error) can still hit a gate whose
+                # target belongs to the missing source -- e.g. `giga_tech_amb_supertensiles_
+                # acot_alpha` gates on the ACOT-only `tech_dark_matter_power_core_ae`, which is
+                # only unrendered because ACOT itself is absent from this build, the same
+                # graceful-degradation situation `_resolve_off_tree_prerequisite_name` already
+                # handles for D-18's off-tree prerequisite names. Falls back to the same
+                # best-effort loc_table lookup that function uses, never a hard failure, and
+                # never a guess beyond what that established precedent already does.
+                target_name = resolved_names.get(match.ref_id) or _resolve_off_tree_prerequisite_name(match.ref_id, ctx)
+                icon = ctx.icon_refs.get(match.ref_id, _default_icon_ref(ctx))
+                gates.append({
+                    "kind": "technology",
+                    "refId": match.ref_id,
+                    "icon": icon,
+                    "label": f"Needs {target_name}",
+                })
+        return gates
+
     technologies_json = []
     categories: set[str] = set()
     for key in key_order:
         defn = ctx.rendered_defs[key]
         node = layout.nodes[key]
-        name_entry = ctx.loc_table.get(key)
-        name = strip_markup(name_entry.value.raw) if name_entry else key
+        name = resolved_names[key]
 
         tier = resolve_declared_tier(key, defn.block, ctx.variable_table)
         repeatable = is_repeatable(defn.block, ctx.variable_table)
@@ -545,7 +750,7 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
         categories.add(category)
 
         cost_assignment = _field(defn.block, "cost")
-        cost = _resolve_numeric(cost_assignment.value if cost_assignment else None, ctx.variable_table)
+        cost = _resolve_cost(cost_assignment.value if cost_assignment else None, ctx.variable_table)
 
         cost_per_level = None
         if repeatable:
@@ -568,7 +773,7 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
             "icon": icon,
             "cost": cost,
             "tier": tier,
-            "laneId": node.lane_id,
+            "rowId": node.row_id,
             "area": area if area in ("physics", "society", "engineering") else "physics",
             "category": category,
             "crisisFaction": ctx.crisis.get(key),
@@ -576,22 +781,34 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
             "dangerous": _bool_flag(defn.block, "is_dangerous"),
             "repeatable": ({"levels": levels, "costPerLevel": cost_per_level} if repeatable else None),
             "requiresMods": requires_mods,
-            "gates": [],
+            "gates": _build_gates(defn),
             "availabilityMatrix": matrix,
             "labelPriority": _label_priority(key, reverse_prereq_count, defn),
         })
 
-    lane_counts: dict[str, int] = {}
+    row_counts: dict[str, int] = {}
     for key in key_order:
-        lane_counts[layout.nodes[key].lane_id] = lane_counts.get(layout.nodes[key].lane_id, 0) + 1
+        row_counts[layout.nodes[key].row_id] = row_counts.get(layout.nodes[key].row_id, 0) + 1
 
-    lanes_json = [
+    # Row model (D-16): `layout.row_ids` is ROW_ORDER -- the derived category rows followed by the
+    # 5 fixed crisis-faction rows (pipeline.layout's module docstring). JSON field names ("rows"/
+    # "rowId") now match the row model directly -- renamed from the earlier "lanes"/"laneId" names
+    # this session, once the client was updated to match (see CLAUDE.md/HANDOFF.md).
+    # A faction row's id/label is the faction name itself; a category row's id is the bare category
+    # id (`layout.row_ids` entry) but its LABEL is that category's own resolved, human-readable
+    # localised name (e.g. "voidcraft" -> "Voidcraft") -- resolved through the same hard-fail
+    # `_require_resolved` path as every other displayed string, not left as the bare machine id.
+    rows_json = [
         {
-            "id": lane_id, "label": lane_id,
-            "crisisFaction": (None if lane_id == "Standard" else lane_id),
-            "technologyCount": lane_counts.get(lane_id, 0),
+            "id": row_id,
+            "label": (
+                row_id if row_id in CRISIS_FACTIONS
+                else _require_resolved(strip_markup(ctx.loc_table.require(row_id).value.raw), row_id, "category label", ctx)
+            ),
+            "crisisFaction": (row_id if row_id in CRISIS_FACTIONS else None),
+            "technologyCount": row_counts.get(row_id, 0),
         }
-        for lane_id in layout.lane_ids
+        for row_id in layout.row_ids
     ]
 
     tier_bands_json = [
@@ -607,6 +824,7 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
     manifest = _read_manifest(ctx.vendor_root)
     document = {
         "schemaVersion": SCHEMA_VERSION,
+        "empireProfileAxes": build_empire_profile_axes(),
         "metadata": {
             "gigastructuresCommit": manifest.get("gigastructures_commit", "unknown"),
             "vanillaVersion": manifest.get("vanilla_version", "unknown"),
@@ -615,7 +833,7 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
             "buildTimestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         },
         "tierBands": tier_bands_json,
-        "lanes": lanes_json,
+        "rows": rows_json,
         "categories": sorted(categories),
         "iconAtlases": icon_atlases_json,
         "technologies": technologies_json,
@@ -697,7 +915,7 @@ def build_empire_overlay(ctx: BuildContext, profile: dict) -> dict:
 
     for key, defn in ctx.rendered_defs.items():
         cost_assignment = _field(defn.block, "cost")
-        costs[key] = _resolve_numeric(cost_assignment.value if cost_assignment else None, ctx.variable_table) or 0.0
+        costs[key] = _resolve_cost(cost_assignment.value if cost_assignment else None, ctx.variable_table) or 0.0
         tiers[key] = resolve_declared_tier(key, defn.block, ctx.variable_table)
 
         potential = _field(defn.block, "potential")
@@ -749,7 +967,25 @@ def build_empire_overlay(ctx: BuildContext, profile: dict) -> dict:
 def build_detail_payload(ctx: BuildContext, key: str) -> dict:
     defn = ctx.rendered_defs[key]
     desc_entry = ctx.loc_table.get(f"{key}_desc")
-    description = strip_markup(desc_entry.value.raw) if desc_entry else ""
+    raw_description = strip_markup(desc_entry.value.raw) if desc_entry else ""
+    # Upgraded (later session) from strip-only to full token resolution, same as `name` -- see
+    # PART 2's survey: 223/980 raw descriptions carried a literal, unresolved `$...$` token before
+    # this fix, and all 223 resolve cleanly (measured max depth 4 hops) under the corrected
+    # resolve-every-sibling-token algorithm. Hard-fails the same way `name` does: description is a
+    # displayed string (the detail popup), and there is no remaining reason to tolerate a raw
+    # token in it that `name` doesn't also tolerate.
+    description = _require_resolved(raw_description, key, "description", ctx) if raw_description else ""
+    # Reconciliation session 3, found by reviewing a real detail-popup screenshot (this field was
+    # never actually DISPLAYED anywhere before the popup slice, so this was invisible until now):
+    # Stellaris's own loc format uses a literal two-character `\n` escape sequence inside a
+    # description string for a real line break (confirmed directly against raw source --
+    # `tech_dark_matter_power_core_ae_desc`'s own YAML value contains the literal backslash-n
+    # bytes, not a real newline) -- `strip_markup` only strips `§`/`£` markup, never touched this.
+    # Unescaped here, not client-side, since the wrong (literal-backslash-n) string is genuinely
+    # bad data to ship, not a presentation choice. Scoped to `description` only -- every other
+    # loc-derived field (names, gate labels, swap names) is short-form and has never been observed
+    # to carry this escape in the real corpus.
+    description = description.replace("\\n", "\n")
 
     repeatable = is_repeatable(defn.block, ctx.variable_table)
     cost_per_level_assignment = _field(defn.block, "cost_per_level")
@@ -759,7 +995,7 @@ def build_detail_payload(ctx: BuildContext, key: str) -> dict:
         if per_level is not None:
             levels = _levels_value(defn.block, ctx.variable_table)
             n = levels if levels else 10  # unbounded: report first 10 levels' worth, not an infinite array
-            base = _resolve_numeric(_field(defn.block, "cost").value, ctx.variable_table) if _field(defn.block, "cost") else 0.0
+            base = _resolve_cost(_field(defn.block, "cost").value, ctx.variable_table) if _field(defn.block, "cost") else 0.0
             repeatable_cost_progression = [round((base or 0.0) + per_level * i, 2) for i in range(n)]
 
     record = ctx.overwrite_records.get(key)
@@ -799,6 +1035,18 @@ def build_detail_payload(ctx: BuildContext, key: str) -> dict:
             condition_text = describe_condition(condition_items[0]) if condition_items else "always"
             modifiers.append({"factor": factor, "conditionText": condition_text})
 
+    # D-18 off-tree-prerequisite surfacing (Item 3, reconciliation session 3): the exact 3 accepted
+    # links (spec/decisions.md's D-18) name a prerequisite with no rendered node. Resolved
+    # best-effort -- soft fallback to the raw key on an unresolvable name, since this is a
+    # supplementary note, not a field this project's usual "hard-fail on unresolved localisation"
+    # discipline applies to (the technology NAMING the off-tree prerequisite still renders and
+    # still has its own, separately-resolved name; a missing NAME for the thing it merely
+    # MENTIONS shouldn't fail the whole build).
+    off_tree_prerequisite_names = [
+        _resolve_off_tree_prerequisite_name(prereq_key, ctx)
+        for prereq_key in ctx.off_tree_prerequisites.get(key, [])
+    ]
+
     return {
         "schemaVersion": SCHEMA_VERSION,
         "technologyId": key,
@@ -809,7 +1057,17 @@ def build_detail_payload(ctx: BuildContext, key: str) -> dict:
         "repositoryLink": repository_link,
         "variants": variants,
         "weight": {"base": base_weight, "modifiers": modifiers},
+        "offTreePrerequisiteNames": off_tree_prerequisite_names,
     }
+
+
+def _resolve_off_tree_prerequisite_name(prereq_key: str, ctx: "BuildContext") -> str:
+    name_entry = ctx.loc_table.get(prereq_key)
+    if name_entry is None:
+        return prereq_key
+    raw_name = strip_markup(name_entry.value.raw)
+    resolved = _resolve_loc_tokens(raw_name, ctx)
+    return resolved if resolved is not None else prereq_key
 
 
 def _repository_link(key: str, defn: TechnologyDefinition) -> dict:
@@ -895,10 +1153,16 @@ def _reduced_vendor_diagnostics(ctx: BuildContext) -> dict:
     """`vendorSourcesLoaded`/`placeholderTechnologiesAbsent`/
     `vanillaTechnologiesRevertedFromAcotOverwrite` -- fires (non-empty) only when ACOT and/or AoT
     is absent from this build. Deliberately loud: a build missing ACOT/AoT is plausible and
-    self-consistent (977 rendered nodes, zero dangling edges, zero alternative-only gaps -- see
-    spec/decisions.md's vendoring-automation investigation) precisely because nothing else looks
-    broken. See `PLACEHOLDER_TECHNOLOGIES_REQUIRING_ACOT_AOT`/`VANILLA_TECHNOLOGIES_ACOT_OVERWRITES`
-    above for why these two lists are maintained constants, not derived from the reduced corpus."""
+    self-consistent (zero dangling edges, zero alternative-only gaps -- see spec/decisions.md's
+    vendoring-automation investigation) precisely because nothing else looks broken. D-18 (this
+    session): a reduced build's rendered-node count is no longer simply "977" restated --
+    depth-1's own full-build count is ALSO 977 (coincidentally the same digits, a different
+    computation: full build is 980 - 3 depth-2+ drops; reduced build is 977 - 4 remaining
+    depth-1 placeholders + 4 vanilla-overwrite reversions = 977 again). Don't treat this
+    coincidence as evidence the two builds are otherwise equivalent -- re-derive from the real
+    corpus rather than reusing either cached figure. See
+    `PLACEHOLDER_TECHNOLOGIES_REQUIRING_ACOT_AOT`/`VANILLA_TECHNOLOGIES_ACOT_OVERWRITES` above for
+    why these two lists are maintained constants, not derived from the reduced corpus."""
     missing_sources = [s for s in ("ACOT", "AoT") if s not in ctx.sources_present]
 
     placeholder_absent = []

@@ -115,6 +115,21 @@ def empire_profile_index(profile: dict) -> int:
     return _index_for(profile, AXES, _STRIDES)
 
 
+def build_empire_profile_axes() -> dict:
+    """Emits `schema/common.schema.json`'s `EmpireProfileAxes` shape -- the axis order,
+    cardinalities and derived strides -- so the client can derive `EmpireProfileIndex` from
+    dataset data instead of restating this module's formula as a second implementation (Item 1b,
+    gate-classification survey session; CLAUDE.md's parallel-geometry rule, generalised from
+    geometry to this indexing scheme). Derived from `AXES`/`_STRIDES`, never hand-restated."""
+    return {
+        "axes": [
+            {"name": name, "values": list(values), "stride": stride}
+            for (name, values), stride in zip(AXES, _STRIDES)
+        ],
+        "totalProfileCount": TOTAL_PROFILE_COUNT,
+    }
+
+
 def all_profiles_in_canonical_order() -> list[dict]:
     """Every profile in the full axis product, in the exact order `empire_profile_index` assigns
     0..TOTAL_PROFILE_COUNT-1 — index i of this list is always

@@ -117,11 +117,11 @@ def test_full_icon_corpus_build_report_unfiltered():
 
 def test_filtered_technology_atlas_matches_p16_closure():
     """The REAL build path (P-16 TODO(Stage 2) closed): technology icons filtered to the
-    980-node rendered set; ascension-perk icons deliberately left unfiltered (see
-    filter_result_to_rendered_scope's docstring for why). This is what MAX_TOTAL_ATLAS_BYTES is
-    now calibrated against."""
+    977-node rendered set (D-18: 980 -> 977); ascension-perk icons deliberately left unfiltered
+    (see filter_result_to_rendered_scope's docstring for why). This is what MAX_TOTAL_ATLAS_BYTES
+    is now calibrated against."""
     rendered_keys = _rendered_keys()
-    assert len(rendered_keys) == 980
+    assert len(rendered_keys) == 977  # D-18: 980 -> 977
 
     tech_sheets, tech_result = build_atlases("technology", VENDOR_ROOT, rendered_keys=rendered_keys)
     perk_sheets, perk_result = build_atlases("ascension_perk", VENDOR_ROOT)
@@ -133,11 +133,14 @@ def test_filtered_technology_atlas_matches_p16_closure():
     for c in tech_result.unresolved:
         print(f"    UNRESOLVED (survives P-16 filter) [{c.definition_source}] {c.key} -> {c.resolved_name} ({c.channel})")
 
-    assert len(tech_result.resolved) == 1192
+    # D-18 (this session): 1192 -> 1189 -- the 3 depth-2+ technologies dropped from the P-16
+    # closure carried resolvable icon candidates that are now correctly excluded by the filter.
+    assert len(tech_result.resolved) == 1189
     # Of the 19 unfiltered unresolved candidates, only these 4 have an owning technology that
     # actually renders -- the other 15 (mostly ACOT bio-spore techs) are outside the P-16
     # closure and no longer matter. Do NOT resolve or guess at these 4 -- config/icon_overrides.txt
-    # is human-decided by design (see resolve.py's module docstring).
+    # is human-decided by design (see resolve.py's module docstring). Unaffected by D-18: none of
+    # the 3 dropped technologies was ever in this unresolved set.
     assert {c.key for c in tech_result.unresolved} == {
         "giga_tech_planetary_matter_dumping",
         "giga_tech_repeatable_observatory_cap",
@@ -147,12 +150,14 @@ def test_filtered_technology_atlas_matches_p16_closure():
 
     assert len(tech_sheets) == 2
     assert (tech_sheets[0].width, tech_sheets[0].height) == (1008, 2016)
-    assert (tech_sheets[1].width, tech_sheets[1].height) == (1008, 1468)
+    # D-18: second sheet shrinks from 1008x1468 to 1008x1406 -- 3 fewer tiles to pack.
+    assert (tech_sheets[1].width, tech_sheets[1].height) == (1008, 1406)
 
     total_atlas_bytes = sum(len(encode_webp(s)) for s in tech_sheets + perk_sheets)
     print(f"total FILTERED atlas bytes (WebP, filtered tech + unfiltered perk): {total_atlas_bytes} "
           f"(tripwire: {MAX_TOTAL_ATLAS_BYTES})")
-    assert total_atlas_bytes == 4_826_990  # 4,564,314 filtered tech + 262,676 unfiltered perk
+    # D-18: 4,826,990 -> 4,799,342 (4,536,666 filtered tech + 262,676 unfiltered perk).
+    assert total_atlas_bytes == 4_799_342
     assert total_atlas_bytes <= MAX_TOTAL_ATLAS_BYTES, (
         f"total atlas bytes {total_atlas_bytes} exceeds MAX_TOTAL_ATLAS_BYTES "
         f"({MAX_TOTAL_ATLAS_BYTES}) -- see pipeline/icons/pack.py's comment on this constant; "

@@ -64,6 +64,36 @@
       "description": "Derived 0-11 index of an EmpireProfile under the canonical ordering documented in this schema's $comment. Never authored by hand; always computed from the three axes."
     },
 
+    "EmpireProfileAxes": {
+      "type": "object",
+      "description": "Emitted mirror of pipeline/dataset_schema/empire_profile.py's AXES -- the axis order, each axis's cardinality and canonical value order, and derived stride, exactly as EmpireProfileIndex's $comment states it. Exists so the client derives EmpireProfileIndex from this emitted data instead of restating the formula as a second implementation (CLAUDE.md's Rules: 'the pipeline owns all geometry [or here, indexing scheme]; the renderer consumes emitted [data] and never recomputes them from a parallel formula') -- the exact defect class D-17's row-geometry desync was found under. A one-sided axis-cardinality change (pipeline gains a value, client doesn't know) must fail loudly, not silently drift; deriving from this field is what makes that structurally impossible rather than merely tested-for.",
+      "properties": {
+        "axes": {
+          "type": "array",
+          "description": "In canonical order (authority, shipset, nomadic today) -- index 0 is the most significant (largest stride).",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string", "enum": ["authority", "shipset", "nomadic"] },
+              "values": {
+                "type": "array",
+                "description": "This axis's values in canonical order -- values[i]'s position i is its index for stride multiplication.",
+                "items": { "type": "string" },
+                "minItems": 1
+              },
+              "stride": { "type": "integer", "minimum": 1, "description": "Multiplier applied to this axis's value-index when composing EmpireProfileIndex. Product of the cardinalities of every axis after this one; the last axis always has stride 1." }
+            },
+            "required": ["name", "values", "stride"],
+            "additionalProperties": false
+          },
+          "minItems": 1
+        },
+        "totalProfileCount": { "type": "integer", "minimum": 1, "description": "Product of every axis's cardinality -- 12 today. The valid range for EmpireProfileIndex is 0..totalProfileCount-1." }
+      },
+      "required": ["axes", "totalProfileCount"],
+      "additionalProperties": false
+    },
+
     "EmpireTypeConstraint": {
       "type": "object",
       "description": "P-14: {from, to, kind, appliesToEmpireTypes}. This is the appliesToEmpireTypes shape -- axis constraints, each an array of allowed values on that axis; an omitted axis is unconstrained (all its values allowed). Confirmed against the full corpus (see the icon/edge survey) that every real edge's empire-type applicability factors as a product of independent axis constraints -- no real edge needs an irregular (non-rectangular) subset of the twelve profiles, so this shape is sufficient. NEVER a flat 12-profile enumeration and NEVER a bitmask in this JSON -- if a bitmask is needed for fast membership testing at runtime, it is derived at build time into the typed-array side-files, never authored or shipped here.",

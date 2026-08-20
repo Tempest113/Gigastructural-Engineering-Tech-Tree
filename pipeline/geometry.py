@@ -17,12 +17,15 @@ from dataclasses import dataclass
 
 from .layout import CARD_HEIGHT, EdgeLayout, LayoutResult, NodeLayout
 
-# Every edge's polyline is exactly 4 (x, y) waypoints (pipeline.layout._route_edges: an
-# orthogonal H-V-H route, 3 segments) -- fixed-size records, so edge geometry packs as a flat
-# float32 array with a uniform per-edge stride, no variable-length bookkeeping needed.
-POINTS_PER_POLYLINE = 4
+# Every edge's polyline is exactly 6 (x, y) waypoints (pipeline.layout._route_edges: a
+# card-avoidance route through the source row's own header/gutter strip -- exit stub, vertical
+# run, horizontal transit, vertical run, entry stub -- 5 segments; moved from 4 points/3 segments
+# in the session that closed the plain H-V-H router's card-crossing bug, see that function's own
+# docstring) -- fixed-size records, so edge geometry packs as a flat float32 array with a uniform
+# per-edge stride, no variable-length bookkeeping needed.
+POINTS_PER_POLYLINE = 6
 FLOATS_PER_NODE = 2  # x, y
-FLOATS_PER_EDGE = POINTS_PER_POLYLINE * 2  # 4 points x (x, y)
+FLOATS_PER_EDGE = POINTS_PER_POLYLINE * 2  # 6 points x (x, y)
 
 
 @dataclass(frozen=True)

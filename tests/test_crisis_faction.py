@@ -5,10 +5,12 @@ from __future__ import annotations
 from pipeline.clausewitz import parse_text
 from pipeline.crisis_faction import (
     CRISIS_FACTIONS,
+    classify_by_flag,
     classify_by_prerequisite_inheritance,
     classify_by_tech_id,
     classify_crisis_factions,
 )
+from pipeline.crisis_faction_flags import CrisisFactionFlagOverride
 from pipeline.crisis_faction_overrides import CrisisFactionOverride
 from pipeline.overwrites import TechnologyDefinition
 
@@ -117,3 +119,63 @@ def test_override_can_assign_a_faction_id_classification_missed():
 
 def test_all_five_faction_names_match_d7_spelling():
     assert CRISIS_FACTIONS == ("Aeternum", "Blokkats", "Compound", "Sirenalia", "Katzenartig Imperium")
+
+
+# ---------------------------------------------------------------------------
+# Step 1.5: flag map (config/crisis_faction_flag_overrides.txt)
+# ---------------------------------------------------------------------------
+
+
+def _flag_override(flag_name: str, faction: str) -> dict[str, CrisisFactionFlagOverride]:
+    return {flag_name: CrisisFactionFlagOverride(flag_name=flag_name, faction=faction, justification="test", line=1)}
+
+
+def test_classify_by_flag_matches_mapped_flag_in_potential():
+    definition = _def("tech_gated", "{ potential = { has_country_flag = my_flag } }")
+    assert classify_by_flag(definition, _flag_override("my_flag", "Compound")) == "Compound"
+
+
+def test_classify_by_flag_ignores_unmapped_flag():
+    definition = _def("tech_gated", "{ potential = { has_country_flag = other_flag } }")
+    assert classify_by_flag(definition, _flag_override("my_flag", "Compound")) is None
+
+
+def test_classify_by_flag_ignores_negated_flag():
+    # A flag inside NOT/NOR means "must NOT have this flag" -- the opposite of membership
+    # evidence, so it must never classify.
+    definition = _def("tech_gated", "{ potential = { NOT = { has_country_flag = my_flag } } }")
+    assert classify_by_flag(definition, _flag_override("my_flag", "Compound")) is None
+
+
+def test_classify_by_flag_descends_into_and_or_only():
+    definition = _def(
+        "tech_gated",
+        "{ potential = { OR = { AND = { has_country_flag = my_flag } } } }",
+    )
+    assert classify_by_flag(definition, _flag_override("my_flag", "Compound")) == "Compound"
+
+
+def test_classify_by_flag_seeds_prerequisite_inheritance():
+    # The flag-classified technology can itself seed step 2 for anything that depends on it
+    # ALONE (a single, non-mixed prerequisite set) -- the same way a step-1 ID match already does.
+    technologies = {
+        "tech_flagged": _def("tech_flagged", "{ potential = { has_country_flag = my_flag } prerequisites = { } }"),
+        "tech_dependent": _def("tech_dependent", "{ prerequisites = { tech_flagged } }"),
+    }
+    result = classify_crisis_factions(technologies, flag_overrides=_flag_override("my_flag", "Compound"))
+    assert result["tech_flagged"] == "Compound"
+    assert result["tech_dependent"] == "Compound"
+
+
+def test_classify_by_flag_does_not_propagate_through_a_mixed_prerequisite_set():
+    # Mirrors the real corpus finding (Part 0's reconciliation, tests/test_crisis_faction_corpus.py):
+    # a dependent that ALSO requires an ordinary, unclassified prerequisite does not inherit,
+    # because step 2 requires every rendered prerequisite to already share one faction.
+    technologies = {
+        "tech_flagged": _def("tech_flagged", "{ potential = { has_country_flag = my_flag } prerequisites = { } }"),
+        "tech_baseline": _def("tech_baseline", "{ prerequisites = { } }"),
+        "tech_dependent": _def("tech_dependent", "{ prerequisites = { tech_flagged tech_baseline } }"),
+    }
+    result = classify_crisis_factions(technologies, flag_overrides=_flag_override("my_flag", "Compound"))
+    assert result["tech_flagged"] == "Compound"
+    assert result["tech_dependent"] is None

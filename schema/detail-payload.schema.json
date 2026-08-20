@@ -128,11 +128,17 @@
       },
       "required": ["base", "modifiers"],
       "additionalProperties": false
+    },
+
+    "offTreePrerequisiteNames": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "D-18 (spec/decisions.md): the exact, accepted cost of the depth-1 ACOT/AoT rendering-scope closure -- a prerequisite this technology names in its own source that is NOT rendered as a node (reachable only via ANOTHER ACOT/AoT technology, not directly from anything rendered). Localised names, best-effort resolved (falls back to the raw technology key if genuinely unresolvable -- never blocks the build, since this is a supplementary note about a technology OTHER than the one this payload describes). Empty for the overwhelming majority (974/977) -- real corpus: exactly 3 technologies carry 1-2 entries each. Never a card badge (three affected nodes doesn't justify a new indicator) -- popup-only, alongside a fixed client-side note that the name is outside the rendered scope."
     }
   },
   "required": [
     "schemaVersion", "technologyId", "description", "repeatableCostProgression",
-    "source", "overwriteDiff", "repositoryLink", "variants", "weight"
+    "source", "overwriteDiff", "repositoryLink", "variants", "weight", "offTreePrerequisiteNames"
   ],
   "additionalProperties": false
 }

@@ -137,8 +137,9 @@ def rendered_potentials():
     return result
 
 
-def test_rendered_scope_is_exactly_980(rendered_potentials):
-    assert len(rendered_potentials) == 980
+def test_rendered_scope_is_exactly_977(rendered_potentials):
+    # D-18 (spec/decisions.md): 980 -> 977, the depth-1 ACOT/AoT closure adopted this session.
+    assert len(rendered_potentials) == 977
 
 
 def test_real_rates_against_projections(rendered_potentials):
@@ -146,7 +147,7 @@ def test_real_rates_against_projections(rendered_potentials):
     survey = survey_uncertainty(rendered_potentials, profiles)
 
     total = survey.total_technologies
-    assert total == 980  # this IS the rendered denominator the spec now requires (Task 1's D-10 split)
+    assert total == 977  # this IS the rendered denominator the spec now requires (Task 1's D-10 split); D-18: 980 -> 977
 
     unconditional_rate = survey.unconditional_rate()
     worst_dependent_rate = survey.worst_profile_dependent_rate()
@@ -180,7 +181,7 @@ def test_real_rates_against_projections(rendered_potentials):
     # SAME 209 the pre-correction figure happened to name, not a different set that sums to the
     # same size by coincidence.
     assert len(survey.unconditional_uncertain) == 209
-    assert unconditional_rate == pytest.approx(209 / 980)
+    assert unconditional_rate == pytest.approx(209 / 977)  # D-18: 980 -> 977 denominator
     assert dict(distribution) == {
         ReasonCategory.CRISIS_OR_STORY_PROGRESS: 89,
         ReasonCategory.ORIGIN_REQUIREMENT: 41,

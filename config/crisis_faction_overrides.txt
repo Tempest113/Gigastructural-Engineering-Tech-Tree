@@ -17,12 +17,11 @@
 # automatic result, not just fill a gap, because faction membership is closer to an editorial
 # call than any of this project's other overwrite/lock-reason tables).
 #
-# pipeline/crisis_faction.py's own module docstring records two cases that were tried
+# pipeline/crisis_faction.py's own module docstring records one case that was tried
 # automatically (via a `potential`-block crisis-flag reference, not prerequisite inheritance) and
-# found to be FALSE POSITIVES rather than real membership signals -- both are deliberately NOT
-# entries here, because the correct classification (standard lane) is already what the automatic
-# derivation produces for them without an override:
-#   - tech_sm_autocannons (EHOF/Urmazin-trader content referencing a Compound weapon-compat flag)
+# found to be a FALSE POSITIVE rather than a real membership signal -- it is deliberately NOT an
+# entry here, because the correct classification (standard lane) is already what the automatic
+# derivation produces for it without an override:
 #   - giga_tech_tetradimensional_engineering (a standard physics tech with an alternate
 #     Blokkat-crisis-progress unlock path, not a Blokkats-lane technology)
 #
@@ -34,16 +33,122 @@
 # `None` forces a technology into the standard-progression lane, overriding an automatic step 1/2
 # match that turns out wrong.
 #
-# No entries yet. The real vendored corpus survey behind this file (CLAUDE.md's "Layout survey"
-# section) found the automatic derivation (steps 1-2) already produces the correct result for
-# every rendered technology checked, including the two false-positive candidates above (which
-# resolve correctly to the standard lane by simply not matching) — do not add one speculatively.
+# --- Real entries below ---
 #
-# Worked example (commented out — NOT a real override; delete the leading '# ' only when adding a
-# genuine, reviewed entry for a technology the automatic derivation actually got wrong). Say a
-# future corpus revision adds a live Compound-crisis technology whose key doesn't contain
-# "compound" and whose prerequisites are all standard-lane, so steps 1-2 can't find it:
+# Both entries below correct the SAME step-1/2 result: `tech_sm_autocannons` was previously
+# documented as a second confirmed false positive alongside giga_tech_tetradimensional_engineering
+# above (EHOF/Urmazin-trader content referencing a Compound weapon-compatibility bypass flag, "not
+# a membership signal"). That reasoning addressed identity (is this technology itself
+# Compound-authored content?) and correctly found no ID/category evidence that it is. It did not
+# address reachability: does `giga_special_tech_compound_weapon_bypass` open a real path to
+# researching the technology that a Compound-crisis empire, and only a Compound-crisis empire, can
+# take? Checked directly against the raw corpus, it does: the flag's sole setter anywhere in the
+# vendored corpus is `vendor/mods/gigastructures/events/giga_compound_situation_09.txt:113`,
+# inside the Compound situation's own event chain (`common/situations/giga_compound_09.txt`
+# drives it) — no other event, effect, or on_action sets it. A technology whose only
+# non-`has_technology` unlock branch is gated behind a flag with that provenance is Compound
+# content wearing an EHOF technology's clothes, not EHOF content that happens to reference a
+# Compound flag in passing.
 #
-# tech_example_relay_core = Compound  # granted by the Compound invasion chain
-#   (giga_191_compound_fleet_orders.txt), confirmed by tracing the country_event that grants it
-#   on <date>; no ID hint and no faction-exclusive prerequisite for steps 1-2 to use.
+# `tech_qnm_disruptors` (giga_08_ehof_components.txt) was not previously documented at all --
+# found this session by re-reading the same file `tech_sm_autocannons` lives in. It carries the
+# byte-for-byte identical `potential` shape: `OR = { AND = { has_technology = <tier-3 baseline>,
+# has_technology = tech_qnm_utilities }, has_country_flag =
+# giga_special_tech_compound_weapon_bypass }`. Same flag, same sole setter, same reasoning
+# applies without modification.
+#
+# Why this is an override and not a rule change to pipeline/crisis_faction.py: the evidence for
+# both entries lives in `vendor/mods/gigastructures/events/`, a directory this project has never
+# declared as a required extraction source (CLAUDE.md's "Required directories, per source" lists
+# `common/technology`, `common/scripted_variables`, `common/scripted_triggers`,
+# `common/ascension_perks`, `common/inline_scripts`, `localisation/english`, and two icon
+# directories -- `events/` is not among them). Teaching the classifier to resolve
+# `has_country_flag` provenance generally would mean adding `events/` as a required source and
+# making event-namespace string inference (which files set which flags) load-bearing for layout
+# output -- a materially larger scope change than the two nodes it would resolve. A one-off,
+# reviewed override is the proportionate response for two nodes; folding this into the general
+# classifier is not, absent more corpus evidence that the pattern recurs.
+#
+# A rule was also considered and rejected as incoherent: "classify a technology's `OR` branch as
+# Compound-gated when a `has_technology` reference inside that branch resolves to Compound
+# content." Run literally against these two technologies' `has_country_flag` branch, that rule
+# reports zero matches -- correctly, because that branch contains no `has_technology` reference
+# at all for a has_technology-scoped test to evaluate. Zero was the right output for the rule as
+# specified; it was the rule's scope, not the corpus, that was wrong, which is why these two
+# nodes are handled here by direct flag-provenance evidence instead.
+#
+# This override does NOT track corpus growth. If a future Gigastructures update adds more
+# technologies gated behind a Compound-situation bypass flag by the same pattern, they will
+# silently classify Standard until someone notices and adds an entry here -- there is no
+# generalised detector watching for this shape. `tests/test_crisis_faction_corpus.py` pins the
+# exact `potential` shape of both technologies below, specifically so a future corpus revision
+# that restructures either one (changes the flag name, removes the bypass branch, merges the two
+# `has_technology` conditions, etc.) fails that test and forces this override back under review
+# rather than silently keeping a stale classification.
+
+tech_sm_autocannons = Compound  # Sole non-has_technology unlock branch is has_country_flag = giga_special_tech_compound_weapon_bypass, set only by giga_compound_situation_09.txt:113 (the Compound situation's own event chain) -- see the block comment above for the full reasoning and why this corrects the earlier "confirmed false positive" verdict rather than contradicting it.
+
+tech_qnm_disruptors = Compound  # Identical potential shape to tech_sm_autocannons in the same file (giga_08_ehof_components.txt): OR of a has_technology AND-branch and a bare has_country_flag = giga_special_tech_compound_weapon_bypass branch, same sole setter -- see the block comment above.
+
+# The 12 entries below correct a related gap, found and reconciled the same session
+# config/crisis_faction_flag_overrides.txt was added (that file's own new entry,
+# qnm_utilities_possible -> Compound, classifies tech_qnm_utilities itself). Each of these 12
+# technologies (all in giga_08_ehof_components.txt) declares
+# `prerequisites = { "<ordinary Standard-lane baseline weapon tech>" "tech_qnm_utilities" }` -- a
+# hard AND requirement on tech_qnm_utilities specifically, not an OR/alternate path around it.
+# Since tech_qnm_utilities is itself reachable only through Compound-crisis-storyline content (see
+# config/crisis_faction_flag_overrides.txt's entry and pipeline/crisis_faction.py's module
+# docstring), every one of these 12 has NO unlock path that does not pass through Compound
+# content, regardless of its Standard-lane co-prerequisite also being satisfied. This is the same
+# reachability principle already applied to the two entries above (a technology whose every unlock
+# path requires reaching faction content belongs to that faction), applied here to a
+# prerequisite-AND gate instead of a has_country_flag branch.
+#
+# Why this is 12 individual overrides and not a change to
+# pipeline.crisis_faction.classify_by_prerequisite_inheritance's step-2 rule: step 2 requires
+# EVERY rendered prerequisite of a technology to already share one faction before it inherits,
+# deliberately -- these 12 each have a MIXED prerequisite set (one Standard-lane baseline weapon
+# tech, one Compound-classified tech_qnm_utilities), which is exactly the shape step 2 is
+# documented to refuse ("a technology with a mixed or partially-unclassified prerequisite set
+# inherits nothing... not strong enough evidence either way"). Widening that rule to accommodate
+# these 12 would apply generally, unaudited, across the rest of the 980-node corpus; a reviewed,
+# individual override for each of the 12 -- verified against its own `prerequisites` list, exactly
+# like every other entry in this file -- is the proportionate response instead.
+tech_sm_flak_batteries = Compound  # prerequisites = { "tech_flak_batteries_3" "tech_qnm_utilities" } (giga_08_ehof_components.txt) -- hard AND on tech_qnm_utilities, which is Compound-only reachable (config/crisis_faction_flag_overrides.txt). No unlock path exists without Compound content, notwithstanding the Standard-lane tech_flak_batteries_3 co-prerequisite.
+
+tech_sm_mass_drivers = Compound  # prerequisites = { "tech_mass_drivers_5" "tech_qnm_utilities" } (giga_08_ehof_components.txt) -- same reasoning as tech_sm_flak_batteries above.
+
+tech_sm_kinetic_artillery = Compound  # prerequisites = { "tech_kinetic_artillery_2" "tech_qnm_utilities" } (giga_08_ehof_components.txt) -- same reasoning as tech_sm_flak_batteries above.
+
+tech_sm_mass_accelerator = Compound  # prerequisites = { "tech_mass_accelerator_2" "tech_qnm_utilities" } (giga_08_ehof_components.txt) -- same reasoning as tech_sm_flak_batteries above.
+
+tech_sm_titanic = Compound  # prerequisites = { "tech_titans" "tech_qnm_utilities" } (giga_08_ehof_components.txt) -- same reasoning as tech_sm_flak_batteries above.
+
+tech_qnm_pd_tracking = Compound  # prerequisites = { "tech_pd_tracking_3" "tech_qnm_utilities" } (giga_08_ehof_components.txt) -- same reasoning as tech_sm_flak_batteries above.
+
+tech_qnm_lasers = Compound  # prerequisites = { "tech_lasers_5" "tech_qnm_utilities" } (giga_08_ehof_components.txt) -- same reasoning as tech_sm_flak_batteries above.
+
+tech_qnm_plasma = Compound  # prerequisites = { "tech_plasma_3" "tech_qnm_utilities" } (giga_08_ehof_components.txt) -- same reasoning as tech_sm_flak_batteries above.
+
+tech_qnm_energy_torpedoes = Compound  # prerequisites = { "tech_energy_torpedoes_2" "tech_qnm_utilities" } (giga_08_ehof_components.txt) -- same reasoning as tech_sm_flak_batteries above.
+
+tech_qnm_energy_lance = Compound  # prerequisites = { "tech_energy_lance_2" "tech_qnm_utilities" } (giga_08_ehof_components.txt) -- same reasoning as tech_sm_flak_batteries above.
+
+tech_qnm_arc_emitter = Compound  # prerequisites = { "tech_arc_emitter_2" "tech_qnm_utilities" } (giga_08_ehof_components.txt) -- same reasoning as tech_sm_flak_batteries above.
+
+tech_qnm_titanic = Compound  # prerequisites = { "tech_titans" "tech_qnm_utilities" } (giga_08_ehof_components.txt) -- same reasoning as tech_sm_flak_batteries above; the two "tech_titans" co-prerequisite entries (tech_sm_titanic, tech_qnm_titanic) are distinct technologies, not a duplicate.
+
+# giga_tech_eawaf_psifusion = Sirenalia -- the one EAWAF/Sirenalia technology (see
+# config/crisis_faction_flag_overrides.txt's EAWAF block for the other six, and CLAUDE.md's
+# defect-class entry for the full corrected-verdict story) that carries NO `potential` block at
+# all -- checked directly against vendor/mods/gigastructures/common/technology/giga_18_eawaf.txt,
+# it has none, unlike every other technology in that same file. Its only unlock mechanism in the
+# vendored corpus is `add_research_option = giga_tech_eawaf_psifusion` inside country_event
+# giga_eawaf.10171 ("Success! Requires Shroud access and Zro",
+# giga_034_eawaf_events.txt:464-486), itself reached only through the giga_eawaf-namespace event
+# chain the other six EAWAF entries also belong to -- so the evidence here is file, category
+# (psionics, shared with every other EAWAF technology), and event-chain co-location, not a
+# `has_country_flag`/`has_technology` gate a flag-map or prerequisite-inheritance mechanism could
+# resolve automatically. This is why it is a technology-key override rather than a
+# crisis_faction_flag_overrides.txt entry.
+giga_tech_eawaf_psifusion = Sirenalia  # No `potential` block exists on this technology to gate on. Sole evidence: lives in giga_18_eawaf.txt (the Sirens' own technology file) and is granted only via add_research_option inside the giga_eawaf-namespace event chain (giga_034_eawaf_events.txt:482, event giga_eawaf.10171) that creates and acts on the Sirens' own country (see the flag-overrides file's EAWAF block for the country-identity evidence). File/category/event-chain co-location, not a resolvable gate -- override, not automatic derivation.

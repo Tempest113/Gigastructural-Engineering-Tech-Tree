@@ -14,7 +14,12 @@ import pytest
 
 from pipeline.clausewitz import parse_file, parse_text
 from pipeline.overwrites import collect_technology_definitions
-from pipeline.rendering_scope import compute_alternative_only_gaps, compute_rendering_scope, rendered_technology_keys
+from pipeline.rendering_scope import (
+    compute_alternative_only_gaps,
+    compute_off_tree_prerequisites,
+    compute_rendering_scope,
+    rendered_technology_keys,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 VENDOR_ROOT = REPO_ROOT / "vendor"
@@ -25,7 +30,12 @@ def _doc(text, path):
     return parse_text(text, path=path)
 
 
-def test_synthetic_closure_is_transitive_and_stops_at_rendered_sources():
+def test_synthetic_closure_is_depth_one_only_no_recursion():
+    # D-18: depth-1 only, superseding the earlier full-transitive-closure design this test used to
+    # assert (`test_synthetic_closure_is_transitive_and_stops_at_rendered_sources`). tech_acot_a is
+    # named directly in tech_giga_a's own prerequisites -> depth-1, included. tech_acot_b/c are
+    # only reachable via tech_acot_a's OWN prerequisites, i.e. depth 2+ -> NOT included, even
+    # though a real rendered technology's chain does eventually reach them.
     vanilla = _doc(
         "tech_vanilla_a = { prerequisites = { tech_vanilla_b } }\n"
         "tech_vanilla_b = { prerequisites = { } }\n",
@@ -43,14 +53,17 @@ def test_synthetic_closure_is_transitive_and_stops_at_rendered_sources():
         [("Vanilla", [vanilla]), ("Gigastructural Engineering", [giga]), ("ACOT", [acot])]
     )
     closure = compute_rendering_scope(history)
-    assert closure == {"tech_acot_a", "tech_acot_b", "tech_acot_c"}
-    assert "tech_acot_unreferenced" not in closure  # no rendered descendant -> not in closure
+    assert closure == {"tech_acot_a"}
+    assert "tech_acot_b" not in closure  # depth 2 -- not included under D-18
+    assert "tech_acot_c" not in closure  # depth 3 -- not included under D-18
+    assert "tech_acot_unreferenced" not in closure  # no rendered reference at all
 
     rendered = rendered_technology_keys(history)
-    assert rendered == {
-        "tech_vanilla_a", "tech_vanilla_b", "tech_giga_a",
-        "tech_acot_a", "tech_acot_b", "tech_acot_c",
-    }
+    assert rendered == {"tech_vanilla_a", "tech_vanilla_b", "tech_giga_a", "tech_acot_a"}
+
+    # tech_acot_a's own prerequisite on tech_acot_b is now off-tree: tech_acot_a renders,
+    # tech_acot_b doesn't, so tech_acot_a's card names a prerequisite with no node.
+    assert compute_off_tree_prerequisites(history) == [("tech_acot_a", "tech_acot_b")]
 
 
 def test_closure_ignores_a_reference_back_into_a_rendered_source():
@@ -133,19 +146,38 @@ def corpus_history():
 
 
 @pytest.mark.skipif(not _vendor_populated, reason="vendor/ not populated locally")
-def test_real_corpus_closure_matches_handoff_measurement(corpus_history):
+def test_real_corpus_closure_matches_d18_depth_one_measurement(corpus_history):
+    # D-18 (spec/decisions.md): depth-1 only, superseding the original 7-member full-transitive
+    # closure this test used to assert. The 3 dropped members
+    # (tech_dark_matter_power_core_enig, tech_mine_dark_energy, tech_precursor_design) are all
+    # depth-2+ -- reachable only via another ACOT technology's own prerequisites, never directly
+    # from a rendered (Vanilla/Gigastructures) technology.
     closure = compute_rendering_scope(corpus_history)
     assert closure == {
         "tech_dark_matter_power_core_dm",
         "tech_dark_matter_power_core_ae",
         "tech_dark_matter_power_core_se",
         "tech_civil_phanon_application",
-        "tech_mine_dark_energy",
-        "tech_dark_matter_power_core_enig",
-        "tech_precursor_design",
     }
 
 
 @pytest.mark.skipif(not _vendor_populated, reason="vendor/ not populated locally")
-def test_real_corpus_rendered_total_is_980(corpus_history):
-    assert len(rendered_technology_keys(corpus_history)) == 980
+def test_real_corpus_rendered_total_is_977(corpus_history):
+    # D-18: 980 -> 977, exactly the 3 depth-2+ closure members dropped under depth-1.
+    assert len(rendered_technology_keys(corpus_history)) == 977
+
+
+@pytest.mark.skipif(not _vendor_populated, reason="vendor/ not populated locally")
+def test_depth_one_closure_off_tree_links_match_the_accepted_set(corpus_history):
+    # D-18's exact, named, accepted cost of depth-1: these 3 links are the ONLY off-tree
+    # prerequisites in the real corpus, all ACOT->ACOT. If a future corpus refresh creates more,
+    # this must fail loudly rather than silently degrading chain completeness further -- per the
+    # user's own instruction when D-18 was adopted.
+    off_tree = compute_off_tree_prerequisites(corpus_history)
+    assert set(off_tree) == {
+        ("tech_dark_matter_power_core_ae", "tech_precursor_design"),
+        ("tech_dark_matter_power_core_dm", "tech_dark_matter_power_core_enig"),
+        ("tech_dark_matter_power_core_dm", "tech_mine_dark_energy"),
+    }
+    assert len(off_tree) == 3
+    assert all(pair[0].startswith("tech_dark_matter_power_core_") for pair in off_tree)

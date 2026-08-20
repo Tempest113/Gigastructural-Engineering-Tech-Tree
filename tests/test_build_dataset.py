@@ -39,7 +39,7 @@ def test_manifest_references_files_that_actually_exist(built):
     for rel_path in built["overlays"].values():
         assert (OUT_DIR / rel_path).is_file(), rel_path
 
-    assert len(built["details"]) == 980
+    assert len(built["details"]) == 977  # D-18: 980 -> 977
     for rel_path in built["details"].values():
         assert (OUT_DIR / rel_path).is_file(), rel_path
 

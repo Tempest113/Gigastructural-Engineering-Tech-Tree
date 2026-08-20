@@ -6,6 +6,7 @@ import pytest
 
 from pipeline.clausewitz import parse_text
 from pipeline.layout import (
+    CARD_HEIGHT,
     REPEATABLES,
     LayoutCycleError,
     TechnologyLayoutInput,
@@ -27,8 +28,8 @@ def _vt(*var_docs):
     return build_variable_table(var_docs)
 
 
-def _input(key, text, lane=None):
-    return TechnologyLayoutInput(key=key, block=_block(text), lane=lane)
+def _input(key, text, faction=None):
+    return TechnologyLayoutInput(key=key, block=_block(text), faction=faction)
 
 
 # ---------------------------------------------------------------------------
@@ -192,7 +193,18 @@ def test_unresolved_tier_propagates_as_hard_failure():
 # ---------------------------------------------------------------------------
 
 
-def test_dense_band_wraps_into_n_wide_subgrid():
+def test_unrelated_same_band_nodes_wrap_within_their_depth_slot():
+    # D-17 correction (spec/decisions.md): depth sets the MINIMUM sub-column a node may occupy,
+    # but a depth is a SLOT of one or more sub-columns, not a single unbounded stack. An earlier
+    # version of this test asserted the bug directly -- 10 mutually unrelated technologies (no
+    # prerequisites, all same-band depth 0) all landing in column 0, stacked across 10 sub-grid
+    # rows. That is exactly the failure mode the real corpus hit (up to 37 nodes stacked in one
+    # column) and produced an unreconciled ~2.5x canvas-height regression. Depth-0 members now
+    # wrap at `subgrid_width` (4) rows per column, spilling into additional columns within depth
+    # 0's own slot: 10 nodes -> ceil(10/4) = 3 columns (0, 1, 2), with 4, 4, 2 nodes respectively.
+    # The invariant is unaffected -- a real same-band prerequisite chain still needs one column per
+    # depth level, since each level only ever has 1 member here (see
+    # test_same_band_ordering_invariant_widens_the_band below).
     graph = {
         f"tech_{i}": _input(f"tech_{i}", "{ tier = 5 prerequisites = { } category = { voidcraft } }")
         for i in range(10)
@@ -200,47 +212,222 @@ def test_dense_band_wraps_into_n_wide_subgrid():
     result = compute_layout(graph, _vt(), subgrid_width=4)
     rows = {result.nodes[k].row for k in graph}
     cols = {result.nodes[k].col for k in graph}
-    assert rows == {0, 1, 2}  # ceil(10/4) = 3 rows
-    assert cols == {0, 1, 2, 3}
+    assert rows == {0, 1, 2, 3}
+    assert cols == {0, 1, 2}
     # every (row, col) pair is unique -- no overlap
     positions = [(result.nodes[k].row, result.nodes[k].col) for k in graph]
     assert len(positions) == len(set(positions))
+    # no column exceeds the wrap cap
+    from collections import Counter
+
+    col_counts = Counter(result.nodes[k].col for k in graph)
+    assert max(col_counts.values()) <= 4
 
 
-def test_subgrid_groups_by_category_before_computed_position():
+def test_same_band_ordering_invariant_widens_the_band():
+    # D-17: a same-band prerequisite chain of length N needs N columns -- a technology must never
+    # render in the same or an earlier column than any of its own same-band prerequisites. Chain:
+    # tech_0 <- tech_1 <- tech_2 <- tech_3, all tier 5 (same band).
     graph = {
-        "tech_bio_1": _input("tech_bio_1", "{ tier = 5 prerequisites = { } category = { biology } }"),
-        "tech_void_1": _input("tech_void_1", "{ tier = 5 prerequisites = { } category = { voidcraft } }"),
-        "tech_bio_2": _input("tech_bio_2", "{ tier = 5 prerequisites = { } category = { biology } }"),
+        "tech_0": _input("tech_0", "{ tier = 5 prerequisites = { } category = { voidcraft } }"),
+        "tech_1": _input("tech_1", '{ tier = 5 prerequisites = { "tech_0" } category = { voidcraft } }'),
+        "tech_2": _input("tech_2", '{ tier = 5 prerequisites = { "tech_1" } category = { voidcraft } }'),
+        "tech_3": _input("tech_3", '{ tier = 5 prerequisites = { "tech_2" } category = { voidcraft } }'),
     }
     result = compute_layout(graph, _vt(), subgrid_width=4)
-    # sorted by (category, computed_position, key): biology < voidcraft alphabetically
-    ordering = sorted(graph, key=lambda k: result.nodes[k].col + result.nodes[k].row * 4)
-    assert ordering == ["tech_bio_1", "tech_bio_2", "tech_void_1"]
+    cols = {k: result.nodes[k].col for k in graph}
+    assert cols == {"tech_0": 0, "tech_1": 1, "tech_2": 2, "tech_3": 3}
+    xs = {k: result.nodes[k].x for k in graph}
+    assert xs["tech_0"] < xs["tech_1"] < xs["tech_2"] < xs["tech_3"]
 
 
-# ---------------------------------------------------------------------------
-# Lanes -- all six always present, including a zero-population one
-# ---------------------------------------------------------------------------
-
-
-def test_all_six_lanes_reserved_even_when_some_are_empty():
-    graph = {"tech_a": _input("tech_a", "{ tier = 0 prerequisites = { } category = { physics } }")}
-    result = compute_layout(graph, _vt())
-    assert result.lane_ids == ["Standard", "Aeternum", "Blokkats", "Compound", "Sirenalia", "Katzenartig Imperium"]
-
-
-def test_crisis_lane_technology_placed_in_its_own_lane():
+def test_same_band_ordering_invariant_ignores_cross_band_prerequisites():
+    # A prerequisite in an EARLIER band imposes no same-band ordering constraint at all -- D-17 is
+    # scoped to same-band edges only. tech_1 (tier 6) depends on tech_0 (tier 5, a different band),
+    # so tech_1's same-band depth is 0 regardless of tech_0's existence.
     graph = {
-        "tech_standard": _input("tech_standard", "{ tier = 0 prerequisites = { } category = { physics } }"),
+        "tech_0": _input("tech_0", "{ tier = 5 prerequisites = { } category = { voidcraft } }"),
+        "tech_1": _input("tech_1", '{ tier = 6 prerequisites = { "tech_0" } category = { voidcraft } }'),
+    }
+    result = compute_layout(graph, _vt(), subgrid_width=4)
+    assert result.nodes["tech_1"].col == 0
+
+
+def test_subgrid_ordering_within_a_cell_no_longer_uses_category():
+    # D-16: category dropped from the within-cell ordering key -- a (row, band) cell's members
+    # already all share one row (category-or-faction) by construction, so it no longer
+    # discriminates. Two same-category technologies at the same tier order by (computed_position,
+    # key) only -- here, purely by key, since neither has a prerequisite giving it a different
+    # computed_position.
+    graph = {
+        "tech_bio_2": _input("tech_bio_2", "{ tier = 5 prerequisites = { } category = { biology } }"),
+        "tech_bio_1": _input("tech_bio_1", "{ tier = 5 prerequisites = { } category = { biology } }"),
+    }
+    result = compute_layout(graph, _vt(), subgrid_width=4)
+    ordering = sorted(graph, key=lambda k: result.nodes[k].col + result.nodes[k].row * 4)
+    assert ordering == ["tech_bio_1", "tech_bio_2"]
+
+
+# ---------------------------------------------------------------------------
+# Item 4 (screenshot-review session): a short sub-grid COLUMN is vertically CENTRED within its
+# row's shared height, not top-anchored with 100% of the slack falling below it. Found from a
+# real screenshot of voidcraft/T0's "Waystations" column (3 members against the row's own 6-row
+# height, set by a denser column elsewhere in the same row) -- confirmed visually, not assumed,
+# that the old top-anchored placement put a real, large empty gap below the last card and none
+# above beyond the row's own fixed header.
+# ---------------------------------------------------------------------------
+
+
+def test_short_column_is_vertically_centred_within_the_row_height():
+    # voidcraft-shaped case: one dense column (4 unrelated, same-depth technologies -- fills all 4
+    # rows under subgrid_width=4, setting the row's own height) and one short column elsewhere in
+    # the SAME row (2 members, via a different same-band depth so they land in a separate column,
+    # not wrapped into the dense one). The short column's 2 members must NOT sit at rows {0, 1}
+    # (the old top-anchored behaviour) -- centred within 4 rows, 2 members should sit at rows
+    # {1, 2}, an equal 1-row gap above and below.
+    graph = {
+        f"tech_dense_{i}": _input(f"tech_dense_{i}", "{ tier = 5 prerequisites = { } category = { voidcraft } }")
+        for i in range(4)
+    }
+    # Two UNRELATED siblings, both depth 1 (a same-band prerequisite on the dense group, but not
+    # on each other) -- same-band depth determines the column, so both land in the same depth-1
+    # column, not two separate columns the way a tech_short_0 <- tech_short_1 chain would.
+    graph["tech_short_0"] = _input(
+        "tech_short_0", '{ tier = 5 prerequisites = { "tech_dense_0" } category = { voidcraft } }'
+    )
+    graph["tech_short_1"] = _input(
+        "tech_short_1", '{ tier = 5 prerequisites = { "tech_dense_1" } category = { voidcraft } }'
+    )
+    result = compute_layout(graph, _vt(), subgrid_width=4)
+
+    dense_col = result.nodes["tech_dense_0"].col
+    assert {result.nodes[f"tech_dense_{i}"].col for i in range(4)} == {dense_col}
+    assert {result.nodes[f"tech_dense_{i}"].row for i in range(4)} == {0, 1, 2, 3}
+
+    short_col = result.nodes["tech_short_0"].col
+    assert short_col != dense_col  # same-band depth ordering (D-17) puts it in its own column
+    short_rows = {result.nodes["tech_short_0"].row, result.nodes["tech_short_1"].row}
+    assert short_rows == {1, 2}, (
+        f"expected the 2-member short column centred within the row's 4-row height (rows {{1, 2}}), "
+        f"got {short_rows} -- {{0, 1}} would mean it's still top-anchored, the bug this test guards against"
+    )
+
+
+def test_no_row_overlaps_when_the_same_row_spans_multiple_bands():
+    """HARD REGRESSION (screenshot-review session, discovered from a real user screenshot of
+    heavily overlapping rows): the centring fix above keyed `column_member_count` by
+    `(row_id, col)` alone. `col` is BAND-RELATIVE -- `depth_slot_start[(band_index, depth)]`
+    resets its own cursor to 0 for every band, so col 0 in one band and col 0 in a LATER band of
+    the SAME row are physically different columns (different x) but shared the same dict key.
+    Two different bands' columns landing on the same local index had their member counts silently
+    SUMMED into one entry, which can exceed `row_row_counts[row_id]` (the row's own real max) and
+    drive the centring offset NEGATIVE -- shifting a column's cards upward past row 0, overlapping
+    the row above. This test reproduces the exact shape: one row (voidcraft), two bands (tier 5
+    and tier 6), each band's own depth-0 column full at `subgrid_width` (4) members -- under the
+    buggy key, `column_member_count[("voidcraft", 0)]` would be corrupted to 8 while
+    `row_row_counts["voidcraft"]` is only 4, producing `centre_offset = (4 - 8) // 2 = -2`."""
+    graph = {}
+    for i in range(4):
+        graph[f"tech_t5_{i}"] = _input(f"tech_t5_{i}", "{ tier = 5 prerequisites = { } category = { voidcraft } }")
+    for i in range(4):
+        graph[f"tech_t6_{i}"] = _input(f"tech_t6_{i}", "{ tier = 6 prerequisites = { } category = { voidcraft } }")
+
+    result = compute_layout(graph, _vt(), subgrid_width=4)
+
+    for key in graph:
+        assert result.nodes[key].row >= 0, f"{key}: row {result.nodes[key].row} is negative -- overlaps the row above"
+
+    # Every node in this single-row graph must land within one contiguous, non-negative row-index
+    # range -- no gaps or negative excursions caused by a cross-band key collision.
+    rows_used = {result.nodes[key].row for key in graph}
+    assert min(rows_used) >= 0
+    assert max(rows_used) < 4  # subgrid_width -- no column may need more than its own max real members
+
+
+def test_detector_catches_the_cross_band_column_key_collision():
+    """Proves the assertion above is capable of failing, not just passing by construction --
+    reproduces the buggy (row_id, col)-only key directly (not by re-importing broken pipeline
+    code) and shows it corrupts the centring offset negative for the exact scenario above."""
+    row_row_counts = {"voidcraft": 4}
+    # Buggy: keyed by (row_id, col) only -- band 0's col-0 (4 members) and band 1's col-0 (4
+    # members) collide and sum.
+    buggy_column_member_count = {("voidcraft", 0): 4 + 4}
+    buggy_offset = (row_row_counts["voidcraft"] - buggy_column_member_count[("voidcraft", 0)]) // 2
+    assert buggy_offset == -2, "the buggy key must reproduce a negative centring offset"
+
+    # Fixed: keyed by (row_id, band_index, col) -- each band's own column count stays separate.
+    fixed_column_member_count = {("voidcraft", 0, 0): 4, ("voidcraft", 1, 0): 4}
+    fixed_offset_band0 = (row_row_counts["voidcraft"] - fixed_column_member_count[("voidcraft", 0, 0)]) // 2
+    fixed_offset_band1 = (row_row_counts["voidcraft"] - fixed_column_member_count[("voidcraft", 1, 0)]) // 2
+    assert fixed_offset_band0 == 0
+    assert fixed_offset_band1 == 0
+
+
+def test_detector_catches_the_old_top_anchored_bug():
+    """Proves the assertion above is capable of failing, not just passing by construction -- this
+    project's own standing rule. Simulates the OLD top-anchored formula directly (local_row with
+    no centring offset) and confirms it produces the rejected {0, 1} placement, distinct from the
+    real centred result."""
+    row_row_count = 4
+    column_member_count = 2
+    old_top_anchored_rows = {i for i in range(column_member_count)}
+    assert old_top_anchored_rows == {0, 1}
+    centre_offset = (row_row_count - column_member_count) // 2
+    new_centred_rows = {centre_offset + i for i in range(column_member_count)}
+    assert new_centred_rows == {1, 2}
+    assert new_centred_rows != old_top_anchored_rows
+
+
+# ---------------------------------------------------------------------------
+# Rows (D-16) -- faction-first-else-category, all always present, including zero-population ones
+# ---------------------------------------------------------------------------
+
+
+def test_category_row_derived_and_faction_rows_always_reserved():
+    # A lone physics-category technology plus no crisis-faction technologies at all: the row set
+    # is still "physics's one real category row" + all 5 faction rows (Compound et al. reserved
+    # even at zero population) -- never a hand-typed "Standard" catch-all lane.
+    graph = {"tech_a": _input("tech_a", "{ tier = 0 prerequisites = { } category = { computing } }")}
+    result = compute_layout(graph, _vt())
+    assert result.row_ids == ["computing", "Aeternum", "Blokkats", "Compound", "Sirenalia", "Katzenartig Imperium"]
+
+
+def test_crisis_faction_technology_placed_in_its_faction_row_not_its_category_row():
+    graph = {
+        "tech_standard": _input("tech_standard", "{ tier = 0 prerequisites = { } category = { computing } }"),
+        # A crisis-faction technology's OWN category (here, its Gigastructures-specific
+        # "blokkats" category) never surfaces as a row of its own -- faction-first placement is
+        # mutually exclusive, so this technology's row is "Blokkats", never "blokkats".
         "tech_blokkat": _input(
-            "tech_blokkat", "{ tier = 0 prerequisites = { } category = { blokkats } }", lane="Blokkats"
+            "tech_blokkat", "{ tier = 0 prerequisites = { } category = { blokkats } }", faction="Blokkats"
         ),
     }
     result = compute_layout(graph, _vt())
-    assert result.nodes["tech_standard"].lane_id == "Standard"
-    assert result.nodes["tech_blokkat"].lane_id == "Blokkats"
+    assert result.nodes["tech_standard"].row_id == "computing"
+    assert result.nodes["tech_blokkat"].row_id == "Blokkats"
+    assert "blokkats" not in result.row_ids
     assert result.nodes["tech_standard"].y != result.nodes["tech_blokkat"].y
+
+
+def test_row_order_groups_categories_by_area_then_alphabetically():
+    # particles/computing are both physics; industry is engineering. Physics rows sort before
+    # engineering rows (AREA_ORDER); within physics, computing < particles alphabetically.
+    graph = {
+        "tech_particles": _input("tech_particles", "{ tier = 0 prerequisites = { } category = { particles } area = physics }"),
+        "tech_computing": _input("tech_computing", "{ tier = 0 prerequisites = { } category = { computing } area = physics }"),
+        "tech_industry": _input("tech_industry", "{ tier = 0 prerequisites = { } category = { industry } area = engineering }"),
+    }
+    result = compute_layout(graph, _vt())
+    category_rows = [r for r in result.row_ids if r not in ("Aeternum", "Blokkats", "Compound", "Sirenalia", "Katzenartig Imperium")]
+    assert category_rows == ["computing", "particles", "industry"]
+
+
+def test_unresolved_row_raises_when_no_faction_and_no_category():
+    from pipeline.layout import UnresolvedRowError
+
+    graph = {"tech_a": _input("tech_a", "{ tier = 0 prerequisites = { } }")}
+    with pytest.raises(UnresolvedRowError):
+        compute_layout(graph, _vt())
 
 
 # ---------------------------------------------------------------------------
@@ -337,11 +524,14 @@ def test_a_pair_can_be_both_prerequisite_and_potential_gate():
     assert kinds == ["potential-gate", "prerequisite"]
 
 
-def test_backward_edge_polyline_still_four_points():
+def test_backward_edge_polyline_still_six_points():
+    # Card-avoidance router rewrite: polyline moved from 4 points (H-V-H, 3 segments) to 6 points
+    # (exit stub / V / transit / V / entry stub, 5 segments) -- see pipeline.layout._route_edges's
+    # own docstring for the full reasoning and the real measured zero-crossing result.
     graph = {
         "tech_high": _input("tech_high", "{ tier = 5 prerequisites = { } category = { physics } }"),
         "tech_low": _input("tech_low", "{ tier = 2 prerequisites = { tech_high } category = { physics } }"),
     }
     result = compute_layout(graph, _vt())
     edge = result.edges[0]
-    assert len(edge.polyline) == 4
+    assert len(edge.polyline) == 6

@@ -7,6 +7,8 @@
   "properties": {
     "schemaVersion": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
 
+    "empireProfileAxes": { "$ref": "common.schema.json#/$defs/EmpireProfileAxes" },
+
     "metadata": {
       "type": "object",
       "description": "P-10: upstream sources MUST be pinned and recorded, displayed as a 'data as of' marker.",
@@ -41,9 +43,9 @@
       }
     },
 
-    "lanes": {
+    "rows": {
       "type": "array",
-      "description": "P-2/P-5: the standard-progression lane plus one per crisis faction, sharing one band axis. All six always present, including a faction at zero population (e.g. Compound -- confirmed real in the current corpus, not a classifier gap; see pipeline/crisis_faction.py) -- a lane is never omitted for being empty.",
+      "description": "P-2/D-16 (spec/decisions.md): a ROW, sharing one band axis with every other row. The field name is unchanged from an earlier model (the standard-progression lane plus one per crisis faction) for JSON-contract/client-typecheck stability -- see D-16 -- but the CONTENT changed: 18 entries, the derived vanilla-category rows (grouped by research area, alphabetical within an area) followed by the 5 crisis-faction rows, faction-first-else-category, mutually exclusive. All 18 always present, including a faction at zero population (e.g. Compound -- confirmed real in the current corpus, not a classifier gap; see pipeline/crisis_faction.py) -- a row is never omitted for being empty.",
       "items": {
         "type": "object",
         "properties": {
@@ -105,7 +107,7 @@
             ],
             "description": "P-12.2/S-1 card field: research cost, first-level/base figure. Per D-4's 'no evaluated weight' precedent, this is a stated field value, not a computed-final number -- in-game costs shift with empire size and other live modifiers the static build can't see, so this is the base/declared cost, approximate by nature, not a promise of what research will actually cost."
           },
-          "laneId": { "type": "string", "description": "References lanes[].id." },
+          "rowId": { "type": "string", "description": "References rows[].id -- this technology's ROW (D-16): its own crisis faction if it has one, else its own category id. Field name unchanged from an earlier lane model for JSON-contract stability; see D-16 in spec/decisions.md." },
           "area": {
             "type": "string",
             "enum": ["physics", "society", "engineering"],
@@ -172,7 +174,7 @@
           }
         },
         "required": [
-          "id", "name", "icon", "cost", "tier", "laneId", "area", "category",
+          "id", "name", "icon", "cost", "tier", "rowId", "area", "category",
           "crisisFaction", "rare", "dangerous", "repeatable", "requiresMods", "gates",
           "availabilityMatrix", "labelPriority"
         ],
@@ -222,8 +224,8 @@
     }
   },
   "required": [
-    "schemaVersion", "metadata", "tierBands", "lanes", "categories", "iconAtlases",
-    "technologies", "edges", "adjacency", "geometry"
+    "schemaVersion", "empireProfileAxes", "metadata", "tierBands", "rows", "categories",
+    "iconAtlases", "technologies", "edges", "adjacency", "geometry"
   ],
   "additionalProperties": false
 }

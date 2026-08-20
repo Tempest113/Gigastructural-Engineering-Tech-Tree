@@ -37,6 +37,20 @@ export interface EmpireProfile {
 // STORAGE ENCODING ONLY -- the composed axes (EmpireProfile) are the identity model; this integer is a pure, documented function of them, used solely to index fixed-size 12-slot arrays (e.g. availabilityMatrix) compactly. Do not reintroduce this as if it were a sanctioned flat enumeration of profiles -- it isn't one; it's a derived array index. Canonical derivation, fixed and never to be changed without a schema version bump: index = authorityIndex*4 + shipsetIndex*2 + nomadicIndex, where authorityIndex/shipsetIndex/nomadicIndex are each axis value's position in the canonical order stated on GestaltAuthority/Shipset/Nomadic above (regular=0/hive_mind=1/machine_intelligence=2; mechanical=0/biological=1; no=0/yes=1). E.g. {authority: hive_mind, shipset: biological, nomadic: yes} -> 1*4 + 1*2 + 1 = 7.
 export type EmpireProfileIndex = number;
 
+/** Emitted mirror of pipeline/dataset_schema/empire_profile.py's AXES -- the axis order, each axis's cardinality and canonical value order, and derived stride, exactly as EmpireProfileIndex's $comment states it. Exists so the client derives EmpireProfileIndex from this emitted data instead of restating the formula as a second implementation (CLAUDE.md's Rules: 'the pipeline owns all geometry [or here, indexing scheme]; the renderer consumes emitted [data] and never recomputes them from a parallel formula') -- the exact defect class D-17's row-geometry desync was found under. A one-sided axis-cardinality change (pipeline gains a value, client doesn't know) must fail loudly, not silently drift; deriving from this field is what makes that structurally impossible rather than merely tested-for. */
+export interface EmpireProfileAxes {
+  /** In canonical order (authority, shipset, nomadic today) -- index 0 is the most significant (largest stride). */
+  axes: ({
+    name: "authority" | "shipset" | "nomadic";
+    /** This axis's values in canonical order -- values[i]'s position i is its index for stride multiplication. */
+    values: (string)[];
+    /** Multiplier applied to this axis's value-index when composing EmpireProfileIndex. Product of the cardinalities of every axis after this one; the last axis always has stride 1. */
+    stride: number;
+  })[];
+  /** Product of every axis's cardinality -- 12 today. The valid range for EmpireProfileIndex is 0..totalProfileCount-1. */
+  totalProfileCount: number;
+}
+
 /** P-14: {from, to, kind, appliesToEmpireTypes}. This is the appliesToEmpireTypes shape -- axis constraints, each an array of allowed values on that axis; an omitted axis is unconstrained (all its values allowed). Confirmed against the full corpus (see the icon/edge survey) that every real edge's empire-type applicability factors as a product of independent axis constraints -- no real edge needs an irregular (non-rectangular) subset of the twelve profiles, so this shape is sufficient. NEVER a flat 12-profile enumeration and NEVER a bitmask in this JSON -- if a bitmask is needed for fast membership testing at runtime, it is derived at build time into the typed-array side-files, never authored or shipped here. */
 export interface EmpireTypeConstraint {
   authority?: (GestaltAuthority)[];
@@ -99,6 +113,7 @@ export interface GeometryRef {
 /** spec/00-overview.md's 'Dataset structure': technology records, layout coordinates, edge geometry, icon atlas references, the compact availabilityMatrix, labelPriority. Shared across all twelve empire profiles -- nothing in this artefact varies per profile. Search index, empire overlays and detail payloads are separate artefacts (their own schema files), fetched independently. */
 export interface BaseDataset {
   schemaVersion: SchemaVersion;
+  empireProfileAxes: EmpireProfileAxes;
   /** P-10: upstream sources MUST be pinned and recorded, displayed as a 'data as of' marker. */
   metadata: {
     gigastructuresCommit: string;
@@ -114,8 +129,8 @@ export interface BaseDataset {
     bandIndex: number;
     label: string;
   })[];
-  /** P-2/P-5: the standard-progression lane plus one per crisis faction, sharing one band axis. All six always present, including a faction at zero population (e.g. Compound -- confirmed real in the current corpus, not a classifier gap; see pipeline/crisis_faction.py) -- a lane is never omitted for being empty. */
-  lanes: ({
+  /** P-2/D-16 (spec/decisions.md): a ROW, sharing one band axis with every other row. The field name is unchanged from an earlier model (the standard-progression lane plus one per crisis faction) for JSON-contract/client-typecheck stability -- see D-16 -- but the CONTENT changed: 18 entries, the derived vanilla-category rows (grouped by research area, alphabetical within an area) followed by the 5 crisis-faction rows, faction-first-else-category, mutually exclusive. All 18 always present, including a faction at zero population (e.g. Compound -- confirmed real in the current corpus, not a classifier gap; see pipeline/crisis_faction.py) -- a row is never omitted for being empty. */
+  rows: ({
     id: string;
     label: string;
     crisisFaction: null | "Aeternum" | "Blokkats" | "Compound" | "Sirenalia" | "Katzenartig Imperium";
@@ -142,8 +157,8 @@ export interface BaseDataset {
     tier: number;
     /** P-12.2/S-1 card field: research cost, first-level/base figure. Per D-4's 'no evaluated weight' precedent, this is a stated field value, not a computed-final number -- in-game costs shift with empire size and other live modifiers the static build can't see, so this is the base/declared cost, approximate by nature, not a promise of what research will actually cost. */
     cost: null | number;
-    /** References lanes[].id. */
-    laneId: string;
+    /** References rows[].id -- this technology's ROW (D-16): its own crisis faction if it has one, else its own category id. Field name unchanged from an earlier lane model for JSON-contract stability; see D-16 in spec/decisions.md. */
+    rowId: string;
     /** S-1: drives card background colour. */
     area: "physics" | "society" | "engineering";
     category: string;
@@ -263,6 +278,8 @@ export interface DetailPayload {
       conditionText: string;
     })[];
   };
+  /** D-18 (spec/decisions.md): the exact, accepted cost of the depth-1 ACOT/AoT rendering-scope closure -- a prerequisite this technology names in its own source that is NOT rendered as a node (reachable only via ANOTHER ACOT/AoT technology, not directly from anything rendered). Localised names, best-effort resolved (falls back to the raw technology key if genuinely unresolvable -- never blocks the build, since this is a supplementary note about a technology OTHER than the one this payload describes). Empty for the overwhelming majority (974/977) -- real corpus: exactly 3 technologies carry 1-2 entries each. Never a card badge (three affected nodes doesn't justify a new indicator) -- popup-only, alongside a fixed client-side note that the name is outside the rendered scope. */
+  offTreePrerequisiteNames: (string)[];
 }
 
 /** P-6. A fourth, separately-fetched artefact -- NOT part of the base dataset (see spec/implementation-notes.md's Stage 2 section for why). Fetched lazily on first search-box focus, not during initial load. Carries build-time-tokenised keywords derived from name, key and description text -- never raw description text, which stays in the lazy detail payload. If the fetch fails or hasn't completed, the client shows a loading state, then a failure state, without blocking any other part of the application (search degrades; nothing else does). */

@@ -1,5 +1,13 @@
 {
   "schemaVersion": "1.0.0",
+  "empireProfileAxes": {
+    "axes": [
+      {"name": "authority", "values": ["regular", "hive_mind", "machine_intelligence"], "stride": 4},
+      {"name": "shipset", "values": ["mechanical", "biological"], "stride": 2},
+      {"name": "nomadic", "values": ["no", "yes"], "stride": 1}
+    ],
+    "totalProfileCount": 12
+  },
   "metadata": {
     "gigastructuresCommit": "abc123",
     "vanillaVersion": "4.5",
@@ -9,7 +17,7 @@
     {"tier": 0, "bandIndex": 0, "label": "T0"},
     {"tier": "repeatables", "bandIndex": 1, "label": "Repeatables"}
   ],
-  "lanes": [
+  "rows": [
     {"id": "standard", "label": "Standard Progression", "crisisFaction": null, "technologyCount": 1}
   ],
   "categories": ["Computing"],
@@ -23,7 +31,7 @@
       "icon": {"sheet": "technologies_0", "x": 0, "y": 0, "width": 52, "height": 52},
       "cost": 50,
       "tier": 0,
-      "laneId": "standard",
+      "rowId": "standard",
       "area": "physics",
       "category": "Computing",
       "crisisFaction": null,

@@ -49,5 +49,27 @@ def test_duplicate_key_is_a_config_error(tmp_path):
         load_overrides(path)
 
 
-def test_checked_in_file_loads_empty_and_parses_cleanly():
-    assert load_overrides() == {}
+def test_checked_in_file_parses_cleanly_and_has_the_fifteen_real_entries():
+    # config/crisis_faction_overrides.txt started with 2 real entries (the has_country_flag
+    # bypass case), gained 12 more in the Part-0 reconciliation session (HANDOFF.md) --
+    # tech_qnm_utilities' 12 direct prerequisite dependents, each individually reachability-
+    # justified -- then 1 more in the EAWAF/Sirenalia correction session (giga_tech_eawaf_psifusion,
+    # the one EAWAF technology with no `potential` block to classify it via the flag map). See that
+    # file's header comment and pipeline/crisis_faction.py's module docstring for the full
+    # reasoning. The 14 Compound entries are unchanged; the 15th is Sirenalia.
+    overrides = load_overrides()
+    compound_expected = {
+        "tech_sm_autocannons", "tech_qnm_disruptors",
+        "tech_sm_flak_batteries", "tech_sm_mass_drivers", "tech_sm_kinetic_artillery",
+        "tech_sm_mass_accelerator", "tech_sm_titanic", "tech_qnm_pd_tracking",
+        "tech_qnm_lasers", "tech_qnm_plasma", "tech_qnm_energy_torpedoes",
+        "tech_qnm_energy_lance", "tech_qnm_arc_emitter", "tech_qnm_titanic",
+    }
+    sirenalia_expected = {"giga_tech_eawaf_psifusion"}
+    expected = compound_expected | sirenalia_expected
+    assert set(overrides) == expected
+    assert len(expected) == 15
+    for key in compound_expected:
+        assert overrides[key].faction == "Compound"
+    for key in sirenalia_expected:
+        assert overrides[key].faction == "Sirenalia"

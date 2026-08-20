@@ -14,9 +14,9 @@ from pipeline.layout import TechnologyLayoutInput, compute_layout
 from pipeline.variables import build_variable_table
 
 
-def _input(key, text, lane=None):
+def _input(key, text, faction=None):
     doc = parse_text(f"tech_x = {text}\n", path="x.txt")
-    return TechnologyLayoutInput(key=key, block=doc.items[0].value, lane=lane)
+    return TechnologyLayoutInput(key=key, block=doc.items[0].value, faction=faction)
 
 
 def _graph():
@@ -58,7 +58,7 @@ def test_pack_edge_polylines_round_trips_and_indexes_correctly():
     assert entry["groupId"] is None
     assert entry["backward"] is False
     assert entry["bandSpan"] <= 0
-    assert entry["length"] == FLOATS_PER_EDGE == 8
+    assert entry["length"] == FLOATS_PER_EDGE == 12
 
     floats = struct.unpack(f"<{ref.length}f", data)
     edge_floats = floats[entry["offset"]:entry["offset"] + entry["length"]]
