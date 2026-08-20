@@ -674,6 +674,16 @@ async function render(): Promise<void> {
     );
   }
 
+  // Item 1 (activeEdgeIds wiring): `pipeline.edge_constraints` now computes a REAL per-profile
+  // active edge set (980-983 of 984 edges, real corpus -- previously a no-op 984/984 for every
+  // profile, undetected across many sessions). `activeEdgeIds` gates drawing, ancestry/dependent
+  // traversal, and the popup's prerequisite/dependent lists alike -- one Set, three consumers,
+  // never three independent filters that could drift apart. Fetched here (before the initial edge
+  // draw) so the very first render already reflects DEFAULT_PROFILE's real active set rather than
+  // drawing everything and correcting a frame later.
+  const initialOverlay = await fetchEmpireOverlay(profileKey(DEFAULT_PROFILE));
+  let activeEdgeIds: Set<number> = new Set(initialOverlay.activeEdgeIds);
+
   setStatus("loading icon atlases…");
   const atlasTextures = await loadAtlasTextures(base);
   // P-3 popup gate section: sheet name -> its own webp URL, so the DOM popup can crop a gate
@@ -909,7 +919,11 @@ async function render(): Promise<void> {
   // `base.edges` -- reused for drawing hover/selection highlight overlays so they trace the exact
   // same geometry already on screen, rather than a second, parallel computation.
   const edgeRoundedPolylines: [number, number][][] = [];
-  const edgeCountByKind: Record<EdgeKind, number> = { prerequisite: 0, "potential-gate": 0, alternative: 0 };
+  // Geometry (endpoints/stub-lengths/raw+rounded polylines) is computed for EVERY edge
+  // unconditionally, active or not -- these feed the routing-correctness verification harness
+  // (window.__tt) and the hover/selection highlight overlay, neither of which is about which
+  // edges are currently active for a profile. Only the VISUAL trace (below) respects
+  // `activeEdgeIds`.
   for (let i = 0; i < base.edges.length; i++) {
     const edge = base.edges[i]!;
     const baseOffset = i * FLOATS_PER_EDGE_POLYLINE;
@@ -931,17 +945,35 @@ async function render(): Promise<void> {
     // card-avoidance route) is untouched; `pts` is only what's actually traced/arrowed.
     const pts = roundPolylineCorners(rawPts, EDGE_CORNER_RADIUS);
     edgeRoundedPolylines.push(pts);
-    const style = EDGE_STYLE[edge.kind];
-    tracePolyline(edgeLineGraphics.get(edge.kind)!, pts, style.dash);
-    addArrowhead(edgeArrowGraphics.get(edge.kind)!, pts);
-    edgeCountByKind[edge.kind]++;
     edgeEndpoints.push({ fromId: edge.from, toId: edge.to, start: pts[0]!, end: pts[pts.length - 1]! });
   }
-  for (const kind of EDGE_KINDS) {
-    edgeLineGraphics.get(kind)!.stroke({ width: EDGE_STROKE_WIDTH, color: EDGE_COLOR, alpha: EDGE_STYLE[kind].alpha });
-    edgeArrowGraphics.get(kind)!.fill({ color: EDGE_COLOR, alpha: EDGE_STYLE[kind].alpha });
+
+  // Item 1: (re)traces only the edges active for the current profile. Called once for the
+  // initial draw and again on every profile switch -- clears and rebuilds each kind's shared
+  // Graphics rather than maintaining one Graphics per edge (P-8's frame-budget reasoning above
+  // for why edges are batched per-kind, not per-edge, still applies).
+  function traceActiveEdges(active: Set<number>): void {
+    const edgeCountByKind: Record<EdgeKind, number> = { prerequisite: 0, "potential-gate": 0, alternative: 0 };
+    for (const kind of EDGE_KINDS) {
+      edgeLineGraphics.get(kind)!.clear();
+      edgeArrowGraphics.get(kind)!.clear();
+    }
+    for (let i = 0; i < base.edges.length; i++) {
+      if (!active.has(i)) continue;
+      const edge = base.edges[i]!;
+      const pts = edgeRoundedPolylines[i]!;
+      const style = EDGE_STYLE[edge.kind];
+      tracePolyline(edgeLineGraphics.get(edge.kind)!, pts, style.dash);
+      addArrowhead(edgeArrowGraphics.get(edge.kind)!, pts);
+      edgeCountByKind[edge.kind]++;
+    }
+    for (const kind of EDGE_KINDS) {
+      edgeLineGraphics.get(kind)!.stroke({ width: EDGE_STROKE_WIDTH, color: EDGE_COLOR, alpha: EDGE_STYLE[kind].alpha });
+      edgeArrowGraphics.get(kind)!.fill({ color: EDGE_COLOR, alpha: EDGE_STYLE[kind].alpha });
+    }
+    edgeCountByKindForStatus = edgeCountByKind;
   }
-  edgeCountByKindForStatus = edgeCountByKind;
+  traceActiveEdges(activeEdgeIds);
 
   const NAME_FONT_SIZE = 20;
   const NAME_FONT_FAMILY = "system-ui, sans-serif";
@@ -1431,10 +1463,16 @@ async function render(): Promise<void> {
   // included in the ancestor/dependent set, exactly as typed. `edge.from` is the earlier
   // (prerequisite) technology, `edge.to` the later (dependent) one, per pipeline/layout.py's own
   // routing convention (`a = nodes[edge.from_key]` exits right toward `b = nodes[edge.to_key]`).
+  // Item 1: only edges active for the CURRENT profile (`activeEdgeIds`, closed over from
+  // `render()`'s scope) participate -- an edge inactive for this profile represents no real
+  // dependency for it (pipeline.edge_constraints's axis-fact-only definition of "active"), so it
+  // must not extend a structural ancestor/dependent closure either.
   function computeAncestryAndDependents(techId: string): { ancestors: Set<string>; dependents: Set<string> } {
     const backward = new Map<string, string[]>(); // to -> [from, ...]
     const forward = new Map<string, string[]>(); // from -> [to, ...]
-    for (const e of base.edges) {
+    for (let i = 0; i < base.edges.length; i++) {
+      if (!activeEdgeIds.has(i)) continue;
+      const e = base.edges[i]!;
       (backward.get(e.to) ?? backward.set(e.to, []).get(e.to)!).push(e.from);
       (forward.get(e.from) ?? forward.set(e.from, []).get(e.from)!).push(e.to);
     }
@@ -1489,6 +1527,7 @@ async function render(): Promise<void> {
     const techId = base.technologies[index]!.id;
     hoverLayer.addChild(cardOutlineOverlay(HOVER_COLOR, 0.9, index));
     for (let i = 0; i < base.edges.length; i++) {
+      if (!activeEdgeIds.has(i)) continue;
       const e = base.edges[i]!;
       if (e.from === techId || e.to === techId) hoverLayer.addChild(edgeHighlight(HOVER_COLOR, i));
     }
@@ -1512,6 +1551,7 @@ async function render(): Promise<void> {
     const techId = base.technologies[index]!.id;
     const { ancestors, dependents } = computeAncestryAndDependents(techId);
     for (let i = 0; i < base.edges.length; i++) {
+      if (!activeEdgeIds.has(i)) continue;
       const e = base.edges[i]!;
       if (ancestors.has(e.from) && (ancestors.has(e.to) || e.to === techId)) {
         selectionLayer.addChild(edgeHighlight(ANCESTRY_COLOR, i));
@@ -1570,11 +1610,15 @@ async function render(): Promise<void> {
     const row = base.rows.find((r) => r.id === tech.rowId);
     const { ancestors, dependents } = computeAncestryAndDependents(techId);
 
+    // Item 1: a direct-neighbour check must also respect activeEdgeIds -- `id` can be in
+    // `ancestors`/`dependents` via a DIFFERENT active path even when its own direct edge to/from
+    // `techId` is inactive for this profile, so re-checking `base.edges` without the active-set
+    // filter here would silently readmit an inactive edge into the direct-neighbour lists.
     const prereqNames = [...ancestors]
-      .filter((id) => base.edges.some((e) => e.from === id && e.to === techId))
+      .filter((id) => base.edges.some((e, i) => activeEdgeIds.has(i) && e.from === id && e.to === techId))
       .map((id) => base.technologies[techIndexById.get(id)!]!.name);
     const dependentNames = [...dependents]
-      .filter((id) => base.edges.some((e) => e.from === techId && e.to === id))
+      .filter((id) => base.edges.some((e, i) => activeEdgeIds.has(i) && e.from === techId && e.to === id))
       .map((id) => base.technologies[techIndexById.get(id)!]!.name);
 
     popupContentEl.innerHTML = `
@@ -1698,17 +1742,37 @@ async function render(): Promise<void> {
   shipsetSelect.value = currentProfile.shipset;
   nomadicSelect.value = currentProfile.nomadic;
 
-  function onProfileControlChange(): void {
-    currentProfile = {
-      authority: authoritySelect.value as GestaltAuthority,
-      shipset: shipsetSelect.value as ShipsetValue,
-      nomadic: nomadicSelect.value as NomadicValue,
-    };
+  // Item 1: the one shared profile-switch path -- both the real `<select>` change handler and
+  // the `window.__tt.setProfile` verification hook go through this, so a test driving profile
+  // switches via `__tt` exercises the exact same activeEdgeIds refresh a real user's dropdown
+  // change does, never a shortcut that only updates availability dimming.
+  async function applyProfile(profile: EmpireProfile): Promise<void> {
+    currentProfile = profile;
+    authoritySelect.value = profile.authority;
+    shipsetSelect.value = profile.shipset;
+    nomadicSelect.value = profile.nomadic;
     updateAvailabilityDisplay();
+    // activeEdgeIds is per-profile -- re-fetch the new profile's overlay (cached by
+    // pipeline.dataset_emit's build, and client-side by fetchEmpireOverlay) and retrace the
+    // edges, THEN refresh the selection highlight (which also traverses activeEdgeIds via
+    // computeAncestryAndDependents) so a currently-selected node's ancestry/dependent overlay
+    // doesn't keep showing a stale profile's active set.
+    const overlay = await fetchEmpireOverlay(profileKey(currentProfile));
+    activeEdgeIds = new Set(overlay.activeEdgeIds);
+    traceActiveEdges(activeEdgeIds);
+    if (selectedIndex >= 0) setSelected(selectedIndex);
     // Profile persists across pan/zoom/selection (this session's own instruction) -- selection
     // itself is untouched by a profile change, but the OPEN popup's availability section (state
     // + reason) is specific to a profile, so it needs a refresh if something is selected.
-    if (selectedIndex >= 0) openPopup(base.technologies[selectedIndex]!.id);
+    if (selectedIndex >= 0) await openPopup(base.technologies[selectedIndex]!.id);
+  }
+
+  async function onProfileControlChange(): Promise<void> {
+    await applyProfile({
+      authority: authoritySelect.value as GestaltAuthority,
+      shipset: shipsetSelect.value as ShipsetValue,
+      nomadic: nomadicSelect.value as NomadicValue,
+    });
   }
   authoritySelect.addEventListener("change", onProfileControlChange);
   shipsetSelect.addEventListener("change", onProfileControlChange);
@@ -1802,9 +1866,9 @@ async function render(): Promise<void> {
   updateLod();
 
   setStatus(
-    `Rendered ${base.technologies.length} technologies, ${base.edges.length} edges ` +
-      `(${edgeCountByKind.prerequisite} prerequisite, ${edgeCountByKind["potential-gate"]} potential-gate, ` +
-      `${edgeCountByKind.alternative} alternative), ${base.tierBands.length} tier bands, ${base.rows.length} rows.`
+    `Rendered ${base.technologies.length} technologies, ${activeEdgeIds.size} of ${base.edges.length} edges active ` +
+      `(${edgeCountByKindForStatus!.prerequisite} prerequisite, ${edgeCountByKindForStatus!["potential-gate"]} potential-gate, ` +
+      `${edgeCountByKindForStatus!.alternative} alternative), ${base.tierBands.length} tier bands, ${base.rows.length} rows.`
   );
   updateStatusLine(camera, currentTier!, currentEdgeTier!);
 
@@ -1816,7 +1880,7 @@ async function render(): Promise<void> {
     getTier: () => currentTier,
     getEdgeTier: () => currentEdgeTier,
     contentBBox,
-    edgeCountByKind,
+    edgeCountByKind: () => edgeCountByKindForStatus,
     edgeVisible: {
       prerequisite: () => edgeLineGraphics.get("prerequisite")!.visible,
       "potential-gate": () => edgeLineGraphics.get("potential-gate")!.visible,
@@ -1861,16 +1925,19 @@ async function render(): Promise<void> {
       return { zeroCostCount: zero.length, zeroCostIds: zero, nullCostCount: nullCost };
     },
     getWrappedNames: () => wrappedNames,
-    // Empire-profile switching + search verification (reconciliation session 4).
-    setProfile: (profile: EmpireProfile) => {
-      currentProfile = profile;
-      authoritySelect.value = profile.authority;
-      shipsetSelect.value = profile.shipset;
-      nomadicSelect.value = profile.nomadic;
-      updateAvailabilityDisplay();
-      if (selectedIndex >= 0) return openPopup(base.technologies[selectedIndex]!.id);
-    },
+    // Empire-profile switching + search verification (reconciliation session 4). Goes through
+    // the same `applyProfile` path a real dropdown change does (Item 1) -- see that function's
+    // own comment for why this must not be a shortcut.
+    setProfile: (profile: EmpireProfile) => applyProfile(profile),
     getProfile: () => currentProfile,
+    // Item 1 verification: the real drawn edge count (sum of edgeCountByKind, i.e. what's
+    // actually traced into the Graphics objects) vs. the active set size, and the raw active
+    // edge index set itself, so a test can assert they match and that they change across
+    // profiles without recomputing anything main.ts doesn't already compute.
+    activeEdgeIds: () => [...activeEdgeIds],
+    drawnEdgeCount: () => edgeCountByKindForStatus
+      ? edgeCountByKindForStatus.prerequisite + edgeCountByKindForStatus["potential-gate"] + edgeCountByKindForStatus.alternative
+      : 0,
     empireProfileIndex: (profile: EmpireProfile) => empireProfileIndex(profile),
     allProfiles: () => allProfiles(),
     checkAvailabilityMatchesEmitted: () => {
