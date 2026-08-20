@@ -107,7 +107,7 @@ from .overwrites import (
 )
 from .rendering_scope import compute_alternative_only_gaps, compute_off_tree_prerequisites, rendered_technology_keys
 from .technology_swaps import TechnologySwap, collect_swaps
-from .trigger_text import describe_condition, describe_trigger_block
+from .trigger_text import ReasonCategory, describe_condition, describe_trigger_block
 from .variables import build_variable_table
 
 SCHEMA_VERSION = "1.0.0"
@@ -153,6 +153,25 @@ def _require_resolved(text: str, technology_key: str, field_name: str, ctx: "Bui
     if resolved is None:
         raise UnresolvedLocalisationTokenError(technology_key, field_name, text)
     return resolved
+
+
+def _resolve_technology_name(key: str, ctx: "BuildContext", name_overrides: dict) -> str:
+    """Extracted to module level (was a `build_base_dataset`-local closure) so `build_diagnostics`
+    (Item 1's dev health monitor, later session) can resolve the same real localised name a
+    technology's card shows, rather than a second, independent resolution that could drift."""
+    name_entry = ctx.loc_table.get(key)
+    raw_name = strip_markup(name_entry.value.raw) if name_entry else key
+    name = _require_resolved(raw_name, key, "name", ctx)
+    if name == key:
+        override = name_overrides.get(key)
+        if override is None:
+            raise UnresolvedLocalisationTokenError(
+                key, "name", f"resolves to its own raw key {key!r} -- no real localisation exists; "
+                f"see config/name_overrides.txt"
+            )
+        name = override.name
+    return name
+
 
 _SOURCES_IN_LOAD_ORDER = ["Vanilla", "Gigastructural Engineering", "ACOT", "AoT"]
 _SOURCE_DIRS = {
@@ -253,6 +272,40 @@ def _scalar_text(node) -> str | None:
     if isinstance(node, StringLiteral):
         return node.value
     return None
+
+
+_POTENTIAL_BOOLEAN_WRAPPERS = {"AND", "OR", "NOT", "NOR"}
+
+
+def _potential_mod_requirements(block: Block) -> list[str]:
+    """Item 2d (user domain call): a technology whose `potential` structurally requires
+    `has_acot = yes` and/or `has_global_flag = has_aot_mod` is not ADDED by ACOT/AoT (its own
+    `defn.source` is Gigastructural Engineering), but is only ACCESSIBLE with that mod's content
+    present -- Gigastructures' own "supertensile alternate" pattern
+    (`giga_17_alternative_mega_build.txt`). These carry the same `requiresMods` badge as a
+    technology whose own source IS ACOT/AoT, rather than resolving `uncertain`. Same scope
+    discipline as `pipeline.edges._scoped_has_technology` (only descend AND/OR/NOT/NOR; an opaque
+    sub-scope like `count_country`/`weight_modifier` is never searched) -- real corpus: exactly 4
+    technologies (`giga_tech_amb_supertensiles_acot_alpha/sigma/delta/phanon`), `alpha`/`sigma`/
+    `delta` requiring ACOT only, `phanon` requiring both (AoT depends on ACOT)."""
+    potential = _field(block, "potential")
+    if potential is None or not isinstance(potential.value, Block):
+        return []
+    found: set[str] = set()
+
+    def walk(node: Block) -> None:
+        for item in node.items:
+            if not isinstance(item, Assignment):
+                continue
+            if item.key_name == "has_acot":
+                found.add("ACOT")
+            elif item.key_name == "has_global_flag" and _scalar_text(item.value) == "has_aot_mod":
+                found.add("AoT")
+            elif item.key_name.upper() in _POTENTIAL_BOOLEAN_WRAPPERS and isinstance(item.value, Block):
+                walk(item.value)
+
+    walk(potential.value)
+    return sorted(found)
 
 
 def _bool_flag(block: Block, name: str) -> bool:
@@ -670,27 +723,13 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
 
     name_overrides = load_name_overrides()
 
-    def _resolve_technology_name(key: str) -> str:
-        name_entry = ctx.loc_table.get(key)
-        raw_name = strip_markup(name_entry.value.raw) if name_entry else key
-        name = _require_resolved(raw_name, key, "name", ctx)
-        if name == key:
-            override = name_overrides.get(key)
-            if override is None:
-                raise UnresolvedLocalisationTokenError(
-                    key, "name", f"resolves to its own raw key {key!r} -- no real localisation exists; "
-                    f"see config/name_overrides.txt"
-                )
-            name = override.name
-        return name
-
     # Resolved once, up front, for every rendered technology -- reused both for the technology's
     # own "name" field below AND for a technology-kind gate's label (P-3: a has_technology gate's
     # target is always itself a rendered technology, 17/17 real distinct targets confirmed by the
     # gate-classification survey, so it already goes through this exact resolution path; a second,
     # independent resolution during gate-building would risk drifting from the target's own
     # displayed name).
-    resolved_names: dict[str, str] = {key: _resolve_technology_name(key) for key in key_order}
+    resolved_names: dict[str, str] = {key: _resolve_technology_name(key, ctx, name_overrides) for key in key_order}
 
     def _perk_gate_label(perk_id: str) -> str:
         entry = ctx.loc_table.get(perk_id)
@@ -771,7 +810,7 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
         availability_results = evaluate_technology_for_profiles(_field(defn.block, "potential") and _field(defn.block, "potential").value, ctx.profiles)
         matrix = [availability_results[i].state for i in range(len(ctx.profiles))]
 
-        requires_mods = [defn.source] if defn.source in ("ACOT", "AoT") else []
+        requires_mods = [defn.source] if defn.source in ("ACOT", "AoT") else _potential_mod_requirements(defn.block)
 
         icon = icon_refs.get(key, _default_icon_ref(ctx))
 
@@ -1132,6 +1171,30 @@ def build_diagnostics(ctx: BuildContext) -> dict:
     survey = survey_uncertainty(technologies_for_survey, ctx.profiles)
     d10_section = build_d10_diagnostics_section(survey, ctx.profiles)
 
+    # Item 1 (later session): the dev health monitor's data. Reuses the exact same evaluator call
+    # D-10's own survey already makes (evaluate_technology_for_profiles) -- never a second,
+    # independently-derived pass that could disagree with what D-10 itself reports.
+    name_overrides_for_diagnostics = load_name_overrides()
+    uncertain_technologies: list[dict] = []
+    for key, potential in sorted(technologies_for_survey.items()):
+        results = evaluate_technology_for_profiles(potential, ctx.profiles)
+        uncertain_indices = [i for i, r in results.items() if r.state == UNCERTAIN]
+        if not uncertain_indices:
+            continue
+        uncertain_technologies.append({
+            "technologyId": key,
+            "name": _resolve_technology_name(key, ctx, name_overrides_for_diagnostics),
+            "unconditional": len(uncertain_indices) == len(ctx.profiles),
+            "perProfile": [
+                {
+                    "profile": ctx.profiles[i],
+                    "category": (results[i].category or ReasonCategory.UNCLASSIFIED).value,
+                    "description": results[i].description or results[i].reason or "",
+                }
+                for i in uncertain_indices
+            ],
+        })
+
     variable_history = collect_variable_definitions(
         _load_expanded(ctx.vendor_root, "scripted_variables", collect_scripts(_script_entries(ctx.vendor_root)))
     )
@@ -1157,6 +1220,7 @@ def build_diagnostics(ctx: BuildContext) -> dict:
     return {
         "schemaVersion": SCHEMA_VERSION,
         **d10_section,
+        "uncertainTechnologies": uncertain_technologies,
         "missingInlineScriptParameterCount": {"current": 0, "previous": 0},
         "tierPromotions": [],
         "swapsRenderingOnInheritedIcon": [

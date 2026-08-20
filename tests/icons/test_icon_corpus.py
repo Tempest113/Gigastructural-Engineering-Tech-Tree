@@ -121,7 +121,7 @@ def test_filtered_technology_atlas_matches_p16_closure():
     (see filter_result_to_rendered_scope's docstring for why). This is what MAX_TOTAL_ATLAS_BYTES
     is now calibrated against."""
     rendered_keys = _rendered_keys()
-    assert len(rendered_keys) == 977  # D-18: 980 -> 977
+    assert len(rendered_keys) == 973  # D-18: 980 -> 977; Item 2c: 977 -> 973
 
     tech_sheets, tech_result = build_atlases("technology", VENDOR_ROOT, rendered_keys=rendered_keys)
     perk_sheets, perk_result = build_atlases("ascension_perk", VENDOR_ROOT)
@@ -135,7 +135,9 @@ def test_filtered_technology_atlas_matches_p16_closure():
 
     # D-18 (this session): 1192 -> 1189 -- the 3 depth-2+ technologies dropped from the P-16
     # closure carried resolvable icon candidates that are now correctly excluded by the filter.
-    assert len(tech_result.resolved) == 1189
+    # Item 2c (user domain call, later session): 1189 -> 1185 -- the 4 permanently-disabled
+    # technologies excluded from the rendered set each carried a resolvable icon candidate too.
+    assert len(tech_result.resolved) == 1185
     # Of the 19 unfiltered unresolved candidates, only these 4 have an owning technology that
     # actually renders -- the other 15 (mostly ACOT bio-spore techs) are outside the P-16
     # closure and no longer matter. Do NOT resolve or guess at these 4 -- config/icon_overrides.txt
@@ -157,7 +159,9 @@ def test_filtered_technology_atlas_matches_p16_closure():
     print(f"total FILTERED atlas bytes (WebP, filtered tech + unfiltered perk): {total_atlas_bytes} "
           f"(tripwire: {MAX_TOTAL_ATLAS_BYTES})")
     # D-18: 4,826,990 -> 4,799,342 (4,536,666 filtered tech + 262,676 unfiltered perk).
-    assert total_atlas_bytes == 4_799_342
+    # Item 2c (user domain call, later session): 4,799,342 -> 4,783,554 -- 4 fewer icons packed
+    # (the 4 permanently-disabled technologies' own icons, now excluded from the rendered set).
+    assert total_atlas_bytes == 4_783_554
     assert total_atlas_bytes <= MAX_TOTAL_ATLAS_BYTES, (
         f"total atlas bytes {total_atlas_bytes} exceeds MAX_TOTAL_ATLAS_BYTES "
         f"({MAX_TOTAL_ATLAS_BYTES}) -- see pipeline/icons/pack.py's comment on this constant; "

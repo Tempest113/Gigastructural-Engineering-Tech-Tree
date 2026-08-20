@@ -2,5 +2,9 @@
 # Used only when a technology's resolved localisation value is verbatim its own raw key -- i.e.
 # the mod author never actually wrote a display name for it. Every entry below MUST be reviewed
 # and justified; this is not a place to guess at names for convenience.
-
-giga_tech_aeternite_weaponry = Aeternite Weaponry Systems  # vendor/mods/gigastructures/localisation/english/giga_ehof_functions_l_english.yml:93 has never been translated by the mod author (value is verbatim the key). Named by pattern-matching this Aeternum tech's two siblings on the same tier ("Aeternite Loop-Quantum Defensive Matrix", "Aeternite Planetcraft Refurbishment") -- found via this session's own screenshot review, not the user's; revisit if Gigastructures ships a real translation upstream.
+#
+# giga_tech_aeternite_weaponry's entry was REMOVED (Item 2c, later session): the technology is now
+# excluded from the rendered tree entirely (`potential = { always = no }`, disabled content, not
+# uncertain content -- see pipeline/rendering_scope.py's `_is_permanently_disabled`), so a name
+# override for it can never fire. Seeded empty again -- the real corpus currently has no other
+# case needing one.

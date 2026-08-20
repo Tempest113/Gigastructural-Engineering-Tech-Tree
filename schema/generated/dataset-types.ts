@@ -317,6 +317,17 @@ export interface Diagnostics {
     current: number;
     previous: number;
   };
+  /** Item 1 (later session): the dev health monitor's data -- every rendered technology with at least one UNCERTAIN profile, with the human-readable trigger text (pipeline.trigger_text.describe_condition, never raw AST) and ReasonCategory that caused it, so the user can review remaining uncertainty and decide what's a fixable data gap versus what's genuinely undecidable game state. `unconditional` is true when all twelve profiles are UNCERTAIN identically (in which case `perProfile` still lists all twelve, for uniformity -- the client doesn't need a second code path to render the unconditional case). Sorted by technologyId for a stable, diffable order across builds. */
+  uncertainTechnologies: ({
+    technologyId: TechnologyId;
+    name: string;
+    unconditional: boolean;
+    perProfile: ({
+      profile: EmpireProfile;
+      category: string;
+      description: string;
+    })[];
+  })[];
   tierPromotions: ({
     technologyId: TechnologyId;
     declaredTier: number;

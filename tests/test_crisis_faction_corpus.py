@@ -56,7 +56,7 @@ def test_corrected_faction_counts(rendered_history):
     for faction, count in counts.most_common():
         print(f"  {faction}: {count}")
 
-    assert sum(counts.values()) == 977  # D-18: 980 -> 977
+    assert sum(counts.values()) == 973  # D-18: 980 -> 977; Item 2c: 977 -> 973
     # Regression anchor, EAWAF/Sirenalia correction session (see
     # config/crisis_faction_flag_overrides.txt's EAWAF block, config/crisis_faction_overrides.txt's
     # giga_tech_eawaf_psifusion entry, pipeline/crisis_faction.py's module docstring, and CLAUDE.md's
@@ -80,10 +80,14 @@ def test_corrected_faction_counts(rendered_history):
     # unchanged at 15 (1 flag-map + 14 overrides, as before this session). If a corpus refresh ever
     # changes any of these counts, that's real news (new crisis content shipped, or existing content
     # restructured), not a silent drift to wave through.
-    assert counts["Standard"] == 900  # D-18: 980 -> 977, all 3 dropped were Standard-faction
+    # Item 2c (user domain call, later session): 977 -> 973 excludes 4 permanently-disabled
+    # technologies (`potential = { always = no }`); 3 were Standard-faction (900 -> 897), 1
+    # (giga_tech_aeternite_weaponry, an Aeternum-lane technology by ID fragment) was Aeternum
+    # (3 -> 2). No other faction is affected.
+    assert counts["Standard"] == 897
     assert counts["Blokkats"] == 42
     assert counts["Sirenalia"] == 14
-    assert counts["Aeternum"] == 3
+    assert counts["Aeternum"] == 2
     assert counts["Katzenartig Imperium"] == 3
     assert counts["Compound"] == 15
 

@@ -164,9 +164,48 @@ GROUND_FACT_BOOL: dict[str, bool] = {
     "has_space_monster_dlc": True,
     "has_nemesis": True,  # host_has_dlc = "Nemesis" wrapper, verified same as the others
     "has_infernals": True,  # host_has_dlc = "Infernals Species Pack" wrapper, verified same as the others
+    "has_megacorp": True,  # MegaCorp DLC ownership -- same all-DLC-owned assumption as every
+    # other named wrapper above. NOT the same leaf as `is_megacorp` (a real empire-type/civic
+    # CHOICE fact -- "is this specific empire a Megacorporation" -- outside this project's 3-axis
+    # model, deliberately left unresolved; conflating the two would wrongly claim every profile
+    # IS a megacorp). Real corpus: 4 technologies (`tech_mega_art`, `tech_interstellar_assembly`,
+    # `tech_matter_decompressor`, `tech_strategic_coordination`) carry `has_megacorp = yes` and
+    # move from UNCERTAIN to AVAILABLE; `is_megacorp`-gated technologies (`tech_executive_retreat`,
+    # `tech_xeno_tourism_agency`) are untouched by this entry.
+    "has_acot": True,  # Item 2d: mod-content requirement, not DLC ownership -- this deployed
+    # tree assumes ACOT (and AoT, which depends on ACOT) are always present, same as the existing
+    # "renders vanilla + Gigastructures + ACOT + AoT" deployment assumption CLAUDE.md already
+    # states. A technology gated on this is NOT uncertain about whether the CONTENT exists (the
+    # pipeline already knows); resolving it true lets whatever ELSE actually gates the
+    # technology (if anything) surface as the real reason. `pipeline.dataset_emit.
+    # _potential_mod_requirements` separately adds the ACOT/AoT `requiresMods` badge these
+    # technologies need -- that's presentation, this is availability, and they're deliberately
+    # two different mechanisms even though both key off the same leaf.
     "is_fallen_empire": False,
     "merg_is_fallen_empire": False,
 }
+
+# Item 2d companion: `has_global_flag = has_aot_mod` is AoT's own mod-presence flag (distinct
+# shape from `has_acot`, which is a dedicated leaf key) -- same "assume present" reasoning,
+# checked alongside `PROGRESSION_FLAGS_TRUE` in the `has_global_flag` branch below but kept in
+# its own set since it's a different KIND of assumption (mod presence, not progression state) and
+# must never be confused with a mod-config-toggle default (MOD_CONFIG_TOGGLE_SUFFIXES) either.
+MOD_PRESENCE_FLAGS_TRUE = {"has_aot_mod"}
+
+# Item 2b (user-confirmed, per-flag basis -- see this dict's own comment before adding an entry).
+# A `has_country_flag`/`has_global_flag` name that names Gigastructures-internal PROGRESSION
+# state reachable by every empire type, once its real eligibility gate (typically a separate
+# `has_ascension_perk` check, already EXCLUDED from evaluation) is satisfied -- distinct from a
+# genuine per-empire-type ELIGIBILITY gate, which must stay UNCERTAIN. Confirmed, one at a time,
+# by the user (domain authority on the mod) -- NEVER blanket-resolved from a naming pattern, per
+# this project's own "ask a specific game question rather than inferring" methodology. Only
+# `colossus_project` is confirmed so far (set by the Colossus Project ascension perk once built;
+# accessible to every empire type -- `has_country_flag = colossus_project`, real corpus: 6
+# technologies, `tech_pk_cracker`/`tech_pk_godray`/`tech_pk_nanobots`/`tech_pk_neutron`/
+# `tech_pk_shielder`/`tech_pk_smelter`). A larger candidate list was surveyed and presented to the
+# user for confirmation before this session's implementation; see CLAUDE.md/docs/BUILD-LOG.md for
+# the full candidate list and which remain open.
+PROGRESSION_FLAGS_TRUE = {"colossus_project"}
 
 # has_country_flag: deliberately NOT resolved. The survey (HANDOFF.md CHECK 2) found no single
 # resolvable pattern across 131 occurrences / 82 distinct names -- confirmed mid-game player
@@ -265,7 +304,15 @@ def _evaluate_leaf(assignment: Assignment, profile: dict) -> _Eval:
         flag_name = _flag_value_name(assignment.value)
         if flag_name is not None and _is_mod_config_toggle_flag(flag_name):
             return _bool_eval(False, negate, assignment)  # unset default: content not forbidden
+        if flag_name is not None and (flag_name in PROGRESSION_FLAGS_TRUE or flag_name in MOD_PRESENCE_FLAGS_TRUE):
+            return _bool_eval(True, negate, assignment)
         return _Eval(_State.UNKNOWN, assignment)
+
+    if key == "has_country_flag":
+        flag_name = _flag_value_name(assignment.value)
+        if flag_name is not None and flag_name in PROGRESSION_FLAGS_TRUE:
+            return _bool_eval(True, negate, assignment)
+        return _Eval(_State.UNKNOWN, assignment)  # everything else: real per-playthrough state, deliberately unresolved
 
     if key in DLC_NAME_CHECK_KEYS:
         return _bool_eval(True, negate, assignment)

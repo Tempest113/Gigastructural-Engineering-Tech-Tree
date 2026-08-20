@@ -52,22 +52,27 @@ def base_dataset(ctx):
     return doc, node_bytes, edge_bytes
 
 
-def test_base_dataset_covers_all_977_rendered_technologies(ctx, base_dataset):
-    # D-18 (spec/decisions.md): 980 -> 977, the depth-1 ACOT/AoT closure adopted this session.
+def test_base_dataset_covers_all_973_rendered_technologies(ctx, base_dataset):
+    # D-18 (spec/decisions.md): 980 -> 977, the depth-1 ACOT/AoT closure.
+    # Item 2c (user domain call, later session): 977 -> 973 -- 4 permanently-disabled
+    # (`potential = { always = no }`) technologies excluded entirely.
     doc, _node_bytes, _edge_bytes = base_dataset
-    assert len(doc["technologies"]) == 977
+    assert len(doc["technologies"]) == 973
     assert {t["id"] for t in doc["technologies"]} == ctx.rendered_keys
 
 
 def test_base_dataset_edge_count_matches_p14_survey(base_dataset):
     # D-18 (spec/decisions.md): 989 -> 984 -- the depth-1 ACOT/AoT closure drops 3 technologies,
     # removing 5 `prerequisite` edges that touched them; alternative/potential-gate unaffected.
+    # Item 2c (later session): 984 -> 977 -- excluding the 4 permanently-disabled technologies
+    # drops 7 more `prerequisite` edges (their own outgoing prerequisite references); nothing else
+    # referenced them as a prerequisite, so alternative/potential-gate stay unaffected again.
     doc, _node_bytes, _edge_bytes = base_dataset
-    assert len(doc["edges"]) == 984
+    assert len(doc["edges"]) == 977
     from collections import Counter
 
     assert dict(Counter(e["kind"] for e in doc["edges"])) == {
-        "prerequisite": 883, "alternative": 76, "potential-gate": 25,
+        "prerequisite": 876, "alternative": 76, "potential-gate": 25,
     }
 
 
@@ -129,8 +134,11 @@ def test_gate_classification_leaves_d10_uncertainty_unchanged(ctx, base_dataset)
     D-10 splits uncertainty into two metrics (spec/decisions.md): UNCONDITIONAL (a technology
     `uncertain` under all twelve profiles identically) and PROFILE-DEPENDENT (the excess over
     that baseline in the single worst profile) -- the latter is what the 3%/10% thresholds
-    govern, per CLAUDE.md's "Trigger evaluation" section. Must stay exactly 33/977 (3.37%), no
-    ratchet regression."""
+    govern, per CLAUDE.md's "Trigger evaluation" section. Was 33/977 (3.37%); Item 2's four
+    resolution rules (later session -- DLC-check/progression-flag/mod-requirement resolution plus
+    the always-no exclusion shrinking the denominator) moved this to 28/973 (2.88%), a real
+    IMPROVEMENT (lower rate against a smaller corpus) -- the ratchet only fails on an increase, so
+    this is not a regression to explain away."""
     doc, _node_bytes, _edge_bytes = base_dataset
     per_profile_uncertain_counts = [
         sum(1 for t in doc["technologies"] if t["availabilityMatrix"][index] == "uncertain")
@@ -140,8 +148,8 @@ def test_gate_classification_leaves_d10_uncertainty_unchanged(ctx, base_dataset)
         1 for t in doc["technologies"] if all(state == "uncertain" for state in t["availabilityMatrix"])
     )
     worst_profile_dependent = max(per_profile_uncertain_counts) - unconditional
-    assert worst_profile_dependent == 33
-    assert round(worst_profile_dependent / len(doc["technologies"]), 4) == 0.0338  # 33/977
+    assert worst_profile_dependent == 28
+    assert round(worst_profile_dependent / len(doc["technologies"]), 4) == 0.0288  # 28/973
 
 
 def test_edge_constraints_leave_d10_uncertainty_unchanged(ctx, base_dataset):
@@ -158,7 +166,7 @@ def test_edge_constraints_leave_d10_uncertainty_unchanged(ctx, base_dataset):
         1 for t in doc["technologies"] if all(state == "uncertain" for state in t["availabilityMatrix"])
     )
     worst_profile_dependent = max(per_profile_uncertain_counts) - unconditional
-    assert worst_profile_dependent == 33
+    assert worst_profile_dependent == 28
 
 
 def test_active_edge_ids_are_not_identical_across_all_twelve_profiles(ctx):
@@ -173,23 +181,25 @@ def test_active_edge_ids_are_not_identical_across_all_twelve_profiles(ctx):
 
 
 def test_active_edge_ids_real_per_profile_counts(ctx):
-    """Pins the real, corpus-measured per-profile active edge counts (984 total edges) so a
-    corpus refresh that silently changes this is caught, not silently accepted. See
-    `pipeline.edge_constraints`'s module docstring for the 5 real constrained edges this reflects:
-    `nomadic` (2 edges), `shipset` (2 edges), and one two-axis (`authority` + `shipset`)
-    intersection."""
+    """Pins the real, corpus-measured per-profile active edge counts (977 total edges -- Item 2c,
+    later session, dropped the total from 984 by excluding 4 permanently-disabled technologies
+    and their 7 own prerequisite edges) so a corpus refresh that silently changes this is caught,
+    not silently accepted. See `pipeline.edge_constraints`'s module docstring for the 5 real
+    constrained edges this reflects: `nomadic` (2 edges), `shipset` (2 edges), and one two-axis
+    (`authority` + `shipset`) intersection -- unaffected in COUNT by Item 2c (none of the 5
+    constrained edges touched an excluded technology), just shifted down by the same flat -7."""
     overlays = {
         (p["authority"], p["shipset"], p["nomadic"]): build_empire_overlay(ctx, p) for p in ctx.profiles
     }
     counts = {key: len(ov["activeEdgeIds"]) for key, ov in overlays.items()}
-    assert counts[("regular", "mechanical", "no")] == 980
-    assert counts[("regular", "mechanical", "yes")] == 980
-    assert counts[("regular", "biological", "no")] == 983
-    assert counts[("regular", "biological", "yes")] == 983
-    assert counts[("hive_mind", "mechanical", "no")] == 980
-    assert counts[("hive_mind", "biological", "no")] == 983
-    assert counts[("machine_intelligence", "mechanical", "no")] == 980
-    assert counts[("machine_intelligence", "biological", "no")] == 982
+    assert counts[("regular", "mechanical", "no")] == 973
+    assert counts[("regular", "mechanical", "yes")] == 973
+    assert counts[("regular", "biological", "no")] == 976
+    assert counts[("regular", "biological", "yes")] == 976
+    assert counts[("hive_mind", "mechanical", "no")] == 973
+    assert counts[("hive_mind", "biological", "no")] == 976
+    assert counts[("machine_intelligence", "mechanical", "no")] == 973
+    assert counts[("machine_intelligence", "biological", "no")] == 975
 
 
 def test_disco_moon_gate_edges_are_active_for_every_profile(ctx, base_dataset):
@@ -294,16 +304,18 @@ def test_no_rendered_technology_name_or_description_carries_a_raw_loc_token(ctx,
 
 
 def test_no_rendered_technology_name_equals_its_own_raw_key(base_dataset):
-    """Found this session, by reviewing a real rendered screenshot: `giga_tech_aeternite_weaponry`
-    has a real loc entry whose VALUE is verbatim its own KEY (the mod author never wrote a display
+    """Found earlier, by reviewing a real rendered screenshot: `giga_tech_aeternite_weaponry` had
+    a real loc entry whose VALUE was verbatim its own KEY (the mod author never wrote a display
     name) -- the `$...$`-token check above didn't catch it, since there's no token, just a bare
-    key masquerading as a name. `config/name_overrides.txt` now covers the one real case; this
-    asserts the fix holds and would catch a future occurrence with no override on file."""
+    key masquerading as a name. `config/name_overrides.txt` covered that one real case at the
+    time; Item 2c (later session) then excluded `giga_tech_aeternite_weaponry` from the rendered
+    tree entirely (`potential = { always = no }`, disabled content), so the override was removed
+    as dead rather than left in place -- see `tests/test_name_overrides.py`. This assertion still
+    stands as the general guard: no CURRENTLY rendered technology's name equals its own raw key,
+    with no example left to name-check specifically."""
     doc, _node_bytes, _edge_bytes = base_dataset
     bad = [t["id"] for t in doc["technologies"] if t["name"] == t["id"]]
     assert bad == []
-    aeternite = next(t for t in doc["technologies"] if t["id"] == "giga_tech_aeternite_weaponry")
-    assert aeternite["name"] == "Aeternite Weaponry Systems"
 
 
 def test_unresolved_localisation_token_in_a_name_fails_the_build(ctx):
@@ -326,7 +338,7 @@ def test_cost_per_level_carried_exactly_on_the_88_repeatables(base_dataset):
     with_cost_per_level = [t["id"] for t in doc["technologies"] if t["repeatable"] and t["repeatable"]["costPerLevel"] is not None]
     assert len(with_cost_per_level) == 88
     non_repeatable_with_repeatable_field = [t for t in doc["technologies"] if t["repeatable"] is None]
-    assert len(non_repeatable_with_repeatable_field) == 977 - 88  # D-18: 980 -> 977
+    assert len(non_repeatable_with_repeatable_field) == 973 - 88  # D-18: 980 -> 977; Item 2c: 977 -> 973
 
     sample = next(t for t in doc["technologies"] if t["id"] == "tech_repeatable_reduced_building_cost")
     assert sample["cost"] == pytest.approx(50000.0)
@@ -352,7 +364,7 @@ def test_cost_field_present_for_every_technology_null_only_when_unresolvable(bas
     }
 
     resolved_costs = {t["id"]: t["cost"] for t in doc["technologies"] if t["cost"] is not None}
-    assert len(resolved_costs) == 977 - 5  # D-18: 980 -> 977
+    assert len(resolved_costs) == 973 - 5  # D-18: 980 -> 977; Item 2c: 977 -> 973
     assert all(c >= 0 for c in resolved_costs.values())
 
     # The 10 previously-null block-form ("cosmic storm") technologies now resolve to their real
@@ -426,8 +438,8 @@ def test_all_twelve_empire_overlays_validate(ctx):
     for profile in profiles:
         overlay = build_empire_overlay(ctx, profile)
         validate_empire_overlay(overlay)
-        assert len(overlay["availability"]) == 977  # D-18: 980 -> 977
-        assert len(overlay["researchPaths"]) == 977
+        assert len(overlay["availability"]) == 973  # D-18: 980 -> 977; Item 2c: 977 -> 973
+        assert len(overlay["researchPaths"]) == 973
 
 
 def test_availability_matrix_agrees_with_overlays(ctx, base_dataset):
@@ -469,9 +481,9 @@ def all_detail_payloads(ctx):
     return {key: build_detail_payload(ctx, key) for key in sorted(ctx.rendered_keys)}
 
 
-def test_all_977_detail_payloads_validate(all_detail_payloads):
-    # D-18: 980 -> 977
-    assert len(all_detail_payloads) == 977
+def test_all_973_detail_payloads_validate(all_detail_payloads):
+    # D-18: 980 -> 977; Item 2c: 977 -> 973
+    assert len(all_detail_payloads) == 973
     for payload in all_detail_payloads.values():
         validate_detail_payload(payload)
 
@@ -480,7 +492,7 @@ def test_search_index_covers_all_technologies_and_validates(ctx, base_dataset, a
     doc, _node_bytes, _edge_bytes = base_dataset
     index = build_search_index(ctx, doc, all_detail_payloads)
     validate_search_index(index)
-    assert len(index["entries"]) == 977  # D-18: 980 -> 977
+    assert len(index["entries"]) == 973  # D-18: 980 -> 977; Item 2c: 977 -> 973
     assert all(e["tokens"] for e in index["entries"])
 
 
@@ -519,15 +531,15 @@ def test_diagnostics_validates_and_reports_the_unconditional_uncertain_finding(c
     diagnostics = build_diagnostics(ctx)
     validate_diagnostics(diagnostics)
 
-    assert diagnostics["unconditionalUncertainty"]["count"] == 209
+    # Item 2 (later session): the four resolution rules (has_megacorp/DLC, colossus_project
+    # progression flag, has_acot/has_aot_mod mod-requirement, plus Item 2c's always-no exclusion
+    # shrinking the denominator 977 -> 973) moved unconditionalUncertainty 209 -> 205 and the
+    # worst profile-dependent rate 0.033777 (33/977) -> 0.028777 (28/973) -- both real
+    # IMPROVEMENTS (lower counts against a smaller corpus), not something the ratchet flags.
+    assert diagnostics["unconditionalUncertainty"]["count"] == 205
     assert len(diagnostics["profileDependentUncertainty"]) == 12
     worst = max(d["rate"] for d in diagnostics["profileDependentUncertainty"])
-    # D-18 (spec/decisions.md, this session): rate moved 0.033673 -> 0.033777 purely from the
-    # denominator shrinking 980 -> 977 (the depth-1 ACOT/AoT closure) -- the worst profile's
-    # UNCERTAIN count itself is unchanged at 33 (33/980 = 0.033673..., 33/977 = 0.033777...,
-    # confirmed directly, not assumed): none of the 3 dropped ACOT technologies was ever
-    # profile-dependent-uncertain.
-    assert worst == pytest.approx(0.033777, abs=1e-5)
+    assert worst == pytest.approx(0.028777, abs=1e-5)
 
     cap_keys = {k for k in ctx.rendered_keys if k.startswith("giga_tech_repeatable_") and k.endswith("_cap")}
     assert len(cap_keys) == 50
@@ -537,6 +549,26 @@ def test_diagnostics_validates_and_reports_the_unconditional_uncertain_finding(c
         assert _field(ctx.rendered_defs[key].block, "potential") is not None, (
             f"{key}: expected a potential block visible only after inline_script expansion"
         )
+
+
+def test_diagnostics_uncertain_technologies_matches_d10(ctx):
+    """Item 1 (later session): the dev health monitor's data must never disagree with D-10's own
+    counts -- both come from the same evaluator call, but this proves it rather than assuming it
+    (this project's own standing rule). unconditionalUncertainty.count must equal the number of
+    uncertainTechnologies entries flagged `unconditional`; the union of unconditional + real
+    profile-dependent entries must equal the total entry count."""
+    diagnostics = build_diagnostics(ctx)
+    entries = diagnostics["uncertainTechnologies"]
+    unconditional_entries = [e for e in entries if e["unconditional"]]
+    assert len(unconditional_entries) == diagnostics["unconditionalUncertainty"]["count"]
+    for e in entries:
+        assert len(e["perProfile"]) == (12 if e["unconditional"] else len(e["perProfile"]))
+        assert 1 <= len(e["perProfile"]) <= 12
+        for p in e["perProfile"]:
+            assert p["category"]
+            assert p["description"]
+    assert len(entries) == len({e["technologyId"] for e in entries})  # no duplicate technologies
+    assert entries == sorted(entries, key=lambda e: e["technologyId"])  # stable diffable order
 
 
 def test_repeatable_cap_family_is_config_gated_in_every_profile(base_dataset):
@@ -636,13 +668,13 @@ def test_config_gated_subject_resolves_all_50_megastructure_names(ctx):
 # ---------------------------------------------------------------------------
 
 
-def test_rendered_node_count_stays_977_regardless_of_technology_swap(ctx, base_dataset):
-    """D-14 decision 1: a swap NEVER becomes its own node -- the rendered set is exactly 977
-    (D-18: 980 -> 977) whether or not a technology carries a technology_swap, axis-expressible or
-    not."""
+def test_rendered_node_count_stays_973_regardless_of_technology_swap(ctx, base_dataset):
+    """D-14 decision 1: a swap NEVER becomes its own node -- the rendered set is exactly 973
+    (D-18: 980 -> 977; Item 2c, later session: 977 -> 973) whether or not a technology carries a
+    technology_swap, axis-expressible or not."""
     doc, _node_bytes, _edge_bytes = base_dataset
-    assert len(doc["technologies"]) == 977
-    assert len(ctx.rendered_keys) == 977
+    assert len(doc["technologies"]) == 973
+    assert len(ctx.rendered_keys) == 973
 
 
 def test_swap_classification_split_uses_the_project_own_axis_facts(ctx):
@@ -854,7 +886,7 @@ def test_off_tree_prerequisite_names_surface_on_the_three_affected_detail_payloa
     phanon = build_detail_payload(ctx, "tech_civil_phanon_application")
     assert phanon["offTreePrerequisiteNames"] == []
 
-    # Every OTHER rendered technology (974/977) has an empty list -- the field is real data, not
+    # Every OTHER rendered technology (971/973) has an empty list -- the field is real data, not
     # a fixed stub, and its non-emptiness is confined to exactly the D-18 accepted-cost set.
     non_empty = {
         key for key in ctx.rendered_keys
@@ -911,18 +943,21 @@ def vendor_without_acot_aot(tmp_path_factory):
     return root
 
 
-def test_reduced_corpus_build_is_977_nodes_not_a_naive_973(vendor_without_acot_aot):
+def test_reduced_corpus_build_is_973_nodes(vendor_without_acot_aot):
     """The headline finding from the vendoring-automation investigation, re-verified as a
     regression test rather than left as a one-off manual measurement: pre-D-18, 980 - 7 + 4 = 977,
-    not 980 - 7 = 973. D-18 (spec/decisions.md, this session): the full-build rendered count moved
+    not 980 - 7 = 973 (the OLD, coincidentally-identical-looking wrong-arithmetic number, before
+    Item 2c ever existed). D-18 (spec/decisions.md): the full-build rendered count moved
     980 -> 977 for an UNRELATED reason (the depth-1 ACOT/AoT closure), and PLACEHOLDER_
     TECHNOLOGIES_REQUIRING_ACOT_AOT narrowed 7 -> 4 members (only the depth-1 ones can still be
-    ABSENT when ACOT/AoT is missing -- the 3 dropped ones are never rendered regardless). Re-run
-    against the real corpus, this reduced-build figure remains 977 -- confirmed empirically, not
-    assumed from the arithmetic (977 - 4 + 4 = 977 is a genuine coincidence of these particular
-    numbers, not a reason the two builds should always match)."""
+    ABSENT when ACOT/AoT is missing -- the 3 dropped ones are never rendered regardless). Item 2c
+    (later session) then excluded 4 permanently-disabled technologies from BOTH build modes
+    identically (none of the 4 is ACOT/AoT-sourced or reachable only through them), moving the
+    full-build figure 977 -> 973 -- and, verified directly here rather than assumed, the
+    reduced-build figure moves the SAME way, landing on 973 too (973 - 4 + 4 = 973, again a
+    coincidence of these particular numbers, not a reason the two builds should always match)."""
     ctx = build_context(vendor_without_acot_aot)
-    assert len(ctx.rendered_keys) == 977
+    assert len(ctx.rendered_keys) == 973
     assert ctx.sources_present == ["Vanilla", "Gigastructural Engineering"]
 
     doc, _node_bytes, _edge_bytes = build_base_dataset(ctx)

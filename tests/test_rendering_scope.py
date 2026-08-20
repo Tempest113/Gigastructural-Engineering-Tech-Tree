@@ -162,9 +162,13 @@ def test_real_corpus_closure_matches_d18_depth_one_measurement(corpus_history):
 
 
 @pytest.mark.skipif(not _vendor_populated, reason="vendor/ not populated locally")
-def test_real_corpus_rendered_total_is_977(corpus_history):
-    # D-18: 980 -> 977, exactly the 3 depth-2+ closure members dropped under depth-1.
-    assert len(rendered_technology_keys(corpus_history)) == 977
+def test_real_corpus_rendered_total_is_973(corpus_history):
+    # D-18: 980 -> 977 (3 depth-2+ closure members dropped under depth-1).
+    # Item 2c (user domain call, later session): 977 -> 973 -- 4 permanently-disabled technologies
+    # (`potential = { always = no }`, directly or as one leaf among dead siblings) excluded from
+    # the rendered set entirely: giga_tech_aeternite_weaponry, giga_tech_interstellar_ringworld,
+    # giga_tech_orbital_elysium, giga_tech_stellar_ring_habitat.
+    assert len(rendered_technology_keys(corpus_history)) == 973
 
 
 @pytest.mark.skipif(not _vendor_populated, reason="vendor/ not populated locally")

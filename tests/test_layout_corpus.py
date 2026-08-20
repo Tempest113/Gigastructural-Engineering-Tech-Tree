@@ -120,7 +120,9 @@ def test_every_rendered_node_gets_a_resolvable_tier_no_hard_failure(real_layout)
     # 3 depth-2+ closure members (tech_dark_matter_power_core_enig, tech_mine_dark_energy,
     # tech_precursor_design) no longer render. See pipeline/rendering_scope.py and D-18 for the
     # full reasoning and the accepted 3-link off-tree-prerequisite cost.
-    assert len(real_layout.nodes) == 977
+    # Item 2c (user domain call, later session): 977 -> 973, 4 permanently-disabled technologies
+    # (`potential = { always = no }`) excluded entirely.
+    assert len(real_layout.nodes) == 973
 
 
 def test_band_count_matches_survey(real_layout):
@@ -184,8 +186,6 @@ def test_densest_actual_row_band_cell_and_canvas_dimensions(real_layout):
     # per-row membership differs substantially (Compound 3 -> 15, particles 103 -> 96, propulsion
     # 50 -> 45). Densest cell/width unaffected throughout -- none of these 13 nodes was ever in the
     # voidcraft x T5 cell.
-    assert densest_cell == ("voidcraft", 5)
-    assert densest_count == 47
     # Canvas grows again, this session's Part-2 spacing pass (13,632 x 11,608 -> 14,160 x
     # 12,328): INTRA_GAP_X 24->40px (width, +16px per of the 3 intra-cell gaps per band =
     # 4 bands wide subgrid... measured directly, not hand-derived), ROW_GUTTER 24->48px, and the
@@ -245,8 +245,19 @@ def test_densest_actual_row_band_cell_and_canvas_dimensions(real_layout):
     # 3.17:1). Canvas moves to **29,670 x 13,448** -- matches the survey's own projection exactly.
     # Densest cell/row population are unaffected (subgrid_width never changes membership, only
     # geometry).
+    #
+    # Item 2c (user domain call, later session): excluding 4 permanently-disabled technologies
+    # (`potential = { always = no }`) drops one node each from `voidcraft`, `statecraft`,
+    # `Aeternum` and `new_worlds` (real per-row counts confirmed below) -- one of them
+    # (`giga_tech_interstellar_ringworld`, `voidcraft` x T5) was a real member of the previously
+    # densest (voidcraft, T5) cell, so densest_count moves 47 -> 46 (same cell, one fewer node).
+    # Canvas width is unaffected (subgrid_width/membership-driven wrap in that cell doesn't cross a
+    # column boundary from one fewer node); height moves 13,448 -> 13,332px from the small ripple
+    # across the affected rows' own sizing.
+    assert densest_cell == ("voidcraft", 5)
+    assert densest_count == 46
     assert real_layout.canvas_width == 29670.0
-    assert real_layout.canvas_height == 13448.0
+    assert real_layout.canvas_height == 13332.0
 
 
 def test_row_population_matches_survey(real_layout):
@@ -275,18 +286,25 @@ def test_row_population_matches_survey(real_layout):
     # rendered technologies (tech_dark_matter_power_core_enig, tech_mine_dark_energy,
     # tech_precursor_design), one each from `computing`, `field_manipulation` and `particles`
     # (83->82, 82->81, 95->94) -- confirmed directly, not assumed, by diffing the row-count table
-    # against the pre-D-18 one. No other row is affected; total drops 980 -> 977.
+    # against the pre-D-18 one. Total: 980 -> 977.
+    #
+    # Item 2c (user domain call, later session): excluding 4 permanently-disabled technologies
+    # (`potential = { always = no }`) drops one node each from 4 rows -- confirmed by direct
+    # per-row diff, not assumed: `voidcraft` 123->122 (giga_tech_interstellar_ringworld),
+    # `statecraft` 82->81 (giga_tech_orbital_elysium), `Aeternum` 3->2
+    # (giga_tech_aeternite_weaponry), `new_worlds` 49->48 (giga_tech_stellar_ring_habitat). No
+    # other row is affected. Total: 977 -> 973.
     row_counts = Counter(n.row_id for n in real_layout.nodes.values())
     counts_by_row = {row_id: row_counts.get(row_id, 0) for row_id in real_layout.row_ids}
     assert counts_by_row == {
         "computing": 82, "field_manipulation": 81, "particles": 94,
-        "archaeostudies": 24, "biology": 130, "military_theory": 43, "new_worlds": 49,
-        "psionics": 28, "statecraft": 82,
-        "industry": 70, "materials": 49, "propulsion": 45, "voidcraft": 123,
-        "Aeternum": 3, "Blokkats": 42, "Compound": 15, "Sirenalia": 14, "Katzenartig Imperium": 3,
+        "archaeostudies": 24, "biology": 130, "military_theory": 43, "new_worlds": 48,
+        "psionics": 28, "statecraft": 81,
+        "industry": 70, "materials": 49, "propulsion": 45, "voidcraft": 122,
+        "Aeternum": 2, "Blokkats": 42, "Compound": 15, "Sirenalia": 14, "Katzenartig Imperium": 3,
     }
     assert "blokkats" not in row_counts
-    assert sum(row_counts.values()) == 977
+    assert sum(row_counts.values()) == 973
 
 
 def test_no_row_overlaps_and_every_card_within_its_own_row_bounds(real_layout):
@@ -343,13 +361,19 @@ def test_edge_kind_breakdown_matches_survey(real_layout):
     removes 5 prerequisite edges (each of the 3 dropped closure members' own inbound/outbound
     prerequisite edges to/from other rendered technologies), all from the `prerequisite` kind;
     `alternative`/`potential-gate` counts are unaffected since none of the 3 dropped technologies
-    participated in an OR-group or a `potential`-gate relationship."""
+    participated in an OR-group or a `potential`-gate relationship.
+
+    Item 2c (user domain call, later session): 984 -> 977 -- excluding the 4 permanently-disabled
+    technologies (`potential = { always = no }`) drops their own 7 outgoing `prerequisite` edges
+    (confirmed: nothing else referenced any of the 4 as a prerequisite, so no INCOMING edges are
+    lost); `alternative`/`potential-gate` counts are again unaffected -- none of the 4 participated
+    in an OR-group or a `potential`-gate relationship."""
     from collections import Counter
 
     kind_counts = Counter(e.kind for e in real_layout.edges)
     print(f"\nedge kind breakdown: {dict(kind_counts)}")
-    assert dict(kind_counts) == {"prerequisite": 883, "alternative": 76, "potential-gate": 25}
-    assert len(real_layout.edges) == 984
+    assert dict(kind_counts) == {"prerequisite": 876, "alternative": 76, "potential-gate": 25}
+    assert len(real_layout.edges) == 977
 
     alt_edges = [e for e in real_layout.edges if e.kind == "alternative"]
     assert len({e.group_id for e in alt_edges}) == 35
@@ -445,13 +469,17 @@ def test_inline_script_tier_group_is_proper_subset_of_repeatable_group(real_layo
 def test_repeatable_band_never_sources_an_edge(real_layout_context):
     """The sink property this session's routing simplifications depend on: every edge (of ANY of
     the three P-14 kinds) touching a repeatable node is non-repeatable -> repeatable, never the
-    reverse and never repeatable -> repeatable. Verified directly over the full 984-edge P-14 set,
-    not just prerequisite. 901 + 83 == 984 == 883 prerequisite + 76 alternative + 25
+    reverse and never repeatable -> repeatable. Verified directly over the full 977-edge P-14 set,
+    not just prerequisite. 894 + 83 == 977 == 876 prerequisite + 76 alternative + 25
     potential-gate (the P-14 edge-kind breakdown -- see test_edge_kind_breakdown_matches_survey).
     D-18 (this session): dropped from 906 (pre-depth-1-closure) -- the 5 edges the depth-1 closure
     change removed (see test_edge_kind_breakdown_matches_survey) were all non-repeatable ->
     non-repeatable (none of the 3 dropped ACOT technologies is repeatable), so all 5 come off this
-    bucket; the non-repeatable -> repeatable bucket (83) is unaffected."""
+    bucket; the non-repeatable -> repeatable bucket (83) is unaffected. Item 2c (user domain call,
+    later session): 901 -> 894 -- the 7 edges Item 2c's exclusion removes (see
+    test_edge_kind_breakdown_matches_survey) are again all non-repeatable -> non-repeatable (none
+    of the 4 excluded technologies is repeatable), so the repeatable-touching bucket (83) is
+    unaffected again."""
     layout, rendered_defs, _rendered_defs_raw, variable_table = real_layout_context
 
     repeatable_keys = {k for k, defn in rendered_defs.items() if is_repeatable(defn.block, variable_table)}
@@ -463,9 +491,9 @@ def test_repeatable_band_never_sources_an_edge(real_layout_context):
 
     assert len(rep_to_nonrep) == 0
     assert len(rep_to_rep) == 0
-    assert len(both_nonrepeatable) == 901
+    assert len(both_nonrepeatable) == 894
     assert len(nonrep_to_rep) == 83
-    assert len(both_nonrepeatable) + len(nonrep_to_rep) == len(layout.edges) == 984
+    assert len(both_nonrepeatable) + len(nonrep_to_rep) == len(layout.edges) == 977
 
     # A repeatable node can never source an edge at all (sink property), so it can never source a
     # backward edge either -- assert this directly rather than relying on it falling out of the

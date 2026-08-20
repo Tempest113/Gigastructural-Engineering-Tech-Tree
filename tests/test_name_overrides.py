@@ -46,9 +46,12 @@ def test_duplicate_key_is_a_config_error(tmp_path):
         load_name_overrides(path)
 
 
-def test_checked_in_config_has_exactly_the_one_known_real_gap():
-    """`config/name_overrides.txt` should carry exactly the one reviewed entry this session found
-    (giga_tech_aeternite_weaponry) -- a change here is either a new real gap (fine, but should be
-    reviewed the same way) or an accidental edit (should be reverted)."""
+def test_checked_in_config_is_seeded_empty_again():
+    """`config/name_overrides.txt` carried exactly one reviewed entry (giga_tech_aeternite_
+    weaponry) until Item 2c (later session) excluded that technology from the rendered tree
+    entirely (`potential = { always = no }`, disabled content) -- the override can never fire for
+    an unrendered technology, so it was removed rather than left dead. Seeded empty again; a
+    change here is either a new real gap (fine, but should be reviewed the same way) or an
+    accidental edit (should be reverted)."""
     overrides = load_name_overrides()
-    assert set(overrides) == {"giga_tech_aeternite_weaponry"}
+    assert set(overrides) == set()

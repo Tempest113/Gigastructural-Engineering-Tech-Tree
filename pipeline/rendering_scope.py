@@ -20,9 +20,46 @@ module originally shipped, itself the first real implementation of HANDOFF.md's 
 
 from __future__ import annotations
 
+from .clausewitz.nodes import Assignment, Identifier
 from .overwrites import TechnologyDefinition, alternative_prerequisite_groups, ordered_prerequisites
 
 RENDERED_UNCONDITIONALLY = ("Vanilla", "Gigastructural Engineering")
+
+
+def _is_permanently_disabled(block) -> bool:
+    """Item 2c (user domain call): a technology whose `potential` block contains a TOP-LEVEL
+    (direct-child, not nested inside NOT/OR/AND or an opaque sub-scope) literal leaf `always = no`
+    is disabled content, not uncertain content -- the mod author left it in the files but made it
+    permanently unreachable by any empire, ever, regardless of axis facts. `potential`'s top level
+    is an implicit AND, so one unconditional-FALSE direct child makes the whole block FALSE no
+    matter what other (now-moot) siblings remain -- confirmed real: `giga_tech_orbital_elysium`
+    keeps `giga_can_use_habitables = yes` and more as dead siblings alongside its own top-level
+    `always = no #disabled since 4.0`, not a clean singleton the way
+    `giga_tech_aeternite_weaponry` is. Deliberately does NOT descend into nested NOT/OR/AND or
+    opaque sub-scopes (count_country, weight_modifier, ...) looking for a deeper `always = no` --
+    same scope discipline `pipeline.edges`/`pipeline.availability` already use, and the real corpus
+    has no such nested case among rendered technologies (verified: the survey behind this
+    implementation ran the full evaluator over every rendered technology and found exactly the
+    same 4 unconditionally-uncertain-via-`always`-leaf technologies this function excludes;
+    `giga_09_ehof_other.txt`'s own `always = no` occurrence sits inside a nested sub-scope this
+    function correctly leaves untouched, matching the evaluator's own established opaque-scope
+    treatment). Never a `potential` block absent entirely (`None` means unconditionally available,
+    not disabled). Real corpus, confirmed by direct inspection, not a naming-pattern guess: exactly
+    4 technologies match -- `giga_tech_aeternite_weaponry`/`giga_tech_interstellar_ringworld`/
+    `giga_tech_orbital_elysium`/`giga_tech_stellar_ring_habitat`."""
+    for item in block.items:
+        if not isinstance(item, Assignment) or item.key_name != "potential":
+            continue
+        potential_value = item.value
+        if not hasattr(potential_value, "items"):
+            return False
+        for leaf in potential_value.items:
+            if not isinstance(leaf, Assignment):
+                continue
+            if leaf.key_name == "always" and isinstance(leaf.value, Identifier) and leaf.value.name == "no":
+                return True
+        return False
+    return False
 
 
 def compute_rendering_scope(technology_history: dict[str, list[TechnologyDefinition]]) -> set[str]:
@@ -87,10 +124,15 @@ def compute_off_tree_prerequisites(
 
 def rendered_technology_keys(technology_history: dict[str, list[TechnologyDefinition]]) -> set[str]:
     """The full rendered-node key set: every Vanilla/Gigastructural Engineering winning
-    definition, plus this corpus's P-16 closure over ACOT/AoT."""
+    definition, plus this corpus's P-16 closure over ACOT/AoT, MINUS Item 2c's permanently-
+    disabled technologies (`_is_permanently_disabled` -- `potential = { always = no }`), excluded
+    entirely rather than rendered as a locked/uncertain node. Applied to the full unioned set, not
+    just the unconditional half, since a disabled technology could in principle appear in either
+    (none of the real 4 are ACOT/AoT today, but the rule doesn't assume that)."""
     winners = {key: occurrences[-1] for key, occurrences in technology_history.items()}
     base = {key for key, winner in winners.items() if winner.source in RENDERED_UNCONDITIONALLY}
-    return base | compute_rendering_scope(technology_history)
+    full = base | compute_rendering_scope(technology_history)
+    return {key for key in full if not _is_permanently_disabled(winners[key].block)}
 
 
 def compute_alternative_only_gaps(technology_history: dict[str, list[TechnologyDefinition]]) -> set[str]:

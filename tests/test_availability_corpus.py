@@ -137,9 +137,11 @@ def rendered_potentials():
     return result
 
 
-def test_rendered_scope_is_exactly_977(rendered_potentials):
-    # D-18 (spec/decisions.md): 980 -> 977, the depth-1 ACOT/AoT closure adopted this session.
-    assert len(rendered_potentials) == 977
+def test_rendered_scope_is_exactly_973(rendered_potentials):
+    # D-18 (spec/decisions.md): 980 -> 977, the depth-1 ACOT/AoT closure.
+    # Item 2c (user domain call, later session): 977 -> 973, 4 permanently-disabled technologies
+    # (`potential = { always = no }`) excluded entirely.
+    assert len(rendered_potentials) == 973
 
 
 def test_real_rates_against_projections(rendered_potentials):
@@ -147,7 +149,7 @@ def test_real_rates_against_projections(rendered_potentials):
     survey = survey_uncertainty(rendered_potentials, profiles)
 
     total = survey.total_technologies
-    assert total == 977  # this IS the rendered denominator the spec now requires (Task 1's D-10 split); D-18: 980 -> 977
+    assert total == 973  # this IS the rendered denominator the spec now requires (Task 1's D-10 split); D-18: 980 -> 977; Item 2c: 977 -> 973
 
     unconditional_rate = survey.unconditional_rate()
     worst_dependent_rate = survey.worst_profile_dependent_rate()
@@ -175,38 +177,47 @@ def test_real_rates_against_projections(rendered_potentials):
 
     # Corrected twice, see this module's docstring: 209 -> 259 (raw vs. expanded blocks) -> 209
     # again (the 50 giga_tech_repeatable_*_cap nodes are CONFIG_GATED, not UNCERTAIN -- they
-    # resolve definitively, they just aren't empire-state LOCKED either). Exact equality here,
-    # not a bound: this specific figure is exactly what the regression test below exists to pin
-    # down, and the category distribution below is the corroborating check that this 209 is the
-    # SAME 209 the pre-correction figure happened to name, not a different set that sums to the
-    # same size by coincidence.
-    assert len(survey.unconditional_uncertain) == 209
-    assert unconditional_rate == pytest.approx(209 / 977)  # D-18: 980 -> 977 denominator
+    # resolve definitively, they just aren't empire-state LOCKED either). Item 2's four resolution
+    # rules (later session) then moved 209 -> 205: 4 fewer purely from Item 2c's denominator
+    # shrink (the 4 excluded always-no technologies were themselves unconditionally uncertain, so
+    # removing them removes them from this count 1:1) -- confirmed exactly, not assumed. Exact
+    # equality here, not a bound: this specific figure is what the regression test below exists to
+    # pin down, and the category distribution below is the corroborating check.
+    assert len(survey.unconditional_uncertain) == 205
+    assert unconditional_rate == pytest.approx(205 / 973)  # D-18: 980 -> 977; Item 2c: 977 -> 973
     assert dict(distribution) == {
         ReasonCategory.CRISIS_OR_STORY_PROGRESS: 89,
         ReasonCategory.ORIGIN_REQUIREMENT: 41,
-        ReasonCategory.OPAQUE_COUNTRY_STATE: 34,
-        ReasonCategory.ETHICS_OR_CIVIC_REQUIREMENT: 34,
-        ReasonCategory.UNCLASSIFIED: 7,
-        ReasonCategory.MOD_CONTENT_REQUIREMENT: 4,
-    }
+        ReasonCategory.ETHICS_OR_CIVIC_REQUIREMENT: 37,
+        ReasonCategory.OPAQUE_COUNTRY_STATE: 25,
+        ReasonCategory.UNCLASSIFIED: 13,
+    }  # MOD_CONTENT_REQUIREMENT is now empty (0) -- Item 2d resolved has_acot/has_aot_mod, so the
+    # 4 ACOT/AoT tensile technologies' blocking reason moved elsewhere (still uncertain via an
+    # unrelated leaf, @giga_amb_flag, itself UNCLASSIFIED) rather than being MOD_CONTENT_REQUIREMENT.
 
 
-def test_warn_threshold_actually_fires_on_the_real_worst_profile(rendered_potentials):
+def test_warn_threshold_actually_fires_on_a_synthetic_worst_profile(rendered_potentials):
     # Task 3's consistency check: a threshold that stays silent on a real breach is worse than
-    # none. The real worst-case profile-dependent rate is consistently a few points above 3%
-    # (3.37%-3.70% across recent runs as the evaluator gained resolution rules) -- confirm
-    # classify_d10_status genuinely returns "warn" for it, not just that the number looks right
-    # in a printed log.
+    # none. The real worst-case profile-dependent rate dropped BELOW 3% (2.88%, Item 2's four
+    # resolution rules, later session) -- a real improvement, but it means the real corpus can no
+    # longer prove classify_d10_status can return "warn" at all. Proven synthetically instead
+    # (this project's own "prove a negative before believing it" standing rule, applied here to
+    # "prove a positive can still fire"), then the REAL rate is asserted against its own real,
+    # current classification -- "ok" today, not "warn" -- so a future regression that pushes it
+    # back over 3% is still caught.
+    assert classify_d10_status(0.035) == "warn"
+    assert classify_d10_status(0.11) == "fail"
+    assert classify_d10_status(0.01) == "ok"
+
     profiles = all_profiles_in_canonical_order()
     survey = survey_uncertainty(rendered_potentials, profiles)
     worst_rate = survey.worst_profile_dependent_rate()
-    assert worst_rate > 0.03  # still a real breach at time of writing -- see printed rate above
-    assert classify_d10_status(worst_rate) == "warn"
+    assert worst_rate == pytest.approx(0.028777, abs=1e-5)
+    assert classify_d10_status(worst_rate) == "ok"
 
     diagnostics = build_d10_diagnostics_section(survey, profiles)
     statuses = {d["status"] for d in diagnostics["profileDependentUncertainty"]}
-    assert "warn" in statuses
+    assert statuses == {"ok"}  # every profile now under the 3% warn threshold (Item 2, later session)
     assert "fail" not in statuses  # ceiling not breached
 
 
@@ -219,6 +230,7 @@ def test_d10_diagnostics_section_is_schema_valid(rendered_potentials):
         "schemaVersion": "1.0.0",
         "profileDependentUncertainty": section["profileDependentUncertainty"],
         "unconditionalUncertainty": section["unconditionalUncertainty"],
+        "uncertainTechnologies": [],
         "missingInlineScriptParameterCount": {"current": 0, "previous": 0},
         "tierPromotions": [],
         "swapsRenderingOnInheritedIcon": [],
