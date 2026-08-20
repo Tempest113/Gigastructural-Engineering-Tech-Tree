@@ -779,6 +779,12 @@ English only for v1. The pipeline is language-parameterised so more languages ar
 
 ## Rules
 
+- Work is committed at the end of every session, in logical groups (pipeline, client,
+  spec/docs, tests kept as separate commits where the diff supports it), never left staged.
+  Bisectability is this project's only defence against a regression whose cause spans
+  sessions — it has already been lost once to accumulated uncommitted work across many
+  sessions, and drifted back into the same state after a prior fix. Do not defer this to "a
+  later cleanup session."
 - Zero technology data is hand-authored. The only hand-maintained files are config: empire
   profiles, gate patterns, `config/crisis_faction_overrides.txt` (D-7's step-3 fallback, seeded
   empty — see `pipeline/crisis_faction.py`), `config/overwrite_overrides.txt`,
