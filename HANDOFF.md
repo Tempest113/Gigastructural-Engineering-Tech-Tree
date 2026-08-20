@@ -253,15 +253,22 @@ call — the headlines below are a pointer, not a substitute:
   three edge kinds drives lock state — these two computations are deliberately distinct and
   named so they don't drift back together. Conflating them is a correctness bug.
 - **No primary prerequisite.** Multiple prerequisites are all equally required.
-- **Layout (corrected — see D-13 and the "Layout model" section below)**: crisis factions are
-  horizontal lanes; **bands are DECLARED tier, never computed column**. A node declared T5 sits
-  in the T5 band regardless of promotion. Band headers show the declared tier and nothing else.
-  Computed column is internal geometry governing horizontal ordering *within* a band, and is
-  never displayed. ~10 declared-tier bands plus a terminal Repeatables band. Tier range
-  unbounded in principle (ACOT reaches T9+), but the rendered set tops out around T8.
-- **Colour**: background = research area or crisis faction; outline = area unless rare or
-  dangerous, dangerous outranks rare, both = 45° split. Colour never the sole carrier. Exact
-  hexes in `CLAUDE.md`; `tokens/` is the intended single source of truth and does not exist yet.
+- **Layout (corrected — see D-13/D-16 and the "Layout model" section below)**: rows are the 13
+  derived vanilla technology categories plus the 5 crisis-faction rows, faction-first-else-
+  category and mutually exclusive (D-16, corrects an earlier draft where the crisis-faction lane
+  was the row axis and category was only a sub-grid wrap key); **bands are DECLARED tier, never
+  computed column** (D-13, unaffected by D-16). A node declared T5 sits in the T5 band regardless
+  of promotion. Band headers show the declared tier and nothing else. Computed column is internal
+  geometry governing horizontal ordering *within* a (row, band) cell, and is never displayed.
+  ~10 declared-tier bands plus a terminal Repeatables band. Tier range unbounded in principle
+  (ACOT reaches T9+), but the rendered set tops out around T8.
+- **Colour**: superseded by D-16 — colour/pattern now encode the ROW (an area-coloured header
+  chip on a category row, faction colour/pattern as row backing on a faction row), cards
+  themselves neutral dark; research area is deliberately NOT colour-encoded inside a faction row
+  (an accepted loss). Outline = area unless rare or dangerous, dangerous outranks rare, both = 45°
+  split (unaffected by D-16 — this is about the card's own outline, not its background). Colour
+  never the sole carrier. Exact hexes in `CLAUDE.md`; `tokens/`/`client/src/tokens.ts` is the
+  single source of truth for node colours (edge colours were added there too, Stage 3 slice 3).
 - **Unknown tolerance (D-10)**: 10% ceiling per empire profile (worst profile, not pooled), 3%
   warn, plus a no-regression ratchet.
 - English only for v1, pipeline language-parameterised.
@@ -1086,46 +1093,450 @@ reason, not by default.
    targeted correctness pass" bullet for the real figures (15/980 rendered nodes have an
    unresolvable `cost`, 88/88 repeatables resolve `costPerLevel`) and `spec/P-02-layout.md`'s
    "Cost display" section for the primary/secondary display decision.
-5. **Stage 3 (Render)** — foundation exists (`client/`: TypeScript + PixiJS + Vite, real dataset
-   AND icon atlases wired in and browser-verified, a permanent local-build/manual-deploy model
-   with an integrity manifest — D-15, spec/decisions.md — `tsc`-verified `dataset-types.ts`), but
-   zero rendering logic — no node cards, no layout drawing, no edges, no interaction, none of
-   P-2/P-3/P-4/etc. Still the largest remaining body of work by far; two sessions so far have only
-   proved the toolchain and delivery path, deliberately not started the renderer itself. See
-   CLAUDE.md's "Stage 3 toolchain foundation is built" bullet for exactly what does and doesn't
-   exist. `spec/P-12.9-research-path.md` is spec-only too — a design for one popup field, not yet
+5. **Stage 3 (Render)** — real rendering, six passes in
+   (`client/src/main.ts`/`camera.ts`/`lod.ts`/`tokens.ts`): slice 1 (static render), slice 2
+   (camera + a first 3-tier LOD), slice 3 (edges), slice 4 (row rendering, D-16's re-axis), a
+   **visual-fidelity pass** that fixed four appearance defects the user found reviewing slice 4's
+   screenshots, and now a **second visual-fidelity pass** that fixed five more. See CLAUDE.md's
+   "Stage 3 visual-fidelity pass" and "Stage 3 visual-fidelity pass 2" bullets for the full
+   writeups. Pass 1 summary: the viewport-pinned sticky headers slice 4 built are REMOVED entirely
+   (the user rejected them outright) and replaced with world-anchored row header chips plus a
+   v1-style tier-band label repeated above every row's own populated band cell — this superseded
+   S-03's "renders once across the full lane stack" criterion for a SECOND time (the first was
+   D-16's lane→row rename), both supersessions now recorded explicitly in `spec/S-03-tier-
+   differentiation.md` itself; every one of the 18 rows (not just the 5 faction rows) now gets a
+   real tinted-panel/border/rounded-corner treatment, so category rows read as labelled containers
+   instead of empty space; the faction row-backing patterns are rescaled for row (not card) scale,
+   with a real unbounded-line bug found and fixed along the way (a faction row's diagonal pattern
+   was bleeding across the entire canvas height, striping category rows too) and Sirenalia's
+   pattern changed from flat rects to real curved "sweeping bands" via PixiJS's `quadraticCurveTo`;
+   card name text is now hard-clamped to 2 lines with an ellipsis (matching the card's own original
+   p95-name sizing intent), verified numerically over all 980 nodes that no name's bounding box
+   exceeds its card. **Pass 2 summary**: card/band spacing widened again (real rebuilt canvas
+   13,632×11,608px, up from 12,888×10,800px); tier bands now get an alternating background tint;
+   edges get rounded corners (closing `spec/P-08-connectors.md`'s previously-skipped requirement)
+   and a brighter light blue-cyan trace colour; the row-chip/per-cell-tier-label overlap Pass 1
+   introduced is fixed (verified numerically, 0 violations across all 18 rows); the five faction
+   row patterns are now real user-supplied artwork (Katzenartig's flagged provisional), which also
+   surfaced and fixed two real bugs — the row panel was reading the chip's flag-identity colour
+   instead of its own row-backing tone, and the pattern accent's clipping mask was never a
+   scene-graph child so it silently clipped every faction pattern to nothing regardless of zoom.
+   Still real gaps, next slice's scope: rare/dangerous/repeatable/gate/mod-requirement badges, the
+   rare/dangerous outline override, hover/click/selection/popup, search, empire-profile switching,
+   plus two still-open art items (real traced Blokkats flag SVG, a signed-off Sirenalia contrast
+   colour). See CLAUDE.md's Stage 3 bullets for exactly what does and doesn't exist.
+   `spec/P-12.9-research-path.md` is spec-only too — a design for one popup field, not yet
    implemented either.
 
 ---
 
 ## Next prompt to paste into Claude Code
 
-**Stale as of a later session — the layout implementation this used to describe was completed
-long ago (see CLAUDE.md's "P-2/D-13 layout is built" bullet); left unfixed for many sessions,
-which is itself a lesson: keep this section current every time it's touched, don't let it drift
-into a pointer at completed work.** Replaced with what's actually next:
+**Stale as of a later session — keep this current every time it's touched; don't let it drift into
+a pointer at completed work (that happened seven times already, see git history of this
+section).** Current as of **"Hard regression fix session — row-overlap bug in the Item 4
+vertical-centring change, plus the missing row-overlap invariant"** (`docs/BUILD-LOG.md`'s
+rendering section — read that entry first, then the screenshot-review entry before it).
 
-**Stage 3 (Render) has a toolchain, a real dataset AND icon atlases wired in, and a real (if
-permanently local-build/manual-deploy — D-15) deploy pipeline — but zero rendering logic.**
-Nothing draws a node card, a band, a lane, an edge, a gate badge, or handles a single interaction
-(P-2 through P-13 are all specced but none is built client-side). This is the largest remaining
-body of work in the project by a wide margin, and the obvious next real prompt: pick ONE vertical
-slice (e.g., "draw the 980 nodes at their real geometry positions, coloured by area, with real
-icons and band/lane labels — nothing interactive yet") rather than attempting the whole renderer
-in one pass. `client/src/dataset.ts`'s loader (`fetchBaseDataset`/`fetchEmpireOverlay`/
-`fetchGeometry`/`atlasUrl`) and `schema/generated/dataset-types.ts`'s types are ready to build on
-directly — a real icon already loads and renders as a PixiJS Sprite in `client/src/main.ts` as a
-proof of the mechanism, not yet as part of any real card.
+**READ THIS BEFORE TOUCHING `pipeline/layout.py` AGAIN.** The immediately-prior session's Item 4
+(short-sub-grid-column vertical centring) shipped with a real, user-reported hard regression:
+`column_member_count` was keyed by `(row_id, col)` alone, and `col` is BAND-RELATIVE (resets to 0
+per band), so two different bands' columns sharing a local index had their member counts silently
+summed, which could drive the centring offset negative and shift cards up into the row above —
+real corpus example, `giga_tech_birch_world_1` landed at row **−16**. Fixed by keying on
+`(row_id, band_index, col)`, the actually-unique triple, plus a same-file `assert centre_offset >=
+0` as a second line of defence. **The existing test suite stayed fully green through the entire
+regression** — nothing asserted the actual invariant (no two rows' card extents may intersect).
+Two new tests close that gap: `tests/test_layout_corpus.py::
+test_no_row_overlaps_and_every_card_within_its_own_row_bounds` (real corpus) and
+`tests/test_layout.py::test_no_row_overlaps_when_the_same_row_spans_multiple_bands` (fast
+synthetic case) — both proven to fail against the actual broken code before being trusted on the
+fix. See CLAUDE.md's Rules section for the full record, including why this is a plain dict-keying
+bug and NOT a recurrence of the parallel-geometry defect class (the client's row-panel derivation
+from real node positions is unaffected and was never the problem — it correctly, faithfully
+reproduced whatever the pipeline emitted, bug included). Canvas dimensions were unaffected by both
+the bug and the fix (29,670 × 13,448px, unchanged) — explained now, not just asserted: row HEIGHT
+comes from `row_row_counts`, set in a first pass the bug never touched; only individual cards'
+position WITHIN their already-correctly-sized row was corrupted, which is exactly why "canvas
+dimensions unchanged" didn't catch it and shouldn't have been read as reassurance on its own.
 
-**Before that vertical slice, one prerequisite**: run `tools/build_dataset.py` locally (needs
-`vendor/` populated) to actually produce `client/public/dataset/` — it is gitignored as of D-15
-and will not exist in a fresh checkout. `npm run dev`/`build` in `client/` will fail without it.
+**Everything else from the screenshot-review session remains intact and correctly verified** —
+audited specifically for this, since the regression's dataset build was also used for some of
+that session's own verification screenshots. Confirmed unaffected: name truncation (Item 1a,
+pure per-card text logic, no Y-position dependency), the gate-label font/overlap fix (Item 1b,
+card-relative positioning, correct regardless of the card's absolute row placement), the profile
+selector CSS fix (Item 2, no pipeline dependency at all), LOD shedding (Item 5, zoom-threshold
+based, not row-Y based), and the swap/`activeEdgeIds`/prerequisite-pooling SURVEY findings (Item
+3 — read-only queries against availability/edges/gates data, which the layout bug never touched;
+layout is computed independently of and after those fields in `pipeline/dataset_emit.py`). One
+screenshot from that session (`final_row_padding_centered.png`, the "after" shot for Item 4
+itself) WAS built against the regression and has been superseded by fresh, verified screenshots
+this session showing zero row overlap at fit-to-viewport and at both same-area and
+cross-area-group row boundaries.
 
-Two smaller, independently-shippable items are also sitting fully specced and unbuilt:
-- `spec/P-12.9-research-path.md` — per-profile research path (v1's second reported failure).
+**Gate classification (P-3), empire-profile switching, search, and the whole badges slice are
+DONE** (prior sessions) **and the screenshot-review session fixed five real defects found from
+real screenshots** (all confirmed intact above, now re-verified against the regression fix too):
+name truncation defaults back to plain tail-ellipsis (middle-ellipsis now used only on the
+minimal set of names that would otherwise collide — 18/977, not "every long name"); the gate
+label's font-measurement mismatch (measured at the 20px name font, rendered at 11px) and its
+vertical collision with a 2-line card name are both fixed; the profile selector's `<select>`s no
+longer overflow their panel (`min-width: 0` — the classic flex-item default that overrides
+`flex-shrink`); a short sub-grid column is now vertically CENTRED within its row's shared height
+instead of top-anchored with 100% of the slack below it (`pipeline/layout.py`, canvas dimensions
+UNCHANGED — 29,670 × 13,448px, this only redistributes space that already existed). LOD text
+shedding was verified CORRECT against S-03's real table (name/cost/icon shed together at the
+`<5%` "Coloured block" stage — the only stage that names them — not a bug, just imperceptible
+since the card is already unreadable by then). The one reported defect NOT reproduced: a
+"garbled" AoT mod-requirement badge — checked across multiple zooms, direct load, and
+search-then-click, always rendered cleanly; real counts confirmed (ACOT 3, AoT 1); flagged, not
+silently dropped, in case it recurs.
+
+**Two real, evidenced findings from the screenshot-review session's surveys, not yet acted on —
+read `docs/BUILD-LOG.md`'s full writeup before starting either:**
+
+1. **Tech-swap display substitution (`swapMappings`, D-14) is emitted but consumed nowhere in the
+   client**, and **the popup's Prerequisites/Dependents lists pool all three edge kinds
+   unlabelled and unfiltered by profile** — both confirmed directly against the real corpus (see
+   CLAUDE.md's Open Items for the full detail: `tech_zero_point_power`/`tech_bio_zero_point_power`
+   as the swap example, `tech_mega_engineering`'s 4-member `alternative` group as the pooling
+   example). The alternative-branch filtering piece does NOT need the unbuilt
+   `appliesToEmpireTypes` edge extractor — each branch's own `availabilityMatrix` entry already
+   reflects per-profile reachability correctly, confirmed by direct measurement.
+2. **The research path (P-12.9)** — v1's real second reported failure (profile-blind traversal +
+   `OR`-branch flattening, see this file's own "Research path" section above for the full
+   diagnosis) — is specced (`spec/P-12.9-research-path.md`) but not implemented.
+   `pipeline.dataset_emit`'s existing `researchPaths`/`_ancestor_research_path` IS real and
+   already shipping in every empire overlay today, but is a simplified BFS-over-`prerequisite`-
+   edges-only placeholder, not P-12.9's cheapest-`OR`-branch algorithm.
+
+**Recommendation, given explicitly to the user this session and worth restating so it isn't
+re-litigated: these should be TWO slices, sequenced, not one.** Swap-aware display and
+kind-labelled/profile-filtered prerequisite lists are the smaller, lower-risk, independently
+valuable slice — AND a real prerequisite for P-12.9, since a correct research-path step display
+needs the same profile-correct technology name lookup this slice would build. Do the
+swap/prerequisite-display slice first, then P-12.9.
+
+**Start both with a survey, not an implementation, same discipline as gate classification.**
+For the swap/prerequisite-display slice: confirm the exact shape of a shared "resolve this
+technology's profile-correct display name/icon" client utility (consumed by the card, the popup,
+and eventually a research-path step), and decide whether alternative-branch filtering belongs in
+the popup's existing Prerequisites section or a new labelled sub-section (kind-pooling is a
+readability bug either way, but "hide locked branches" vs "show all four, mark which is active"
+are different UX calls worth surfacing to the user before building). For P-12.9: read
+`spec/P-12.9-research-path.md` in full (every design decision is already settled there — per-
+profile computation, v1's flat-list-with-running-total shape kept as-is, cheapest-total-cost
+`OR`-branch selection, uncertain steps stay in the path with the total marked an estimate,
+config-gated steps excluded from the total and explained separately, triggered by selecting a
+technology, no pinned goal); establish precisely what `_ancestor_research_path` is missing
+(per-profile `alternative`-branch selection, cheapest-cost not just BFS, config-gated/uncertain
+step handling, and how a `Gate` should read in a path step now that P-3 is real data); reproduce
+the validation the spec's design was checked against — `tech_mega_engineering`'s path for
+regular/mechanical/non-nomadic should reproduce v1's own reported **74,750** exactly, nomadic
+should route through Arkship Mastery (**99,750**), bio-shipset through Stingers (**73,750**) with
+Battleships excluded as locked — confirm these still hold against the CURRENT 977-node corpus (not
+980) before treating them as a settled baseline. Report both surveys; stop before implementing
+either.
+
+Stay out of, still: pattern fills as real traced art (procedural placeholders are fine for now),
+ΔE2000/WCAG mechanical colour checks (S-1's own CI-enforced criterion, still unbuilt), URL-encoded
+shareable state (CLAUDE.md's Rules: "empire type, filters, search, open popup" — not built yet;
+profile selection, search query and popup open/close all currently reset on page reload),
+secondary gate badges for a technology with more than one gate (spec's "where space permits" —
+only the primary gate renders on the card today; 10/977 real technologies have a second gate
+instance and would benefit, but this wasn't asked for this session), middle-click isolation (P-7,
+fully specced in `spec/P-07-isolation.md`, confirmed entirely unbuilt this session — a real,
+scoped, ready-to-build feature the user asked about but explicitly did not ask to build yet).
+
+One smaller, independently-shippable item is also sitting unbuilt:
 - No `pytest` CI workflow exists yet (only `tsc --noEmit` runs in CI — the deploy workflow
   doesn't build anything at all now, per D-15) — a real, flagged gap.
 
 One item is prepared but deliberately not executed: `tools/deploy_local.sh` (D-15) is ready to
 publish a real build to a GitHub Release and trigger the first real deploy, but doing so is a
 live, visible action a human should trigger deliberately, not something run automatically.
+
+**Prerequisite, same as every session**: `client/public/dataset/` is gitignored (D-15) and won't
+exist in a fresh checkout — run `tools/build_dataset.py` locally (needs `vendor/` populated)
+before `npm run dev`/`build` in `client/`. Re-run it fresh rather than assume any on-disk build is
+current; the real node/edge counts are 977/984 under D-18, canvas is 29,670 × 13,448px under
+`subgrid_width=6`, 70 gate instances over 60 technologies under P-3's now-closed classification.
+
+## Part-0 reconciliation session (stopped here per explicit instruction)
+
+A fresh session opened with a 4-part prompt whose Part 0 was blocking: reconcile a disagreement
+between two writeups over Compound's population (2 vs. a described "15, post-reclassification").
+Confirmed by direct repo inspection: no flag→faction map existed anywhere before this session —
+the queued "13 = tech_qnm_utilities + 12 dependents, via a flag map seeded with
+`qnm_utilities_possible`" plan was genuinely dropped, not implemented, exactly as suspected.
+
+Implemented as asked: `config/crisis_faction_flag_overrides.txt` + `pipeline/crisis_faction_flags.py`
++ `pipeline.crisis_faction.classify_by_flag` (D-7 "step 1.5"), seeded with the one entry
+(`qnm_utilities_possible = Compound`), verified against the raw event/localisation source (not the
+flag's name alone — see CLAUDE.md's new Part-0 bullet for the full evidence chain), wired into
+`classify_crisis_factions` and `pipeline/dataset_emit.py`.
+
+**Real measured result: Compound = 3, Standard = 922 — not the expected 15/910.**
+`tech_qnm_utilities` itself correctly picks up Compound via the flag map; its 12 direct dependents
+do not inherit, because the existing step-2 rule (`classify_by_prerequisite_inheritance`) requires
+EVERY rendered prerequisite to already share one faction, and each of the 12 also requires an
+ordinary Standard-lane baseline weapon technology as a co-prerequisite — a mixed set, by design
+never propagated. This is not a bug; it's step 2 doing exactly what its own docstring says. The
+queued "15" plan implicitly needed a weaker inheritance rule that was never specified or built.
+**Per the prompt's own explicit instruction ("if it differs, stop and report before continuing"),
+this session stopped here and did not attempt Parts 1-3** (edge routing/card-avoidance, spacing,
+or the v1-sourced Sirenalia pattern port) — those remain fully open, unstarted.
+
+Full pytest green (1,369 passed, up from 1,368 — synthetic `classify_by_flag`/loader coverage plus
+the real-corpus regression tests were added alongside the fix). Client dataset not rebuilt, no
+screenshots taken — this session's diff is pipeline-only.
+
+**Resolved same session**: the user confirmed the 12 dependents should be Compound, via 12
+individually-reviewed `config/crisis_faction_overrides.txt` entries (not a step-2 semantics
+change) — implemented exactly as proposed. **Final real figure: Compound = 15, Standard = 910,
+matching the originally-expected number exactly.** `config/crisis_faction_overrides.txt` now
+carries 14 real entries. Row membership: `particles` 104→96 (7 dependents), `propulsion` 51→45 (5
+dependents). Canvas returns to 13,632×11,608px (same as before the flag map, coincidentally — see
+CLAUDE.md's Part-0 bullet for why that's not evidence nothing changed). Full pytest green (1,381
+passed). Client dataset still not rebuilt as of the reconciliation itself — folded into the
+verification pass for Parts 1-3, which this same session continued into per the user's
+instruction. See CLAUDE.md's Part-0 bullet for the full final writeup.
+
+## Parts 1-3: edge router card-avoidance rewrite, spacing, real Sirenalia geometry (same session)
+
+**Part 1 — edge router.** Measured (not eyeballed) the real defect first: a script counting edge
+polyline segments intersecting an unrelated card's bbox found **2,586 real crossings across 722 of
+989 edges** on the pre-existing 4-point H-V-H router. Root cause, confirmed by direct geometric
+analysis: the router's vertical run always landed in a genuinely card-free x (any inter-column gap
+is empty across every row sharing a band, since column x only depends on band+column, never row),
+but the LONG final horizontal segment connecting that x to the actual target position necessarily
+crossed whatever unrelated cards sat in between at that fixed y — exactly the reported
+false-connection shape. Several 4-point variants were tried and MEASURED (source-adjacent vs.
+target-adjacent gutter, with/without forcing a true band edge) — **none reduced the crossing count
+below the original baseline**, because a single-bend H-V-H shape always has one long,
+unconstrained horizontal segment somewhere.
+
+The fix that actually works needs a second bend: `pipeline/layout.py`'s `_route_edges` now emits a
+**6-waypoint, 5-segment** polyline (exit stub → V → horizontal transit through the edge's own
+SOURCE ROW's header/gutter strip, which is card-free for the FULL canvas width → V → entry stub).
+Both vertical runs sit in a column gap (safe for their full height, regardless of row); the middle
+horizontal run sits in a row header strip (safe for its full width, regardless of column) — a
+provably-safe combination, not tuned empirically. **Measured real result: 0 crossings across all
+989 edges** (down from 2,586). `MIN_STUB` (8px) added at both ends. This is a real schema/side-file
+change: `pipeline/geometry.py`'s `POINTS_PER_POLYLINE` moved 4→6; `client/src/main.ts`'s
+`FLOATS_PER_EDGE_POLYLINE` moved 8→12. `roundPolylineCorners`/`tracePolyline`/`addArrowhead` were
+already generic over point count and needed no logic changes, only stale comments fixed.
+
+The user's exact named technologies (`tech_improved_deflectors`, `tech_basic_cloaking_fields`)
+don't exist under those literal keys in the vendored corpus — but the real corpus DOES contain
+"Improved Deflectors" (T1) directly above "Storm Manipulation" (T2) and "Basic Cloaking Field"
+(T2) to its right, in the same neighbourhood the user described — screenshotted directly (see
+below) and confirmed clean: no trace runs under "Storm Manipulation."
+
+**Part 2 — spacing.** `INTRA_GAP_X` 24→40px (was flagged still-too-tight; `INTRA_GAP_Y` confirmed
+acceptable, unchanged). `ROW_GUTTER` 24→48px (more separation between every row). New
+`AREA_GROUP_GUTTER` (96px), applied only at the 3 real group boundaries (the 3 research areas
+each form one group, the 5 faction rows form a 4th) via a new `row_group_of` map `_row_order`
+returns alongside `row_order` — client-side, derived from the SAME `tech.area` lookup already used
+for row chip colouring (`rowArea`), no schema change needed for this half. `ROW_HEADER_HEIGHT`
+52→68px, and the per-cell tier label's x moved from a hardcoded `+4` to `+CHIP_MARGIN` (shared
+left edge with the chip) — both closing the reported label/chip misalignment and tight vertical
+clearance before the first card row. **Real measured canvas: 14,160 × 12,616px** (was
+13,632 × 11,608px).
+
+**Part 3 — Sirenalia geometry, ported from v1 directly.** v1's actual pattern lives in
+`js/render.js`'s `drawWaves` (NOT CSS — v1 draws it on a canvas 2D context; the CSS only holds a
+`--siren` colour variable used elsewhere). Ported verbatim: 4 layers, each a FILLED region bounded
+above by a sine curve (`y = rowTop + rowHeight*(base + sin(t)*amp)`) and below by the row's own
+bottom edge — not a stroked ribbon, which is what the three earlier rejected attempts drew. v1's
+own per-layer `{amp, phase, base, alpha, period}` values and 60px sampling step were copied
+directly. **Correction to this project's own prior assumption**: v1 uses ONE accent colour across
+all 4 layers with only ALPHA varying (0.05→0.09) — not "several distinct pink/purple shades" as an
+earlier session's placeholder both stated and implemented; `tokens.ts`'s Sirenalia entry and
+comment were corrected to match. The signed-off `#B0338C` hex is kept as that one colour (v1's own
+`--siren` CSS value is a different palette, out of this session's styling-port scope per the
+signed-off-hex rule). No PixiJS-vs-canvas-2D gap was hit — `Graphics.fill()` after building each
+layer's path handles v1's per-layer fill directly.
+
+**Aeternum lightening**: signed-off hexes (`#591227` backing, `#823269` flag pink) unchanged;
+`tokens.ts`'s Aeternum pattern spec now uses a LOCAL, rendering-only lightened variant (`#823269`
+blended 35% toward white → `#AE7A9E`) as the hexagon stroke colour, plus `accentAlpha` 0.30→0.42.
+
+**Verify**: full pytest (1,381 passed), `tsc --noEmit`, `vite build` all clean. Real dataset
+rebuilt (`tools/build_dataset.py`) and served via `vite preview`; a real headless-Chromium
+(`playwright-core`, transient, not added to `package.json`) run: zero console errors, zero failed
+requests, `stageChildCount === 1`, `rowPanelCount === 18`, `checkNameBounds`/
+`checkChipLabelOverlap`/`checkEdgeEndpointsInCards` all 0 violations, and a new
+`checkMinStubLength` (added this session, checks the RAW pre-rounding polyline's exit/entry
+segment lengths against `MIN_STUB`) — **0 violations across all 989 edges**. Five screenshots
+reviewed: fit-to-viewport (area/faction grouping visibly reads as 4 blocks), the
+Improved-Deflectors/Storm-Manipulation/Basic-Cloaking-Field neighbourhood at 100% (clean routing,
+directly refuting the reported false connection), the Sirenalia row at 100% (real layered wave
+fill, not the old stroked-ribbon placeholder), the Aeternum row at 100% (visibly lighter hexagon
+stroke against the burgundy backing), and the voidcraft→Aeternum row-group boundary at 25% (the
+larger inter-group gap reads clearly against the ordinary Aeternum→Blokkats row gap directly below
+it).
+
+**Next up**: badges (rare/dangerous/repeatable/gate/tier), pattern fills as real traced art (the
+Blokkats flag SVG trace is still the one open procedural-placeholder item), hover/click/selection,
+popups, search, empire-profile switching — same exclusions as every prior slice, still open.
+
+## EAWAF/Sirenalia correction, v1-style edge router, edge LOD, and spacing session
+
+Six numbered items from the user. Items 1, 4, 5, 6 implemented; items 2 and 3 surveyed and
+STOPPED ON, per explicit instruction — see CLAUDE.md's bullet of the same name for the full
+per-item writeup, exact figures, and reasoning. Summary here, for a fast catch-up:
+
+**Item 1 (implemented)**: re-derived Sirenalia/EAWAF membership without relying on
+`has_star_flag = giga_eawaf_siren_faust` (confirmed unsound — Faust isn't Siren-exclusive). All 7
+of the family's flag-gated technologies are confirmed set exclusively inside the Sirens' own event
+chain (`giga_034_eawaf_events.txt`, which creates a country literally named "Sirenalia"). Sirenalia
+7 → 14 via 6 new `config/crisis_faction_flag_overrides.txt` entries + 1 new
+`config/crisis_faction_overrides.txt` entry. This is the FOURTH instance of the project's recurring
+defect class (a survey dismissed a whole family on the wrong distinguishing signal) — see
+CLAUDE.md's defect-class paragraph. A DNF-based reachability rule (test-scope only, NOT promoted to
+the live classifier) still converges exactly with the hand-built derivation after this change.
+
+**Item 2 (surveyed, no code changed)**: no rendering-scope bug found. The user's two named
+"over-inclusion" examples turn out to be a Gigastructures technology (unconditionally rendered by
+design) and a legitimate ACOT closure member — likely Item 3's stacking defect misread as an
+over-inclusion case. Re-open only with a new, specific example.
+
+**Item 3 (this session: surveyed, no code changed — SUPERSEDED, see reconciliation note above)**:
+the "never render left of/in line with a prerequisite" invariant is real, violated (182/315
+same-band prerequisite edges, 57.8%), always satisfiable (no same-band cycles). This was
+subsequently IMPLEMENTED as D-17 by a concurrently-running session, and its width cost landed
+close to this survey's own +11.6% prediction — but a follow-up reconciliation session found and
+fixed an unbounded-stacking bug in that implementation. See D-17 in `spec/decisions.md` for the
+full history and the corrected canvas figure.
+
+**Item 4 (implemented)**: replaced the previous, PROVEN-zero-crossings gutter-channel router with a
+port of v1's own chamfered two-bend "circuit trace" edge geometry (`js/render.js`'s `addEdge`),
+per the user's explicit rejection of the gutter router's dense-parallel-channel look after seeing
+it rendered. This is a knowing, recorded trade — new measured unrelated-card-crossing count is
+2,828 across 606/989 edges (nonzero, accepted). A minimum-stub guarantee was added on top of v1's
+own formula (which has none), with a fallback to the previous gutter router for the subset of edges
+(same-band/short/backward) v1's two-bend shape can't route without violating it — endpoint
+containment and minimum stub length both stayed 100% clean (0/989 violations) throughout. Also
+corrected: `EDGE_COLOR` was wrongly brightened to blue-cyan in an earlier session on a mistaken
+belief about v1's own colour — checked against v1's real source this session, v1's actual default
+is a dark grey (`#38363c`); the blue-cyan is now `HOVER_COLOR`, reserved (with a comment) for a
+hover/selection state that doesn't exist yet.
+
+**Item 5 (implemented)**: edge LOD reappearance threshold lowered so edges come back at 16.6% zoom
+(status-strip-reported), one step further out than the previously observed 21.5%.
+
+**Item 6 (implemented)**: `INTRA_GAP_X` 40→120px (a fourth pass at the same recurring complaint).
+Found and fixed a REAL rendering bug while investigating why `ROW_GUTTER` read as invisible: row
+panels were drawn across their FULL reserved height, including their own trailing gutter, so
+adjacent panels visually touched with zero apparent separation even though `ROW_GUTTER` was a real,
+correct, nonzero number. Fixed at the render call site (panels now stop `ROW_GUTTER` short of their
+own bottom); `AREA_GROUP_GUTTER` reduced 96→64px now that it's no longer competing with an invisible
+`ROW_GUTTER` for "which gap reads as bigger." Real measured canvas: 16,800 × 12,520px.
+
+**Verified**: full pytest (1,382 passed), `tsc --noEmit`, `vite build` all clean; real dataset
+rebuilt and a real headless-Chromium run confirmed zero console errors/failed requests, 0/989
+endpoint-containment and minimum-stub violations (new detectors proven capable of failing on
+synthetic bad inputs before trusting the clean pass), and the 2,828/606 crossing count. Five
+screenshots reviewed and matched expectations — see CLAUDE.md for the full list.
+
+**Not done, tracked above in "Next prompt"**: the badges slice is still the next open, unstarted
+work (Item 3's fix landed via the concurrently-running D-17 session, then a follow-up
+reconciliation session — see above — not via this session).
+
+## Reconciliation session — D-17 stacking fix, docs split, edge-router offset fix, row/band geometry desync fix
+
+Opened after a report that a concurrent session had stood down mid-work, leaving the repo in an
+unreconciled state. Ran single-threaded throughout, no sub-agents, per explicit instruction.
+
+**D-17 unbounded-stacking bug found and fixed.** `pipeline.layout.compute_layout` used
+`same_band_depth` directly as sub-column, stacking every member sharing a depth in ONE column via
+an unbounded counter — the real corpus's worst cell stacked 37 unrelated technologies 37 rows
+tall. `tests/test_layout.py` had a test asserting this as intended behaviour (a THIRD instance of
+this project's "green suite proves self-consistency, not correctness" pattern, and the first one
+that didn't just have narrow fixture coverage — it actively enshrined the bug as spec). Fixed:
+depth now sets a MINIMUM sub-column; each depth is a slot of one or more sub-columns, wrapped at
+`subgrid_width`. Canvas moved 18,750×30,152 → 30,840×9,736. Full writeup, including the
+`subgrid_width` 4/6/8/12 trade-off survey the new width cost prompted (not changed, left for the
+user to pick from), is D-17 in `spec/decisions.md` — read that before touching sub-column
+assignment again.
+
+**CLAUDE.md split.** It had grown to 210,756 chars (past the CLI's 150k warning), 83% of it an
+append-only "Open items" session log. Moved verbatim (byte-identical, checked) to
+`docs/BUILD-LOG.md` (179,453 chars now), reorganised by component rather than chronology.
+CLAUDE.md is now 38,605 chars with a short, genuinely-open "Open items" list. HANDOFF.md
+(112,951 chars) was judged NOT to have the same problem — it's a working document with a real
+"Next prompt" section, not an append-only log — and was left structurally intact.
+
+**Two count discrepancies from a prior session, reconciled:**
+- Sirenalia's 14th member (`giga_tech_eawaf_psifusion`) is classified via a technology-key
+  override on genuinely weaker evidence than the other 13 (no `potential` block at all to key
+  on — pure file/event-chain co-location). The other 13 all have a direct flag/ID signal. This is
+  why v2 shows 14 against v1's 13 — not a miscount, a deliberate (documented) extra inclusion.
+- The "2,828 crossings / 606 edges" figure was never a different denominator from 989 — 606 is
+  `affectedEdgeCount` (edges with ≥1 crossing), always checked against all 989. Re-measured after
+  this session's own changes: 2,992 crossings / 725 of 989 edges affected.
+- `client/src/{tokens,camera,lod}.ts` were never git-tracked (zero commit history) so "edited vs.
+  recreated" can't be answered from git — but every documented justification (camera clamps, LOD
+  thresholds, `EDGE_COLOR`/`HOVER_COLOR`) is present and matches the narrative; nothing lost.
+
+**ACOT/AoT closure depth (Item 5): surveyed, not implemented, per instruction.** Depth-1-only
+would break exactly 3 links, all ACOT→ACOT, confirmed to include the user's own named case
+(`tech_dark_matter_power_core_ae`, "Alpha-class Enigmatic Power" → `tech_precursor_design`,
+"Precursor Databank Analysis", both verified against real vendored localisation). A middle option
+(render an out-of-closure prerequisite as a distinct stub/ghost node) is feasible but unbuilt.
+User needs to pick between depth-1, the current full-transitive-closure rule, or a stub option.
+
+**Edge router: two real fixes, not just verification.**
+1. Fetched v1's real `js/render.js` directly — confirmed `_v1_style_waypoints` is a byte-for-byte
+   port of v1's own `addEdge` (the "chamfer" IS what v1 itself calls "corners chamfered at 45°";
+   there is no separate longer-diagonal path in v1's real source to port instead).
+2. Found the real trough cause: v1's own formula has no per-edge offset at all, so edges sharing
+   similar geometry drew literally overlapping traces (worst cluster: 54 edges sharing one exact
+   `mid` x-value). Added a small deterministic offset (reusing the existing `_channel_offset`
+   hash) — worst cluster drops to 10, total overlapping-edge count 868 → 685. Crossing count
+   against unrelated cards is materially unaffected by this specific change (~2,992 either way) —
+   it addresses visual overlap, not card-crossing, which are different concerns.
+
+**A second, serious desync bug found and fixed while re-verifying: `client/src/main.ts` computed
+row/band geometry (panel/tint/header positions) via its OWN reimplementation of
+`pipeline/layout.py`'s formulas, which silently went stale the moment D-17's wrap-within-depth fix
+changed those formulas server-side.** Row panels, tier tints, and cell labels were drawing at
+completely wrong positions relative to where cards actually rendered (found via a headless
+screenshot: a faction row's pattern nowhere near its own cards). Permanent fix, not a re-sync:
+row/band geometry is now DERIVED from the real min/max node positions in the geometry side-file,
+so client and server geometry can never drift apart again regardless of future formula changes.
+Verified: `rowGeometry.y` for every row now matches its real card positions exactly (header-offset
+apart); confirmed visually across all four required screenshot cases.
+
+**Item 7 verification, real numbers, current dataset:**
+- Tier badge vs. band: 0/892 non-repeatable nodes disagree (checked directly, not assumed).
+- 88 repeatable technologies, all in the terminal band; none render a repeat-count badge yet
+  (badges slice, still unbuilt).
+- 28/980 cards render `Cost: 0` — real corpus zero-cost starting technologies, not a fallback
+  (5 more have `cost: null` and render no cost line at all, per existing policy).
+- 107/980 names render with an ellipsis; 6 distinct visible-text collisions (different
+  technologies whose wrapped/clamped display text happens to coincide — not itself a bug, since
+  full names differ and are available on hover/popup, but worth knowing).
+- 0/980 cards fall back to a missing icon.
+- The 7 long-span backward `potential-gate` edges are now locatable and traceable (confirmed by
+  screenshot) — `tech_cosmogenesis_escort → tech_missiles_1` (bandSpan 5) is the longest.
+
+**Verified**: full pytest (1,384 passed), `tsc --noEmit`, `vite build` all clean throughout. Real
+dataset rebuilt twice (once after the D-17/offset fix, once after the row/band geometry fix); a
+real headless-Chromium run against the final rebuild: zero console errors, zero failed requests,
+all existing invariant checks (name bounds, chip/label overlap, edge endpoints, min stub) still
+0 violations. Four required screenshots taken and reviewed: fit-to-viewport (row panels now
+correctly span their full real extent), the D-17 in-line case (`tech_dark_matter_power_core_ae`
+isolated, no overlap), the Sirenalia row (patterns now aligned with real cards, all 14 members
+visible including the reclassified EAWAF technologies), and a multi-elbow/long-span-edge region.
+
+**Not done this session, by explicit instruction**: Items 3 and 5 (`subgrid_width` value itself,
+ACOT/AoT closure rule) are surveyed only, awaiting the user's decision. `docs/BUILD-LOG.md`'s
+reorganisation moved content but did not rewrite or re-verify any individual historical claim
+inside it beyond the byte-identical-move check.
+
+**Next prompt should point at the badges slice** (guidance above, in the "Next prompt to paste
+into Claude Code" section, is otherwise still accurate) — but MUST run `tools/build_dataset.py`
+fresh first (D-15, gitignored dataset) and should re-run the headless verification script rather
+than trust any number in this section as still current once new code lands.

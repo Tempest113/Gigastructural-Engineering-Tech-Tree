@@ -16,21 +16,36 @@ band — not a computed-column count, which would be materially larger (see belo
 Repeatable technologies occupy a dedicated terminal band labelled "Repeatables", positioned after
 the highest declared tier.
 
-Tier bands and crisis lanes (P-5) are **orthogonal**: bands run vertically and are assigned
-identically regardless of lane; lanes run horizontally and partition the standard-progression
-technologies from each crisis faction's. Every technology has exactly one band and one lane. A
+**Rows (D-16, `spec/decisions.md` — corrects an earlier draft that used the crisis-faction lane as
+the row axis).** Tier bands and rows are **orthogonal**: bands run vertically (columns) and are
+assigned identically regardless of row; rows run horizontally. A row is either one of the vanilla
+technology categories, or one of the 5 crisis factions (D-7) — **faction-first and mutually
+exclusive**: a technology with a crisis faction goes in that faction's row; every other technology
+goes in its own category's row. Every technology has exactly one band and one row. A
 crisis-faction technology that is also repeatable occupies the Repeatables band within its own
-faction's lane — the two axes compose, neither one overrides the other.
+faction's row — the two axes compose, neither one overrides the other.
 
-**The band grid is global and single.** Every lane spans the full grid, from T0 (or the lowest
-enumerated tier) through the Repeatables band, regardless of what that lane's own technologies
-actually use. A lane whose technologies stop at T5 still has T6-through-Repeatables bands; they
-render empty. This is required so the shared coordinate space (P-5) stays valid for cross-lane
-edge routing (P-8) — a band index means the same declared tier in every lane, with no per-lane
+The category-row set is **derived from the rendered corpus, never a hand-typed list of "the 13
+vanilla categories"** — see D-16 for why: Gigastructures' own `blokkats` technology category is
+entirely faction-classified (42/42 Blokkats), so it must never surface as its own (always-empty)
+row, and deriving the row set from whichever categories still have a non-faction member after
+faction-first assignment handles that for free, with no special case anywhere in the code.
+**Row order**: derived categories first, grouped by research area (physics → society →
+engineering) then alphabetically by category id within an area, followed by the 5 crisis-faction
+rows in D-7's own fixed order. Every faction row is always emitted, including at zero population
+(Compound).
+
+**The band grid is global and single.** Every row spans the full grid, from T0 (or the lowest
+enumerated tier) through the Repeatables band, regardless of what that row's own technologies
+actually use. A row whose technologies stop at T5 still has T6-through-Repeatables bands; they
+render empty. This is required so the shared coordinate space stays valid for cross-row edge
+routing (P-8) — a band index means the same declared tier in every row, with no per-row
 renumbering — and it is also the honest representation: an empty band is a visible statement that
-the faction has no content at that tier, not a gap papered over by compression. Lanes are fitted
-**vertically** to their content only (a lane with five technologies is short; one with fifty is
-tall); they are never fitted or compressed horizontally.
+the row has no content at that tier, not a gap papered over by compression. Rows are fitted
+**vertically** to their content only, and their height is **variable, derived from that row's own
+largest (row, band) cell under the N-wide sub-grid wrap** — a row with three technologies is
+short; one with over a hundred is tall; no row is padded to a global maximum. Rows are never
+fitted or compressed horizontally.
 
 ## Bands are declared tier; computed position is internal geometry only
 
@@ -58,9 +73,12 @@ stop": they band into the terminal Repeatables band regardless of their own decl
 the card badges **repeat count** in place of the tier badge — `Repeatable: ×N` for a finite cap,
 `Repeatable: ∞` for unbounded. `tier` is still resolved, still validated
 (`UnresolvedTierError` applies unchanged, no exemption for repeatables), and still emitted — it
-remains meaningful for the sub-grid's internal `(category, computed position, key)` ordering and
-for the detail popup, it simply isn't what the band header or card display. See D-13 in
-`spec/decisions.md` for why this is not a repeat of v1's band-header bug: v1's header made a false
+remains meaningful for the sub-grid's internal `(computed position, key)` ordering (see the "Card
+arrangement" section below — this key used to also carry `category`, dropped in D-16's row
+re-axis since a row is now always a single category or a single unsplit faction, so it no longer
+discriminates anything within a cell) and for the detail popup; it simply isn't what the band
+header or card display. See D-13 in `spec/decisions.md` for why this is not a
+repeat of v1's band-header bug: v1's header made a false
 claim about the cards under it ("TIER 6" over T5-badged cards), while here the band header
 ("Repeatables") and the card badge (repeat count) each assert something true and non-contradictory
 about a different aspect of the same node.
@@ -134,37 +152,72 @@ audit for the sourcing checks that back this.)
 
 ## Card arrangement within a band
 
-- A band is not one card wide. **Nothing in this rule constrains arrangement within a band** —
-  only band ordering across declared tiers is constrained (backwards edges notwithstanding, see
-  above). A densely populated band (Standard's T5, the corpus's worst case at 253 nodes — measured
-  under the corrected repeatable-membership rule below; see the Repeatables section for what moved)
-  renders
-  as an **N-card-wide sub-grid** within its band, grouped by `category`/research area.
-  **Implemented: N = 4**, chosen over 3 or 5 because the real build (`pipeline/layout.py`) ran
-  cleanly at 4 with no reason surfaced to prefer another value — canvas dimensions land in the
-  same "large but ordinary" range on both axes rather than either dominating (see CLAUDE.md's
-  layout survey for the real measured canvas size).
-- Within a band's sub-grid, nodes are ordered `(category, computed position, technology key)` —
-  category first, so a dense band reads as labelled neighbourhoods rather than one undifferentiated
-  wall; computed position (see above) second, so within-category prerequisite chains still read
-  left-to-right where the sub-grid is wide enough to show it; technology key last, purely to make
-  remaining ties deterministic. This ordering rule, not a general Sugiyama crossing-reduction
-  pass, is what `pipeline/layout.py` implements — a full barycentre/median crossing-minimisation
-  pass over the whole graph remains a possible refinement, not required for a correct first build.
+- A (row, band) cell is not one card wide. A densely populated cell (D-16's re-axis:
+  `voidcraft`×T5, the corpus's worst case at 47 nodes — see D-16 in `spec/decisions.md` for the
+  full before/after; the old Standard×T5 lane×band cell at 253 no longer exists as a single cell
+  once category and faction rows split it) renders as a **sub-grid** within its cell, N cards wide
+  at minimum (**implemented: N = 4**, `subgrid_width` in `pipeline/layout.py`, chosen over 3 or 5
+  because the real build ran cleanly at 4 with no reason surfaced to prefer another value — see
+  D-17 in `spec/decisions.md` for the trade-off survey this value's interaction with D-17 later
+  prompted, at 4/6/8/12, left open for the user to pick from).
+- **D-17 same-band ordering invariant (`spec/decisions.md`): a technology must never render left
+  of, or vertically in line with (stacked in the same sub-column as), any of its own same-band
+  prerequisites.** This governs sub-column assignment WITHIN a band — bands themselves remain
+  declared tier, completely unaffected by D-17 (D-13, unchanged). Sub-column is no longer a plain
+  wrap-at-N positional index; it is **prerequisite-chain depth over same-band edges only**
+  (`same_band_depth`, a technology's longest same-band-prerequisite-chain length, computed via
+  topological sort, pooled across every row sharing the band since a same-band prerequisite edge
+  can cross row boundaries and every row sharing a band shares the same column x-positions). Depth
+  sets a MINIMUM sub-column, not the sub-column directly: each depth is a SLOT of one or more
+  sub-columns, and members sharing a depth still WRAP at `subgrid_width` rows per sub-column,
+  spilling into additional sub-columns within their own depth's slot — this is what keeps the
+  N-wide sub-grid's old wrap behaviour for an ordinary, dependency-free cluster of technologies
+  while still enforcing the invariant for a real same-band prerequisite chain. A deeper depth's
+  slot starts strictly after every shallower depth's own slot in that band, so the invariant holds
+  regardless of how many sub-columns a shallower depth's own population needed. **Cost, measured
+  over the real corpus**: canvas grows from 16,800 × 12,520px (pre-D-17) to 30,840 × 9,736px at
+  `subgrid_width=4` — see D-17 for the full before/after table, including a first (buggy,
+  unbounded-stacking) D-17 implementation that inflated height to 30,152px before the
+  wrap-within-depth correction above was applied. **Current**: `subgrid_width=6` (the user's pick
+  from D-17's 4/6/8/12 trade-off survey) gives **29,670 × 13,448px** — smaller AND better-aspected
+  than the `subgrid_width=4` figure above; see D-17's own "decision: 6, chosen" entry.
+- Within a shared depth slot, nodes are ordered `(same_band_depth, computed position, technology
+  key)` — `same_band_depth` first (determines which slot, per the invariant above), full-graph
+  `computed position` (see above) next as a tie-breaker within a shared slot, technology key last
+  purely to make remaining ties deterministic. **`category` was dropped from this key in D-16's
+  row re-axis and stays dropped** — a (row, band) cell's members already share the same
+  category-or-faction by construction, so sorting by it is a no-op. This ordering rule, not a
+  general Sugiyama crossing-reduction pass, is what `pipeline/layout.py` implements — a full
+  barycentre/median crossing-minimisation pass over the whole graph remains a possible refinement,
+  not required for a correct first build.
+- **Gutters** (`pipeline/layout.py`, one named place — values have moved several times across
+  sessions, each move recorded in that module's own inline comments rather than restated here;
+  current real values as of D-17's reconciliation): `INTRA_GAP_X` = 120px between sibling cards
+  within one cell's sub-grid row; `INTRA_GAP_Y` = 24px between sub-grid rows within one cell;
+  `INTER_BAND_GUTTER` = 96px between adjacent tier-band columns (reserved for P-8 routing
+  channels); `AREA_GROUP_GUTTER` = 64px, an additional gap at the 3 research-area/faction-block
+  row-group boundaries only (`computing`→`archaeostudies`, `statecraft`→`industry`,
+  `voidcraft`→`Aeternum`); `ROW_HEADER_HEIGHT` = 68px per-row header-label strip (present even for
+  a zero-population row); `ROW_GUTTER` = 48px, pure visual separation between one row's last
+  sub-grid row and the next row's header, on top of `ROW_HEADER_HEIGHT`. Total inter-row spacing
+  is 116px. See `pipeline/layout.py`'s constant declarations for the full move history (each value
+  has increased multiple times in response to reported "unreadable density" across several
+  sessions) — not duplicated here since it would need updating every time a value moves again.
 - Layout MUST be computed at build time and stored as coordinates in the dataset — as typed-array
   side-files, JSON carrying only `GeometryRef` pointers (`00-overview.md`), never inlined
   coordinate arrays. `pipeline/geometry.py` packs `pipeline/layout.py`'s output this way: node
   positions and edge polylines are two separate `float32` side-files, matching
   `base-dataset.schema.json`'s `geometry.nodePositions`/`geometry.edgePolylines`. Runtime layout
   of a graph this size is incompatible with P-9 and P-10.
-- The layout engine MUST support **multiple horizontal lanes** (the standard-progression lane
-  plus one per crisis faction, P-5) sharing one band axis and one coordinate space, with
-  independent vertical ordering within each lane, so cross-lane edges still route (P-8). The
-  Repeatables band is not a separate zone — it is an ordinary terminal band, present within every
-  lane that has repeatable technologies. **All five crisis lanes are always present, including at
-  zero population** — Compound currently has none (confirmed real: its seven `tech_compound_*`
-  technology blocks are commented out in the vendored source, not a classifier gap — see
-  `pipeline/crisis_faction.py`), and still reserves a lane strip rather than being omitted.
+- The layout engine MUST support **multiple horizontal rows** (D-16: the derived vanilla-category
+  rows, faction-first-excluded, plus one per crisis faction) sharing one band axis and one
+  coordinate space, with independent vertical ordering within each row, so cross-row edges still
+  route (P-8). The Repeatables band is not a separate zone — it is an ordinary terminal band,
+  present within every row that has repeatable technologies. **All 18 rows are always present,
+  including at zero population** — Compound currently has none (confirmed real: its seven
+  `tech_compound_*` technology blocks are commented out in the vendored source, not a classifier
+  gap — see `pipeline/crisis_faction.py`), and still reserves a row strip rather than being
+  omitted.
 
 ## Card dimensions
 

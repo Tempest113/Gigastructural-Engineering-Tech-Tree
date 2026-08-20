@@ -2132,3 +2132,657 @@ Filed as one composite block rather than split, since its six numbered items int
   implement-then-reconcile history, including the unbounded-stacking bug a follow-up session found
   and fixed in that implementation.
 
+
+## Reconciliation session 2 — D-18 depth-1 ACOT/AoT closure, parallel-geometry rule, badges slice
+
+Continuation of the reconciliation session above, same session's later half. Full detail lives in
+`spec/decisions.md`'s D-18 entry, CLAUDE.md's Rules section (the parallel-geometry rule), and
+`spec/S-03-tier-differentiation.md`; this entry is a pointer plus the real numbers, not a
+restatement.
+
+**Ten untracked files committed.** `client/src/{tokens,camera,lod}.ts`, two config override
+tables, their loaders, their tests, and this file (`docs/BUILD-LOG.md` itself) had accumulated
+across many sessions with no `.gitignore` pattern excluding them — simply never `git add`ed.
+`tests/test_repo_hygiene.py` now guards against a recurrence: a local-only pytest check (CI can't
+see untracked files by construction) that fails if anything under `client/src/` or `pipeline/` is
+untracked.
+
+**D-18: ACOT/AoT rendering scope is depth-1, not a full transitive closure.** Adopted after the
+user reviewed the exact 3-link accepted cost (all ACOT→ACOT, including their own named case:
+`tech_dark_matter_power_core_ae` → `tech_precursor_design`) and rejected a considered stub/ghost-
+node middle option as disproportionate. `pipeline.rendering_scope.compute_rendering_scope` is now
+a single pass, no recursion; `compute_off_tree_prerequisites` (new) computes the accepted-cost set,
+pinned by a corpus test. Real effect: 980 → 977 rendered technologies, 989 → 984 edges. Canvas
+dimensions and densest cell UNCHANGED (30,840 × 9,736px, `voidcraft`×T5=47). Every corpus test
+across the suite re-verified against the new 977/984 figures — full cascade in commit history, not
+restated per-file here.
+
+**Parallel-geometry rule recorded** (CLAUDE.md's Rules): the pipeline owns all geometry, the
+renderer derives from real emitted positions, never a parallel formula. Audited `client/src/
+main.ts` for other instances — the severe form (multi-step derived formulas) is now fully
+eliminated; what remains is a set of mirrored scalar constants (`CARD_WIDTH`, gutters,
+`SUBGRID_WIDTH`, `AREA_ORDER`, etc.) with lower blast radius, flagged as a scoped follow-up (adding
+card dimensions to the schema) rather than fixed this session.
+
+**Item 4 loose ends**: 6 real name-text collisions found (`checkNameRendering`'s
+`duplicatePairs`) — 5 are genuinely identical real names from the mod itself (hive/wilderness
+variant pairs, an ACOT/base duplicate), 1 (`tech_dark_matter_deflector`/`tech_dark_matter_
+propulsion`, "Dark Matter Dimensional Deflector"/"...Thruster") is a genuine truncation-caused
+collision — two different full names sharing a truncated 2-line prefix. `subgrid_width` left at 4,
+untouched, per instruction.
+
+**Badges slice, the main body of work.** Cards previously showed icon/name/cost/tier badge only.
+Added: rare badge (gold "★"), dangerous badge (red "!"), mod-requirement badge(s) (`ACOT`/`AoT`
+text chips), repeat-count badge (`×N`/`∞`, replacing the tier badge for repeatable nodes), gate
+icon + label (wired to the schema, renders nothing today since `gates` is always `[]` — P-3's
+pipeline-side classification isn't built, a real pipeline gap flagged honestly, not silently
+shipped as if complete). Rare/dangerous also drive the card's OUTLINE per S-1 (dangerous outranks
+rare; both → a 45°-split outline, dangerous red top-left, via a masked duplicate stroke).
+
+**Layout**: a new fixed-width (34px) vertical badge gutter along the card's right edge, sized
+against the real corpus's worst case (rare+dangerous+1 mod-requirement = 4 stacked slots
+including tier/repeat, confirmed directly — never mod+repeatable, max 1 mod entry). Name text
+width narrowed to make room (`NAME_MAX_WIDTH_PX`: 202px → 160px) — a real, reported trade-off:
+more names now need the ellipsis than before slotting every indicator into the fixed 270×92 card.
+
+**LOD**: `lod.ts`'s previous 3-tier simplification (documented at the time as existing "only
+because badges didn't exist yet") is replaced with S-03's real 7-stage table verbatim. Real
+correction along the way: the old simplification shed the icon/name at <10% ("nothing left to
+shed between 10% and 5%" when it was written) — under the real table, icon/name/cost are the
+"everything remaining" that only sheds at <5% ("Coloured block"), one stage later; the dangerous
+badge is what now occupies the <10%–<5% gap.
+
+**Real per-indicator counts, over the 977-node D-18 corpus** (`window.__tt.checkIndicatorCounts`,
+matching the dataset's own real fields exactly): rare 411, dangerous 64, mod-requirement 4, gated
+0, repeatable 88 (all in the terminal Repeatables band, all rendering a repeat-count badge, none a
+tier badge). `checkIndicatorBounds`: 0 violations across 1,456 checked indicator placements — the
+detector was proven capable of failing (fed a synthetic 500px-displaced badge, confirmed the same
+math flags it) before trusting the clean real-corpus pass.
+
+**Verified**: full pytest (1,387 passed), `tsc --noEmit`, `vite build` all clean. Real dataset
+rebuilt against D-18; a real headless-Chromium run: zero console errors, zero failed requests,
+`checkNameBounds`/`checkIndicatorBounds`/`checkEdgeEndpointsInCards`/`checkMinStubLength`/
+`checkTierBadgeMatchesBand` all 0 violations. Six screenshots reviewed: a card carrying all four
+simultaneous indicators (rare+dangerous+mod-req+tier, the same D-17 in-line case node, split
+outline clearly visible), a dangerous-only card (solid red outline, distinct from a neighbouring
+rare-only gold-outlined card), and one frame at each of five S-03 threshold bands showing
+indicators dropping in the specified order (confirmed directly against the status line's own
+reported LOD tier, not just eyeballed).
+
+**Not done this session**: hover/click/selection, popups, search, empire-profile switching, real
+gate data (P-3's pipeline classification pass), a traced Blokkats SVG, ΔE2000/WCAG mechanical
+colour checks, the `subgrid_width` decision (left at 4, survey recorded in D-17 for the user to
+choose from). See CLAUDE.md's Open items and HANDOFF.md's Next prompt for what's next.
+
+## Reconciliation session 3 — hover, selection, detail popup, plus three corrections
+
+**Item 1 — rare-count sanity check: 411/977 (42%) confirmed real, not a bug.** Verified the
+reader uses inline_script-EXPANDED blocks (0 raw-vs-expanded mismatches — `is_rare` is never
+templated, unlike the `giga_tech_repeatable_*_cap` family's tier/potential fields), and
+spot-checked 3 Gigastructures entries directly against raw source (`is_rare = yes` literally
+present). Per-source breakdown: Vanilla 223/673 (33%), Gigastructures 184/300 (61%), ACOT 3/3,
+AoT 1/1. Vanilla's raw grep count (232 occurrences of `is_rare = yes` across all vanilla files)
+independently corroborates the 223 rendered figure. Recorded here so it is never re-queried.
+
+**Item 2 — the truncation collision fixed, and a real pre-existing under-count corrected along
+the way.** `wrapAndClampName` (`client/src/main.ts`) now middle-ellipsizes on the final line,
+preserving the name's true last word (`headOfLine + "…" + lastWord`) instead of plain
+tail-truncation — mod naming conventions commonly vary only the final word of an otherwise-shared
+name, and tail truncation is exactly what erased it. **A/B-measured directly, not assumed**: with
+plain tail-ellipsis (temporarily reverted for the comparison), the REAL collision count on the
+current corpus is **11 groups**, not the 6 a prior session reported — that 6 was apparently
+measured against a stale or differently-configured build. The middle-ellipsis fix resolves all 6
+truncation-CAUSED groups (Blokkilian Equations ×3, Long-Term Blokkat Scrap ×2, Matrioshka Brain
+×2, Strategic Coordination ×2, Dark Matter Dimensional ×3, Doctrine Interstellar ×2), leaving
+exactly the 5 genuine same-name-in-the-mod pairs untouched (Mass Neutronium Extraction, Curator
+Archaeology Lab, Clustered Synapses, Confluence of Thought, Machine Template System) — zero
+truncation-caused collisions remain, verified directly. Ellipsis count itself is unchanged at 253
+either way (the fix changes WHAT a truncated name shows, never WHETHER a name needs truncation).
+
+**Item 3 — the D-18 off-tree-prerequisite gap closed.** `pipeline.dataset_emit.build_detail_payload`
+resolves each affected technology's off-tree prerequisite(s) to a localised name
+(`offTreePrerequisiteNames`, new detail-payload field, soft-fallback to the raw key rather than a
+hard build failure, since this describes a technology OTHER than the one being built). Real
+values: `tech_dark_matter_power_core_ae` → `["Precursor Databank Analysis"]`,
+`tech_dark_matter_power_core_dm` → `["Enhanced Zero Point Reactor", "Dark Energy Drawing"]`, the
+other 975 → `[]`. Popup-only, no card badge (per instruction — 3 nodes doesn't justify one).
+
+**Item 4 — the main slice: hover, selection, ancestry/dependent highlighting, detail popup.**
+- Hit-testing: a plain O(977) linear scan over the real emitted `nodePositions` on each
+  `pointermove`/`pointerdown` DOM event — never a parallel geometry formula, never per-frame.
+  Measured at <1ms for 200 calls; the hover/selection graphics redraw only happens when the
+  resolved node index actually changes.
+- Hover: highlights the card outline plus its directly-incident edges in `HOVER_COLOR` (finally
+  consumed, reserved since the edge-router session). Gated off below `CONTENT_SHED_THRESHOLD`
+  (<5%, the flat-coloured-block LOD stage).
+- Selection: click-to-select/click-empty-to-deselect, persists across pan/zoom. Highlights the
+  selected card (`SELECTED_COLOR`, new token), its full ancestry (`ANCESTRY_COLOR`, new,
+  cool-hued) and full dependents (`DEPENDENT_COLOR`, new, warm-hued) — a BFS over ALL THREE P-14
+  edge kinds (prerequisite/alternative/potential-gate), explicitly NOT P-12.9's research-path
+  algorithm (structural/profile-invariant vs. per-profile cheapest-OR-branch; stated in code
+  comments so a later session doesn't conflate the two). Verified against a known OR group
+  (`giga_tech_asteroid_artillery`'s alternative edge, members `tech_battleships`/`tech_stingers`):
+  both members present in the ancestor set, confirming alternative branches are never flattened.
+- Focus-pan: selecting a node pans (never zooms) so it centres in the viewport area LEFT of the
+  fixed-width detail-popup panel — how "the popup must not obscure the selected card" holds
+  structurally, not by luck.
+- Detail popup: a DOM overlay (CLAUDE.md's Stack), right-side fixed panel. Shows untruncated name,
+  row/tier/area/faction, cost, mod-requirement chips, three-state availability (never boolean —
+  shows the unconditional state when all 12 `availabilityMatrix` slots agree, explicitly says
+  "varies by empire type... not built this session" when they don't, never silently picks a
+  profile), lazily-fetched description (`fetchDetailPayload`, new `dataset.ts` helper, small
+  in-memory cache), direct prerequisites/dependents by localised name, and the Item-3 off-tree note
+  where applicable.
+- Long-span backward `potential-gate` edges (previously "unlocatable by eye" per HANDOFF.md):
+  **selection resolves this.** Selecting `tech_cosmogenesis_escort` ("Riddle Escort") and zooming
+  to 15% shows its highlighted dependent trace to `tech_missiles_1` clearly followable across the
+  full 5-band span (confirmed by screenshot) — the stub-connector treatment recommended earlier is
+  no longer necessary now that selection highlighting exists.
+
+**A real bug found via screenshot review (again the recurring "screenshots catch what tests
+couldn't" pattern): Stellaris's own loc format uses a literal two-character `\n` escape inside a
+description string for a line break** (confirmed against `tech_dark_matter_power_core_ae_desc`'s
+raw YAML — the literal backslash-n bytes, not a real newline). Invisible until now because
+description was never actually DISPLAYED anywhere before this session's popup. `strip_markup`
+never touched it (`§`/`£` markup only). Fixed in `pipeline.dataset_emit.build_detail_payload`
+(scoped to `description` only). Real corpus: 25 affected before, 0 after.
+
+**Frame-time note, sandbox caveat repeated because it matters here specifically**: measured
+median ~288-300ms in this sandbox's software-WebGL (SwiftShader) fallback, both WITH and WITHOUT
+hover active (pan-only baseline measured separately at ~299ms) — confirming hover adds negligible
+marginal cost; the absolute figure is this sandbox's own rendering cost for the full scene, not a
+hover regression, and is not comparable to the previously-reported 6.1ms/12.1ms real-hardware
+figure (measured on different hardware in a different session, a gap this project has documented
+multiple times before).
+
+**Verified**: full pytest (1,389 passed), `tsc --noEmit`, `vite build` all clean throughout. A
+real headless-Chromium run against the rebuilt corpus: zero console errors, zero failed requests;
+`checkNameBounds`/`checkIndicatorBounds`/`checkEdgeEndpointsInCards`/`checkMinStubLength`/
+`checkTierBadgeMatchesBand` all clean; hit-testing verified correct at 3 zoom levels × 3 named
+technologies + empty-space checks, all matched. Six screenshots reviewed: a hovered card with
+highlighted edges, a selected node with ancestry (violet) and dependents (amber) visibly
+distinguished plus the popup listing both by name (including OR-group members), the popup on a
+crisis-faction technology, the popup on an off-tree-prerequisite card (showing the "Also
+requires" note and real multi-paragraph description), and the long-span edge trace at two zoom
+levels.
+
+**Not done this session** (explicitly out of scope): research path (P-12.9), search UI,
+empire-profile switching, gate classification (P-3, still `gates: []` everywhere), faction pattern
+refinement, `subgrid_width` change.
+
+## Reconciliation session 4 — subgrid_width=6, empire-profile switching, search
+
+**Item 1 — `subgrid_width` set to 6, the user's pick from D-17's 4/6/8/12 survey.**
+`pipeline.layout.DEFAULT_SUBGRID_WIDTH` and `client/src/main.ts`'s mirrored `SUBGRID_WIDTH` both
+changed. Real re-measured figures over the 977-node/984-edge D-18 corpus, matching the survey's
+own projection exactly: canvas **29,670 × 13,448px** (2.21:1 aspect, down from 30,840 × 9,736px
+at 3.17:1), worst band width **5,730px** (down from 8,460px), worst row height 672px (`industry`
+row). Densest cell and row population unaffected (`voidcraft`×T5=47 — `subgrid_width` never
+changes membership, only geometry). Every pinned test assertion updated
+(`tests/test_layout_corpus.py`); synthetic mechanism tests (`tests/test_layout.py`) pass
+`subgrid_width=4` explicitly and are unaffected, deliberately.
+
+**Item 2 — empire-profile switching, fully built.** `client/src/empireProfile.ts` (new) mirrors
+`pipeline/dataset_schema/empire_profile.py`'s canonical `EmpireProfileIndex` formula exactly
+(round-trip verified across all 12 profiles). A three-axis selector (never a flat 12-item list)
+drives `updateAvailabilityDisplay()`, which reads `tech.availabilityMatrix[index]` DIRECTLY from
+the base dataset for every node — no client-side recomputation, verified by an independent
+cross-check against the emitted matrix across all 12 profiles × 977 nodes (11,724 checks, 0
+mismatches). Visual treatment: a neutral (non-hued) dim overlay at a per-state alpha, plus a
+distinct glyph badge (✕ locked / ? uncertain / ⚙ config-gated) — colour is never the sole carrier,
+per S-1's own discipline extended to a fourth classification. The detail popup shows the
+SELECTED profile's real state (from the base dataset) and lazily fetches that profile's overlay
+for the structure-derived/trigger-derived reason text (P-13) — never fabricated, never silently
+defaulting to one profile.
+
+Real per-profile availability counts, all 12, cross-validated against D-10's previously-recorded
+figures: unconditional uncertainty (209, profile-invariant) plus the worst profile's
+profile-dependent uncertain count (33, i.e. 3.37% of 977) sum to exactly 242 — the worst raw
+"uncertain" count measured directly (regular/biological/no). D-10's regime is UNCHANGED by this
+session: 3.37% sits above the 3% warn threshold, comfortably under the 10% hard ceiling, matching
+the figure already on record (D-18 didn't move it — none of the 3 dropped technologies was ever
+profile-dependent).
+
+**Item 3 — search, fully built, consuming the emitted index directly.** The index tokenises
+name + technology key + description (verified directly from `build_search_index`'s real
+implementation — category/faction are NOT included, despite the schema's own description
+mentioning them as a possibility; this is a real, reported finding, not assumed from the schema
+text alone). Prefix-match search (P-6's optional fuzzy matching not implemented), ranked
+exact-name > name-prefix > token-prefix. Matches highlight IN PLACE (`SEARCH_MATCH_COLOR`, new
+token) — never a filter, so prerequisite-chain reading is never broken. Verified against known
+queries including a resolved-loc-token name ("Civilian Arkships") and an ellipsis-truncated one
+("Dark Matter Deflector") — both found correctly despite their card-display truncation, since
+search operates on the full untruncated name via the index, never the rendered/wrapped text.
+Clicking a result reuses the existing `setSelected`/`focusOnNode` path, no parallel selection
+mechanism.
+
+**Verified**: full pytest (1,389 passed — including `tests/test_repo_hygiene.py` catching a real
+gap: `client/src/empireProfile.ts` was created but never `git add`ed, exactly the failure mode
+that test exists to guard against), `tsc --noEmit`, `vite build` all clean. A real headless-
+Chromium run: zero console errors, zero failed requests; all pre-existing invariant checks
+(name/indicator bounds, edge containment, min-stub, tier-badge/band agreement) still 0 violations
+after the `subgrid_width` change. Six screenshots reviewed: two visibly different profiles on the
+same region (cards visibly dim/undim and change badge glyph between Regular/Mechanical/Non-nomadic
+and Hive Mind/Biological/Nomadic), one card in each of the four real states (available, locked,
+uncertain, config-gated), the popup showing a real locked reason ("locked — Nomadic empires" on a
+technology gated to non-nomadic empires), and a search result selected with the camera panned to
+centre it.
+
+**Not done this session** (explicitly out of scope): research path (P-12.9), gate classification
+(P-3, still `gates: []` everywhere), faction pattern refinement.
+
+## Reconciliation session 5 — repo-hygiene guard extension, EmpireProfileIndex parallel-formula fix, gate classification (P-3)
+
+Two small corrections requested first, then a full survey-then-implement pass on gate
+classification (P-3), the last unbuilt pipeline piece.
+
+**Correction (a) — the repo-hygiene guard couldn't catch its own absence.**
+`tests/test_repo_hygiene.py` (built a session earlier specifically to catch untracked
+load-bearing files) was itself untracked, and its guarded-tree list (`client/src/`, `pipeline/`)
+didn't include `tests/` — the exact tree it lives in. Tracked and committed; guard extended to
+`tests/`, `spec/`, `config/`, `docs/` (every tree where CLAUDE.md's Rules say an untracked file
+is never legitimately derived/disposable). Nothing else turned up untracked in any of those trees
+at the time of the fix — confirmed by running the extended check, not assumed.
+
+**Correction (b) — the client's `EmpireProfileIndex` was a parallel formula, the exact defect
+class CLAUDE.md's "pipeline owns all geometry" rule forbids (generalised here from geometry to an
+indexing scheme).** `client/src/empireProfile.ts` used to hand-restate
+`pipeline.dataset_schema.empire_profile`'s stride/axis-order formula — agreeing today, free to
+drift silently later, the same shape that caused D-17's row-geometry desync. Fixed the same way:
+the base dataset now emits `empireProfileAxes` (new field, `schema/common.schema.json`'s new
+`EmpireProfileAxes` def — axis order, each axis's values, derived stride, `totalProfileCount`;
+built by `pipeline.dataset_schema.empire_profile.build_empire_profile_axes`, itself derived from
+the module's existing `AXES`/`_STRIDES`, never hand-restated). `client/src/empireProfile.ts` was
+rewritten to derive `empireProfileIndex`/`allProfiles`/`axisValues` purely from that emitted
+data — no hardcoded stride or axis-value list survives client-side; a caller that hasn't called
+`initEmpireProfileAxes` yet gets a loud error, never a stale hardcoded answer. Verified: the
+client-derived index round-trips correctly across all 12 real profiles (0 mismatches, headless
+run against the real build), `tsc --noEmit`/`vite build` clean, detector-fails-first proven by
+temporarily emitting a stub `empireProfileAxes` from the pipeline and confirming JSON Schema
+validation catches the malformed shape immediately (before reverting). Two new pytest tests pin
+this: the real build's emitted `empireProfileAxes` equals what `build_empire_profile_axes()`
+independently computes, and `totalProfileCount` agrees with every technology's
+`availabilityMatrix` width (12, today).
+
+**Item 1 (this session) — the spec's wrong example, found and corrected before implementation.**
+`spec/P-03-gates.md` cited "the Tetradimensional Engineering technology" as an example of one
+technology gating another. Checked directly against the real corpus (this project's own
+evidence-before-design rule) and found **false**: `giga_tech_tetradimensional_engineering` gates
+several *ascension perks* (`common/ascension_perks/giga_ascension_perks.txt`'s
+`custom_tooltip`/`has_technology` pairs) — out of P-3's scope entirely — and names no technology
+of its own in any rendered technology's `potential` block. Corrected in place to a real example
+(`giga_tech_amb_supertensiles_acot_alpha` → `tech_dark_matter_power_core_ae`), with the original
+example's refutation recorded rather than silently swapped out, so a future session finding the
+old example in git history learns it was checked and refuted.
+
+**Item 2 — gate classification, built.** `pipeline/gate_patterns.py` is the new registry module:
+four registered trigger patterns (`has_ascension_perk`, `has_technology`, `has_gigastructural_
+constructs`, `has_galactic_wonders`), each walked with the same `potential`-only, scoped
+AND/OR/NOT/NOR descent discipline `pipeline.edges`/`pipeline.availability` already use (reused
+directly, not re-derived — the `count_country` false-positive `pipeline.edges`' own docstring
+describes is exactly the bug class this discipline guards against here too). Real corpus counts,
+confirmed by direct inspection before implementation began: `has_ascension_perk` 22 technologies/
+22 instances, `has_technology` 22 technologies/25 instances (3 technologies name two targets
+each), `has_gigastructural_constructs` 9/9, `has_galactic_wonders` 14/14 — 70 gate instances
+total over 60 technologies, 10 of which carry more than one instance (7 crossing two distinct
+mechanism types — 6 `tech_lathe_*` + `giga_tech_the_vat` — plus 3 more, found only once gates
+were actually built rather than by the coarser per-mechanism-type survey grouping, carrying two
+`has_technology` targets each: `giga_tech_disco_moon`, `tech_qnm_disruptors`,
+`tech_sm_autocannons`).
+
+**The two Gigastructures scripted-trigger wrappers were confirmed by direct inspection, not
+assumed from their names**: `has_gigastructural_constructs` (`giga_scripted_triggers.txt`) is a
+1:1 wrapper for `ap_gigastructural_constructs`; `has_galactic_wonders` (`zzz_overwrites.txt`) is
+an `OR` of the base `ap_galactic_wonders` perk plus three DLC-ownership-variant perk IDs
+unlocking the exact same thing (`ap_galactic_wonders_utopia`/`_megacorp`/
+`_utopia_and_megacorp` — none of which has its own vendored icon or loc entry, confirmed, so the
+base id is the only one that could be displayed anyway). Both wrappers carry an `is_ai = yes`
+AI-only override branch neither this registry nor `pipeline.availability` models — recorded in
+the module docstring so a future session doesn't mistake it for an oversight.
+
+**Curation decision (the user's, recorded verbatim in reasoning): mechanism-level, not
+occurrence-level.** Once a pattern is registered, every real occurrence badges — no further
+per-technology editorial filter. Reasoning: 70 instances over 60 technologies is small enough
+that badging all of them is informative rather than noisy, and a hand-curated per-occurrence
+subset would be one more hand-maintained surface like the crisis-faction/flag/name override
+files, for no evidenced benefit at this size. The registry's job is RESOLUTION (icon/label
+lookup, the two wrapper→perk mappings), not SELECTION. Written into `spec/P-03-gates.md` itself,
+not just this log.
+
+**Zero interaction with availability evaluation, asserted rather than assumed.** All four
+registered keys were already in `pipeline.availability.EXCLUDED_KEYS` (an identity-element state
+predating this module) — gate classification adds only display metadata.
+`tests/test_gate_patterns.py::test_gate_leaf_keys_matches_availabilitys_excluded_keys_exactly`
+pins the two lists staying in exact sync (with its own detector-fails-first proof). D-10's
+worst-case profile-dependent uncertainty is confirmed unchanged: still 33/977 (3.37%), asserted
+against the real build in `tests/test_dataset_emit.py::
+test_gate_classification_leaves_d10_uncertainty_unchanged` — not assumed, computed as
+`max(per-profile raw uncertain count) − unconditional-uncertain count` per D-10's own two-metric
+split. Edge counts are also confirmed unchanged: 984 total (883 prerequisite + 76 alternative +
+25 potential-gate) — `tests/test_dataset_emit.py::
+test_base_dataset_gates_match_the_gate_classification_survey` additionally asserts every
+technology-kind gate is exactly one of the 25 `potential-gate` edges, one to one, no more no
+fewer.
+
+**Ordering (D-3) implemented and tested**: ascension-perk gates sort before technology gates;
+declaration order preserved within a kind (Python's stable sort). The 6 `tech_lathe_*`
+technologies (the only real corpus case with one of each kind) all confirmed to put the perk
+gate first.
+
+**Icon and label resolution**: ascension-perk gate icons reuse `_icon_ref_map` (previously
+technology-only in name, generic in implementation) against the already-built, deliberately
+unfiltered perk atlas (`pipeline/icons/build.py`'s own docstring anticipated this — "ascension-
+perk atlas building stays fully unfiltered until gate detection exists to filter it correctly,"
+and confirmed here: filtering was never needed, the unfiltered perk atlas was already small,
+~262KB, well inside the 6MB tripwire). Technology-gate icons reuse the target's own already-
+resolved technology icon. Labels are `"Needs {name}"`, the perk/technology's own already-resolved
+localised display name — technology-gate labels reuse the exact same name-resolution pass now
+factored out (`_resolve_technology_name`, precomputed once for all 977 rendered technologies) so
+a gate's target name can never drift from that technology's own displayed name. One real
+edge case found only by running the reduced-corpus test (D-14's ACOT/AoT-optional build mode):
+`giga_tech_amb_supertensiles_acot_alpha` gates on the ACOT-only `tech_dark_matter_power_core_ae`,
+which isn't rendered at all when ACOT is absent from the build — not a D-18 off-tree case, a
+whole-source-absent case. Fixed by falling back to the same best-effort loc_table lookup
+`_resolve_off_tree_prerequisite_name` already uses for D-18's off-tree names, never a hard
+failure — D-14 already established "ACOT/AoT absent is a supported build mode, not an error."
+
+**Client-side: only the popup needed a real change.** The card renderer (badges slice, an earlier
+session) was already fully wired against `tech.gates[0]` and rendered nothing only for lack of
+real data — confirmed by rebuilding the real dataset and checking `gated: 60` (rendered) exactly
+matches `datasetGatedCount: 60` (emitted), 0 indicator-bounds violations across 1,576 checks. The
+popup, however, had no gate section at all before this session — added one (`client/index.html`'s
+new `.gate-row`/`.gate-icon` CSS, `client/src/main.ts`'s popup template), rendering every gate in
+the technology's ordered list (not just the primary), each with its real cropped atlas icon (CSS
+`background-position` against the same already-fetched atlas webp the PixiJS card icons use — no
+second icon fetch) and localised label. Screenshotted and confirmed correct: `Synaptic Cogitator`
+shows both "Needs Cosmogenesis" and "Needs Scalable Reservoir Computing" in the right order.
+Secondary gate badges on the CARD itself (spec's "where space permits" language, for the 10/977
+technologies with more than one gate instance) are explicitly NOT built — flagged in the code
+comment and here, since only the primary gate has ever been asked for.
+
+**Verified**: full pytest (1,409 passed, up from 1,389 — 20 new tests: 15 in
+`tests/test_gate_patterns.py`, 5 corpus-level additions to `tests/test_dataset_emit.py`),
+`tsc --noEmit`/`vite build` clean, headless-Chromium run zero console errors/zero failed
+requests, all pre-existing invariant checks (name bounds, indicator bounds, edge-endpoints-in-
+cards, D-17) still 0 violations after rebuilding with real gate data. Every new detector proven
+capable of failing before being trusted: the `GATE_LEAF_KEYS == EXCLUDED_KEYS` test has its own
+deliberately-diverged-set companion test; the `empireProfileAxes` equality test was proven by
+temporarily emitting a broken stub from the pipeline and watching schema validation reject it.
+Five screenshots reviewed: a card with an ascension-perk gate badge (`giga_tech_birch_world_1` →
+"Needs Vast Expanses"), a card with a technology gate badge (`giga_tech_amb_supertensiles_
+acot_alpha` → "Needs Alpha Project..."), the two-mechanism card (`giga_tech_the_vat`, primary
+gate only per the card-vs-popup distinction above), the popup showing both of
+`tech_lathe_cogitator`'s gates in the correct D-3 order, and a card at 35% zoom (between the
+0.20 icon-shed and 0.60 label-shed S-03 thresholds) showing the gate icon with its label
+correctly shed.
+
+**Not done this session** (explicitly out of scope, or flagged rather than silently built):
+research path (P-12.9, now the next open item — see HANDOFF.md's next prompt), secondary gate
+badges on the card for a multi-gate technology (popup already shows all gates; only the card is
+primary-only), faction pattern refinement.
+
+## Screenshot-review session — card text/gate-label bugs, profile selector overflow, row-padding centring, LOD verification, gate-count/curation-wording reconciliation, swap/prerequisite-display and research-path surveys
+
+Six items from real screenshot review, then two corrections to the previous session's own
+writeup, then two surveys (stop-before-implementing on both).
+
+**Item 1a — name truncation defaults back to plain tail-ellipsis.** The middle-ellipsis fix from
+an earlier session (built to stop `tech_dark_matter_deflector`/`tech_dark_matter_propulsion` from
+both truncating to the identical "Dark Matter\nDimensional…") had been applied unconditionally to
+EVERY truncated name, not just the ones that actually needed it — destroying the informative
+middle of names like "Runic Matter Manipulation Techniques" (rendered "Runic Matter
+Ma…Techniques") for zero benefit. Fixed with a two-pass approach
+(`resolveNameTruncations`, `client/src/main.ts`): every name wraps in TAIL mode first; names
+whose tail-mode output COLLIDES with another name's (grouped by output string) switch to MIDDLE
+mode; the switch is verified, not assumed. Real corpus result: 253 names truncated, only 18 use
+middle-ellipsis (the minimal set), 5 duplicate-visible-text groups remain — all 5 confirmed to be
+technologies with byte-IDENTICAL raw names (`tech_archeology_lab`/`_ancrel`, `tech_hive_cluster`/
+`tech_wilderness_cluster`, `tech_hive_confluence`/`tech_wilderness_confluence`, and 2 of the 18
+middle-ellipsis names — "Mass Neutronium Extraction" and "Machine Template System," each shared
+by two real technologies) — genuinely unresolvable by any truncation strategy since the SOURCE
+strings are identical, not a truncation artifact. This exact "5 genuine, 0 truncation-caused"
+figure matches what an earlier session had already established, confirming the fix didn't
+regress it.
+
+**Item 1b — gate label font-measurement bug and name-overlap collision, both real, found from one
+screenshot** (`giga_tech_amb_supertensiles_acot_phanon`, "Needs Civil Phanon Engineering"
+rendering as a stray "Ne…Engineering" fragment overlapping the card name). Two distinct causes:
+(1) `wrapAndClampName`'s shared `measureCtx` was left at the 20px NAME font by the main per-card
+loop and never reset before measuring the 11px gate label, so every width came back ~1.8x too
+large and the label over-truncated severely. Fixed by making `fontCss` a required-in-spirit
+parameter the function sets on `ctx` itself, closing the class of bug (a caller can no longer
+leave stale font state behind for the next measurement). (2) The label's Y-position was the gate
+icon's own badge-gutter-stack slot Y — as early as the 2nd slot for a technology with no
+rare/dangerous/mod badges before it — well within a 2-line name's own vertical span, since (unlike
+the small square badges, which live entirely inside the gutter column) the label deliberately
+extends leftward into the name's horizontal territory. Fixed by clamping the label's Y to never
+start above where the name text block actually ends (`Math.max(gateIcon.y, nameText.y +
+nameText.height + 2)`). Gate labels also switched to plain tail truncation (never middle) — unlike
+card names, a gate label is never compared against another gate label for collisions, so there's
+nothing for middle-ellipsis to protect. After both fixes: "Runic Matter Manipulation…" / "Needs
+Civil Phanon…", cleanly separated, no overlap. Screenshotted before/after.
+
+**Item 1c — the reported "garbled" AoT badge could not be reproduced.** Real per-mod counts
+confirmed (ACOT 3, AoT 1 — `tech_civil_phanon_application` is the one AoT-requiring technology).
+Checked at multiple zoom levels (36%–140%), via direct page load, and via search-then-click (a
+different code path than direct camera positioning) — every check rendered the badge cleanly and
+legibly, indistinguishable from an ACOT badge. Reported honestly as unreproduced rather than
+inventing a speculative fix; real counts stated for the record in case it recurs.
+
+**Item 2 — profile selector overflow, root-caused and fixed.** A `<select>`'s flex-item default
+is `min-width: auto`, which resolves to its longest OPTION's intrinsic content width (e.g.
+"Machine Intelligence") — this overrides `flex: 1`'s shrink behaviour entirely regardless of the
+panel's own width. Fixed with the standard override (`min-width: 0` on `#profile-selector
+select`, plus `overflow: hidden; text-overflow: ellipsis` for graceful degradation of whichever
+select is tightest after an equal three-way split). Verified with the longest label on all three
+axes simultaneously selected (Machine Intelligence / Biological / Non-nomadic) — all three fit
+within the 300px panel.
+
+**Item 3 — survey only, not implemented (see HANDOFF.md's next prompt for the full detail and
+recommendation).** Confirmed real, evidenced findings: `swapMappings` (D-14) is emitted correctly
+(123 distinct technologies carry an axis-expressible swap active for some profile, 0 for the
+default profile, up to 123 for machine_intelligence/biological/nomadic — real per-profile counts)
+but consumed nowhere in the client; the popup's Prerequisites/Dependents lists pool all three edge
+kinds unlabelled with no profile filtering (`tech_mega_engineering`'s 5-edge list shows one true
+`prerequisite` and 4 `alternative` OR-group members as one undifferentiated list — the same
+OR-branch-flattening failure class documented as v1's own bug, now confirmed present in the popup
+too). `appliesToEmpireTypes`/`activeEdgeIds` is confirmed a real no-op (984/984 — every edge,
+every profile) by direct measurement against a real overlay, not just cited from CLAUDE.md's
+existing note. Key finding: alternative-branch filtering does NOT need that unbuilt extractor —
+each branch member's own `availabilityMatrix` entry already reflects per-profile reachability
+correctly (measured directly: `tech_mega_engineering`'s 4 alternatives split available/locked
+exactly as expected across three real profiles). Recommendation given to the user: two slices,
+sequenced — swap/prerequisite-display first (smaller, and a real prerequisite for P-12.9's own
+correct name display), research path second.
+
+**Item 3c / research path (P-12.9) — survey only, not implemented.** Confirmed
+`pipeline.dataset_emit`'s `researchPaths`/`_ancestor_research_path` is real and already shipping
+in every empire overlay (not a stub), but is a simplified BFS-over-`prerequisite`-edges-only
+placeholder — not P-12.9's per-profile cheapest-`OR`-branch algorithm. Full survey (missing
+pieces, validation-figure reproduction plan) written up in HANDOFF.md's next prompt rather than
+duplicated here.
+
+**Item 4 — card vertical padding asymmetry, root-caused and fixed as real pipeline geometry.**
+Confirmed from a real screenshot: a short sub-grid column (e.g. voidcraft/T0's 3-member
+"Waystations" column, against the row's own 6-row shared height set by a denser column elsewhere
+in the same row) was top-anchored, putting 100% of the row's leftover vertical space below the
+last card and none above beyond the row's fixed header. Fixed in `pipeline/layout.py`: each
+column's own member count is now tracked (`column_member_count`) and, in a second pass once every
+row's shared height is final (`row_row_counts`), each column's local row is offset by
+`(row_row_counts[row] - column_member_count[col]) // 2` — centring it within the row's shared
+height instead of pinning it to the top. D-17's same-band column-ordering invariant is untouched
+(this only changes vertical position WITHIN a column, never which column a node lands in).
+**Canvas dimensions UNCHANGED — 29,670 × 13,448px** — this redistributes already-reserved space,
+it doesn't add or remove any. New pipeline test
+(`test_short_column_is_vertically_centred_within_the_row_height`, with its own
+detector-fails-first companion) pins the behaviour. Full pytest (1,411 passed, up from 1,409),
+`tsc`/`vite build` clean, all corpus tests (including the pinned canvas-dimension assertions)
+unaffected. Screenshotted before/after — the 3-member column now sits with real, visible space on
+both sides of its card stack, not just below.
+
+**Item 5 — LOD text shedding, verified CORRECT, not a bug.** Checked whether S-03's real
+shedding table is actually applied to name/cost/icon text (`.visible`, a real PixiJS hide, never
+merely alpha-dimmed — confirmed via a new `checkLodTextShedding` debug hook). It is: all three
+shed together, exactly at the `<5%` "Coloured block" threshold — the ONLY stage in S-03's table
+that names them ("everything remaining"); no earlier stage in the table shortens for name/cost/
+icon specifically. Verified numerically at 20% (all visible), 4.9% (all hidden), 100% (all
+visible) against the real build. The user's report ("no longer appears to shed") is explained,
+not contradicted: shedding happens right as the card becomes unreadably tiny anyway, so the
+transition is imperceptible — spec-compliant, not a defect. Reported honestly rather than
+inventing a change to something that already matches its own spec.
+
+**Item 6 — middle-click isolation (P-7), confirmed spec-only.** `spec/P-07-isolation.md` fully
+specifies it (depth-controlled, all-three-edge-kinds traversal, dimming/hiding mask, exit control
++ `Escape`, precomputed adjacency for the P-10 100ms budget) — confirmed genuinely unbuilt, not
+partially built and missed. Left for a later, explicitly-requested slice per this session's own
+instruction; recorded in CLAUDE.md's Open Items so it doesn't need re-discovering.
+
+**Reconciliation (a) — gate-count arithmetic slip, confirmed and corrected.** The prior session's
+own SURVEY reported "45 gate instances across 40 technologies"; the IMPLEMENTATION (same session,
+later) correctly reports 70/60. Confirmed directly against the real build: 45 = 22
+(`has_ascension_perk`) + 9 (`has_gigastructural_constructs`) + 14 (`has_galactic_wonders`) — the
+survey figure silently omitted the 25 `has_technology` instances entirely, an arithmetic slip, not
+a real discrepancy in the implementation (the implementation was always correct; CLAUDE.md,
+HANDOFF.md and docs/BUILD-LOG.md's own implementation entry already carried the correct 70/60
+figures — only `spec/P-03-gates.md`'s curation-decision paragraph still had the stale 45/40).
+Corrected in `spec/P-03-gates.md` to 70/60, with the corrected per-technology `has_technology`
+count (3 technologies name two targets each, not "a few").
+
+**Reconciliation (b) — curation wording strengthened.** The prior session's spec wording ("45
+gate instances... is small enough that badging all of them is informative rather than noisy") tied
+the "badge everything" decision to a size threshold — readable as licence to reconsider if the
+count ever grew, when the user's actual decision was unconditional: badge every occurrence,
+always; the registry RESOLVES gates (icon/label lookup), it does not SELECT which occurrences
+matter. `spec/P-03-gates.md` rewritten to lead with the unconditional rule and demote the real
+corpus count to a parenthetical fact about the corpus, not the reason for the rule.
+
+**Verified** (items 1, 2, 4, 5 only, per this session's own scope): full pytest (1,411 passed),
+`tsc --noEmit`/`vite build` clean, headless-Chromium zero console errors/zero failed requests,
+zero name-bounds violations, zero indicator-bounds violations (1,576 checked), zero
+edge-endpoints-in-cards violations (984 checked), zero truncation-caused name collisions (5
+remaining are source-identical, not truncation artifacts), LOD text shedding confirmed at the
+real 5% threshold. New detectors proven capable of failing before being trusted: the
+row-centring test's own top-anchored-bug simulation, the name-truncation collision/middle-
+ellipsis-count reporting. Screenshots: the Runic Matter card before and after (both bugs fixed),
+the profile selector at its longest labels (fits), a band cell showing the now-centred short
+column, and a card at 4.9% zoom showing full LOD shedding (flat coloured blocks, no text/icons
+anywhere).
+
+**Not done this session** (explicitly out of scope, survey-only, or flagged rather than silently
+built): swap-aware display and profile-filtered/kind-labelled prerequisite lists (surveyed,
+recommended as the next slice, not implemented), the research path (P-12.9, surveyed, not
+implemented), middle-click isolation (P-7, confirmed spec-only, not implemented), secondary gate
+badges for a multi-gate technology on the CARD (popup already shows all gates).
+
+## Hard regression fix session — row-overlap bug in the Item 4 vertical-centring change, plus the missing row-overlap invariant
+
+A user screenshot at fit-to-viewport showed rows heavily overlapping — category rows drawing on
+top of each other, both within a research area and across areas. The layout was correct before
+the immediately-prior (screenshot-review) session's changes. All other planned work was stopped
+per explicit instruction until this was root-caused and fixed.
+
+**Root cause, confirmed by direct reproduction, not inferred.** The screenshot-review session's
+Item 4 (short-sub-grid-column vertical centring, `pipeline/layout.py`) added
+`column_member_count`, a dict tracking each sub-grid column's own member count so a short column
+could be centred within its row's shared height instead of top-anchored. It was keyed by
+`(row_id, col)` alone. `col` is BAND-RELATIVE — `depth_slot_start[(band_index, depth)]` resets
+its own `cursor` to 0 for every `band_index` (confirmed by reading the `depth_slot_start`
+construction directly) — so col 0 in one band and col 0 in a LATER band of the same row are
+physically different columns (different `x`, via `band_x_start[band_index] + col * ...`) but
+shared the same dict key. Two different bands' columns landing on the same local index had their
+member counts silently SUMMED into one entry, which could exceed the row's real max
+(`row_row_counts[row_id]`) and drive the centring offset `(row_row_counts[row_id] -
+column_member_count[key]) // 2` NEGATIVE — shifting a column's cards upward past row 0, into the
+row above. **Reproduced directly**: temporarily reverting the key back to `(row_id, col)` and
+rerunning against the real corpus immediately produced `giga_tech_blokkat_afterburner`
+(`column_member_count[('Blokkats', 0)] = 11` against `row_row_counts['Blokkats'] = 6`, offset
+−3) and, with the same-session `assert centre_offset >= 0` also removed to let the corrupted
+geometry through end to end, `giga_tech_birch_world_1` landing at row **−16** (`y = −1000`,
+`column_member_count[('voidcraft', 0)]` corrupted to **37** against a real `row_row_counts` of
+**6**) — confirming the exact symptom (rows drawing into each other) end to end, not just an
+isolated assertion.
+
+**Both named suspects investigated; only the first was real.** The vertical-centring change
+itself (prime suspect) was confirmed as the sole cause. The second suspect — row-panel geometry
+in `client/src/main.ts` desyncing from node positions again, the same defect class a prior
+session found and fixed (CLAUDE.md's "pipeline owns all geometry" rule) — was checked directly
+and ruled out: `client/src/main.ts` still derives every row's/band's extent from the REAL min/max
+emitted node position within it (confirmed by reading the block's own code and comments), never
+from an independent formula. It faithfully reproduced whatever the pipeline emitted, bug
+included — that is the CORRECT behaviour of that architecture, not a second bug. This is recorded
+explicitly in CLAUDE.md so it reads as "confirmed and ruled out," not "not checked."
+
+**Fixed** by keying `column_member_count` (and the corresponding lookup in the second pass) on
+the full `(row_id, band_index, col)` triple, which is unique by construction (each band's own
+`col` values are only meaningful within that band). Added `assert centre_offset >= 0` directly in
+`pipeline/layout.py` as a second, independent line of defence — a negative offset is provably
+impossible for a correctly-scoped key, so this can only ever fire on a future instance of this
+same mistake, never on legitimate data.
+
+**Why canvas dimensions stayed byte-identical through the entire regression, and why that
+shouldn't have been read as reassurance.** Row HEIGHT is derived from `row_row_counts[row_id]`,
+computed entirely in the FIRST pass (per-band member counting), which the buggy second pass never
+touches — only where an individual card sat WITHIN its already-correctly-sized row was corrupted.
+Canvas width was never touched by either pass at all (`x`/`col` are set once, in the first pass,
+and never revisited). So "canvas dimensions unchanged" was always going to be true regardless of
+whether the centring fix was correct or badly broken — it measures a quantity the bug structurally
+could not move, and its being unchanged carries no information about whether individual cards
+landed inside or outside their own row's bounds. Explained here so a future "dimensions unchanged,
+must be fine" shortcut doesn't recur for a similar bug shape.
+
+**The real lesson, and why this reached the user**: the full existing test suite (1,411 tests,
+including the pinned canvas-dimension and row-count assertions) stayed GREEN through the entire
+regression. Nothing asserted the actual geometric invariant that matters — that no two rows'
+card-occupied vertical extents intersect, and that no node's row index is ever negative. This is
+the same lesson D-17's unbounded-stacking bug already taught this project once (a green suite
+proves self-consistency, not correctness) — now recorded as a confirmed second occurrence, not a
+new lesson.
+
+**The missing invariant, added and proven capable of failing first.** Two new tests:
+- `tests/test_layout.py::test_no_row_overlaps_when_the_same_row_spans_multiple_bands` — a fast
+  synthetic case (one row, two bands, each band's own depth-0 column full at `subgrid_width`
+  members) reproducing the exact collision shape, plus its own detector-fails-first companion
+  test reconstructing the buggy vs. fixed key arithmetic directly.
+- `tests/test_layout_corpus.py::test_no_row_overlaps_and_every_card_within_its_own_row_bounds` —
+  real corpus: no node's `row` is ever negative, and no two rows' card-occupied vertical extents
+  (min/max of `y`/`y + CARD_HEIGHT` per row) intersect, checked via a running-max-end sweep over
+  rows sorted by start (not merely adjacent-pair comparison, which would miss one row's extent
+  fully enclosing a later, shorter row's).
+
+Both proven capable of failing BEFORE being trusted on the fix, per this project's own standing
+rule: the corpus test was run against the actual pre-fix code (key reverted, internal assertion
+also temporarily removed) and failed exactly as expected (`giga_tech_fe_megaworkshop_1` at row
+−16), then the fix was restored and the same test passed clean.
+
+**Audit of the screenshot-review session's other work (item 5's explicit ask): everything else
+is intact.** Checked specifically because the regression's own dataset build was also used for
+some of that session's verification screenshots:
+- Item 1a (name truncation) and Item 1b (gate-label font/overlap fix): both pure per-card,
+  Y-position-independent logic — unaffected regardless of which row a card's data happened to
+  land in at build time. The demonstrated fixes remain valid evidence.
+- Item 2 (profile selector CSS): no pipeline dependency at all — unaffected.
+- Item 5 (LOD shedding): zoom-threshold based, not row-Y based — unaffected.
+- Item 3's surveys (`swapMappings`, `activeEdgeIds`, availability-based alternative-branch
+  filtering): read-only queries against availability/edge/gate data, computed independently of
+  and before layout in `pipeline/dataset_emit.py` — the layout bug never touched any of the
+  values reported. All findings stand as reported.
+- The one casualty: `final_row_padding_centered.png` (the screenshot-review session's own "after"
+  screenshot for Item 4) WAS built against the regression and has been superseded this session by
+  fresh screenshots showing zero row overlap, both at fit-to-viewport and at close-up row
+  boundaries.
+- Items described in the prior turn's prompt as "activeEdgeIds wiring, tech swaps, prerequisite
+  lists" were never implemented in the first place — Item 3 was explicit survey-only, nothing was
+  built, so there is nothing there for a layout regression to have broken. Stated plainly here in
+  case the phrasing in a future prompt implies otherwise.
+
+**Verified**: full pytest (1,414 passed, up from 1,411 — 4 new tests: 2 regression tests + their
+2 detector-fails-first companions), `tsc --noEmit`/`vite build` clean, headless-Chromium zero
+console errors/zero failed requests. Real corpus row-overlap check: 0 violations across all 18
+rows (full extent table reported: e.g. `computing` [68, 740] inside its [0, 788) panel,
+`voidcraft` [9652, 10324] inside its [9584, 10372) panel, no adjacent or enclosing overlaps
+anywhere). Zero name-bounds, indicator-bounds (1,576 checked) and edge-endpoints-in-cards (984
+checked) violations. Canvas dimensions confirmed unchanged (29,670 × 13,448px) with the
+mechanical reason why, not just the figure. Three screenshots: fit-to-viewport showing the full
+18-row stack with clean separation, a 100%-zoom boundary between two rows in the same research
+area (`computing` → `field_manipulation`), and a 100%-zoom boundary between two area groups
+(`voidcraft` → `Aeternum`, showing the extra `AREA_GROUP_GUTTER` clearance).

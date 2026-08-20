@@ -14,13 +14,27 @@ thresholds below.
 
 - At the minimum supported zoom level, a user can identify tier boundaries without reading node
   text.
-- **Tier bands are labelled with a sticky header that renders once across the full lane stack**
-  (P-2, P-5) — not once per lane. Since bands are global and identical across every lane, a tier
-  reads as a single unbroken vertical span from the standard-progression lane down through every
-  crisis lane, with one header at the top, e.g. a sticky band header reading "Tier 5" — rather
-  than each lane repeating its own copy. Labels remain legible or gracefully scale at low zoom,
-  for any enumerated tier including those past T9, and for the single, lane-spanning Repeatables
-  band.
+- ~~**Tier bands are labelled with a sticky header that renders once across the full lane
+  stack**~~ **Superseded (Stage 3 visual-fidelity session, later than D-16's row re-axis) — this
+  is the SECOND S-03 header criterion overridden by direct user review of the rendered result,
+  after the row re-axis already replaced "lane" with "row"; note the pattern so a future session
+  doesn't reintroduce either.** A first Stage 3 slice built a real viewport-pinned sticky header
+  per this criterion's letter — one band label, one row label, each swapping contents as the
+  camera moved. The user rejected it on sight: a banner floating in a fixed screen corner that
+  changes what it names as you scroll doesn't visually belong to any of the objects on screen, no
+  matter how correctly it tracks "current band"/"current row". The corrected requirement, per the
+  same review, is the opposite of "renders once": **a small, subdued tier-band label repeats
+  above every row's own populated band cell** (matching v1's treatment, which the user has
+  separately confirmed he's happy with — see CLAUDE.md's "Stage 3 visual-fidelity pass" bullet),
+  anchored in WORLD space like every other label so it scales and pans with the content instead of
+  fighting the viewport for a fixed corner. This costs the "single unbroken vertical span" framing
+  the old criterion argued for — a tier's identity is now read from many small repeated labels,
+  not one authoritative header — but two independent user reviews (rejecting sticky headers,
+  approving v1's repeated-label look) converge on the same answer, so the old framing is retired,
+  not patched. Labels are still expected to become illegible at low/fit-to-viewport zoom — this is
+  now the INTENDED behaviour, not a shortfall to fix: at overview zoom the user navigates by row
+  shape and colour, not by reading text, and world-anchored labels shrinking with zoom is exactly
+  what "scaling with the content like everything else" means.
 - The alternating treatment does not conflict with, or reduce the contrast of, the node colour
   coding in S-1 or the locked-state treatment in P-13.
 

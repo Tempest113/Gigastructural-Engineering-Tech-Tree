@@ -162,14 +162,43 @@ weight, and therefore research path — relevant to `EmpireTypeConstraint` and P
 
 ### Scope of ACOT and AoT
 
-The tree renders vanilla and Gigastructures technologies unconditionally. ACOT and AoT
-technologies are rendered only where they fall in the **rendering-scope closure** of a rendered
-technology — `prerequisite` edges only, pooled across all twelve profiles — so a rendered
-technology's prerequisite chain is never broken by an invisible gap. An ACOT/AoT technology with
-no rendered descendant is not emitted as a node. This is a build-time computation, not a
+**D-18 (`spec/decisions.md`) — the closure is DEPTH-1, not a full transitive closure. This
+supersedes this section's original justification below the line, kept only as historical
+record of what was superseded and why.** The tree renders vanilla and Gigastructures technologies
+unconditionally. An ACOT/AoT technology renders only when a rendered (vanilla/Gigastructures)
+technology names it **directly** in its own `prerequisites` block — no recursion. An ACOT/AoT
+technology reachable only through ANOTHER ACOT/AoT technology's own prerequisite chain does not
+render, even if that intermediate technology does. This is a build-time computation, not a
 user-facing filter — there is no checkbox and no mod-set URL state. Mod requirement is a
 `requiresMods: string[]` field rendered as a card badge (`ACOT`, `AoT`) — distinct from gates and
 from prerequisites — that communicates the requirement without toggling visibility.
+
+**The accepted cost, real and named, not hypothetical**: exactly 3 off-tree prerequisite links in
+the real corpus, all ACOT→ACOT — a rendered ACOT technology whose own card names a prerequisite
+that itself has no node. `tech_dark_matter_power_core_ae` ("Alpha-class Enigmatic Power") →
+`tech_precursor_design` ("Precursor Databank Analysis"); `tech_dark_matter_power_core_dm`
+("Delta-class Enigmatic Power") → `tech_dark_matter_power_core_enig` and → `tech_mine_dark_energy`.
+The user reviewed this exact set (surfaced by a reported over-inclusion complaint naming the first
+pair) and chose depth-1 over both the original full-closure rule and a considered middle option
+(rendering an out-of-closure prerequisite as a distinct stub/ghost node — rejected as
+disproportionate to 3 links). `tests/test_rendering_scope.py::
+test_depth_one_closure_off_tree_links_match_the_accepted_set` pins this exact 3-link set; a
+corpus refresh that creates more fails it loudly rather than silently degrading chain completeness
+further. Real measured effect: rendered node count 980 → 977, edges 989 → 984 (5 fewer
+`prerequisite` edges; `alternative`/`potential-gate` unaffected). Canvas dimensions and densest
+(row, band) cell were UNCHANGED by D-18 itself (30,840 × 9,736px at the `subgrid_width=4` in
+effect when D-18 shipped, `voidcraft`×T5=47) — none of the 3 dropped technologies was in the
+densest cell or its own band. (Canvas is now 29,670 × 13,448px under `subgrid_width=6`, the
+user's later D-17 pick — see D-17's own record; the densest cell is still `voidcraft`×T5=47,
+unaffected by either change.)
+
+**Original justification, superseded by D-18 above, kept for history**: the tree used to render
+ACOT and AoT technologies wherever they fell in the **rendering-scope closure** of a rendered
+technology — `prerequisite` edges only, pooled across all twelve profiles, so a rendered
+technology's prerequisite chain was never broken by an invisible gap — with an ACOT/AoT technology
+having no rendered descendant excluded as a node. The user reported this over-included: an
+ACOT/AoT technology reachable only through another ACOT/AoT technology, itself required by nothing
+actually rendered, still appeared. D-18 replaced this with depth-1.
 
 Rendering scope is a separate computation from **per-profile structural reachability**: because
 the closure above is profile-invariant, a node reachable via only one profile's tech-swap chain
@@ -223,7 +252,8 @@ unavailable. Output is always `(technology, empire profile) -> {state, reason}` 
 `{available, locked, uncertain}` — never a boolean (D-10/P-13).
 
 **D-10 splits into two distinct metrics, both computed over RENDERED nodes (P-16's closure —
-980 at last count), not the full 1,879 canonical technologies** — see `spec/decisions.md`'s D-10
+977 at last count, D-18's depth-1 ACOT/AoT closure, down from 980), not the full 1,879 canonical
+technologies** — see `spec/decisions.md`'s D-10
 for the full reasoning; summarised:
 
 - **Profile-dependent uncertainty** — a technology whose state varies by profile (some profiles
@@ -240,7 +270,7 @@ for the full reasoning; summarised:
   data-completeness figure with its own regression ratchet, but **NOT subject to the 10%
   ceiling** — a different quality signal, not a weaker version of the same one.
 
-The two denominators (all-1,879-canonical vs. rendered-980) give materially different, and
+The two denominators (all-1,879-canonical vs. rendered-977) give materially different, and
 oppositely-signed, answers: rendered-only uncertainty (26.84%) is *higher* than all-canonical
 (22.67%), because Gigastructures' own content — not unrendered ACOT/AoT bulk — is the
 concentration point (39.00% at-risk). Narrowing ACOT/AoT rendering scope does not fix a ceiling
@@ -278,11 +308,60 @@ feature than what's built), so any technology gated behind one falls to `uncerta
 what that trigger actually checks. `has_country_flag` (131 corpus occurrences, 82 distinct names)
 is confirmed to have no single resolvable pattern and is left fully unresolved.
 
+### Gates
+
+**Built (gate-classification session).** `pipeline/gate_patterns.py` classifies four registered
+trigger patterns into the schema's `Gate` shape, layered on top of P-14's universal
+`potential-gate` edge extraction — never removing or altering an edge, only adding a badge.
+Real corpus counts: `has_ascension_perk` (22 technologies), `has_technology` (22 technologies,
+25 instances — one-to-one with the 25 `potential-gate` edges), `has_gigastructural_constructs`
+(9), `has_galactic_wonders` (14) — 70 gate instances total over 60 technologies, 10 of which
+carry more than one instance (7 crossing two distinct mechanism types, 3 more carrying two
+`has_technology` targets each).
+
+**Curation is at the MECHANISM level, not the occurrence level.** Once a pattern is registered,
+every real occurrence badges — there is no further per-technology editorial filter. See
+`spec/P-03-gates.md`'s "Curation is at the MECHANISM level" note for the full reasoning (the
+alternative, a hand-curated per-occurrence subset, would be one more hand-maintained surface like
+the crisis-faction/flag/name override files, for no evidenced benefit at this corpus size).
+
+`has_gigastructural_constructs`/`has_galactic_wonders` are Gigastructures' own scripted-trigger
+wrappers, not literal `has_ascension_perk` checks — confirmed by direct inspection, not assumed
+from the names: `has_gigastructural_constructs` is a 1:1 wrapper for `ap_gigastructural_
+constructs`; `has_galactic_wonders` is an `OR` of the base `ap_galactic_wonders` perk plus 3
+DLC-ownership-variant perk IDs unlocking the same thing, displayed under the single canonical
+base id (the only one of the four that's actually vendored/localised). Both wrappers carry an
+`is_ai = yes` AI-only override branch the registry deliberately does not model, matching
+`pipeline.availability`'s existing treatment.
+
+**Zero interaction with availability evaluation.** All four registered keys were already in
+`pipeline.availability.EXCLUDED_KEYS` (an identity-element state) before this module existed —
+gate classification adds only display metadata.
+`tests/test_gate_patterns.py::test_gate_leaf_keys_matches_availabilitys_excluded_keys_exactly`
+pins the two lists staying in exact sync, so a future change to either without the other fails
+loudly. D-10's worst-case profile-dependent uncertainty is unaffected: still 33/977 (3.37%),
+asserted against the real corpus build
+(`tests/test_dataset_emit.py::test_gate_classification_leaves_d10_uncertainty_unchanged`), not
+assumed.
+
+Ordering (D-3): ascension-perk gates outrank technology gates; index 0 is the primary gate,
+the only one the node card renders (spec's "where space permits, additional gates render as
+compact secondary badges" for a technology with more than one gate is not built — only 10/977
+real technologies have a second gate instance). The popup shows every gate in the ordered list,
+each with its resolved icon and localised "Needs `<name>`" label.
+
+The spec's original "Tetradimensional Engineering" example of one technology gating another was
+checked against the real corpus and found wrong — `giga_tech_tetradimensional_engineering`
+gates several ascension perks, not any technology's `potential` block. Corrected in
+`spec/P-03-gates.md` to a real example (`giga_tech_amb_supertensiles_acot_alpha` →
+`tech_dark_matter_power_core_ae`), with the original example's refutation recorded rather than
+silently dropped.
+
 ### Tiers
 
 Tier range is **not** bounded. ACOT pushes tiers to T9 and beyond. Enumerate tier bands from
 the data. No fixed upper bound anywhere in layout, LOD, or band labelling. Measured against the
-real 980-node rendered corpus: 10 declared-tier bands (T0-T9) plus the terminal Repeatables band.
+real 977-node rendered corpus (D-18): 10 declared-tier bands (T0-T9) plus the terminal Repeatables band.
 
 **A node's band is its own declared `tier` field — never adjusted by graph depth (D-13,
 corrected from an earlier draft that promoted a node's displayed position) — with one declared
@@ -311,7 +390,9 @@ the same list — the `potential-gate` figure was never counted at all before th
 D-13 in `spec/decisions.md` for the full reasoning, the reconciliation, and worst cases.
 
 **Tier-source audit** (prompted by v1's reported wrong-placement failures — checked the source of
-every rendered node's declared tier, not assumed correct): of 980 rendered nodes, 930 (94.9%)
+every rendered node's declared tier, not assumed correct; pre-D-18 figures, not re-verified
+against the 977-node closure since none of the 3 dropped ACOT technologies belonged to the
+inline_script/@variable-tier subsets this audit tracks): of 980 rendered nodes, 930 (94.9%)
 have `tier` literal on the raw, unexpanded technology block; **50 (5.1%) — all
 `giga_tech_repeatable_*_cap` technologies — only get a `tier` field via `inline_script`
 expansion** (`giga_mega_repeatable.txt`'s template), exactly the bug class that produces wrong
@@ -329,9 +410,23 @@ machinery, since it's a literal field difference, not a variable-indirection iss
 
 ### Colour and pattern
 
-Background encodes research area. Outline encodes research area unless the tech is rare or
-dangerous, in which case that takes priority. Dangerous outranks rare. A tech that is both gets
-a 45° split outline, dangerous red on the top-left half.
+**Superseded by D-16's row re-axis (`spec/decisions.md`) — "background encodes research area" is
+no longer the per-card rule.** Colour and pattern now encode the ROW, not the card: an
+area-coloured header chip on a category row, faction colour and pattern as row backing on a
+faction row, cards themselves neutral dark. Rare/dangerous outline and badge remain the one
+per-card exception below, unchanged by the re-axis. **Research area is deliberately NOT
+colour-encoded inside a faction row** — a technology that is both crisis-sourced and, say,
+`voidcraft` shows its faction's colour, not its area's, once it's in that faction's row. This is
+an accepted loss, stated explicitly so it isn't rediscovered as a bug later: faction membership is
+mutually exclusive with category under D-16's row model (a technology is in exactly one row), so
+there is no second colour channel left to carry area once a technology is in a faction row — the
+row itself only has one colour to give. (Client rendering itself is a later slice; this section
+states the rule the renderer must follow, not that it's built yet.)
+
+Outline encodes research area unless the tech is rare or dangerous, in which case that takes
+priority. Dangerous outranks rare. A tech that is both gets a 45° split outline, dangerous red on
+the top-left half. (This per-card outline rule is unaffected by the row re-axis — it's about the
+CARD's own outline, not its background.)
 
 Colour is never the sole carrier. Rare and dangerous each also get a card badge. The LOD shedding
 sequence is one shared table (spec/S-03): gate label and repeatable shed first (<60% zoom), then
@@ -343,7 +438,14 @@ table rather than restating specific thresholds here.
 
 Crisis factions: Aeternum, Blokkats, Compound, Sirenalia, Katzenartig Imperium. Faction
 assignment is derived from tech ID, then from `potential`/prerequisites, then from a checked-in
-manual override file for the remainder.
+manual override file for the remainder. **This derivation (`pipeline/crisis_faction.py`) is
+completely unchanged by D-16** — D-16 only changed what CONSUMES the classification (row
+selection instead of lane selection); see D-16 in `spec/decisions.md`.
+
+**Connector colour (P-8) is a single neutral colour for every edge, not tail-classification
+colour** — `spec/P-08-connectors.md` is corrected to match the shipped Stage 3 slice 3
+implementation (`client/src/tokens.ts`'s `EDGE_COLOR`); see that spec file and CLAUDE.md's
+"Slice 3 — edges" bullet for the original decision and reasoning.
 
 Exact hex values live in `tokens/` as the single source of truth, consumed by node rendering
 and connector rendering alike. Do not hardcode colours in components.
@@ -360,7 +462,9 @@ Shown on the card and in the popup as `Repeatable: ×40`, or `Repeatable: ∞` w
 secondary) — never `costPerLevel` alone, never omitted for a repeatable card. See
 `spec/P-02-layout.md`'s "Cost display" section for the full rationale (in-game cost is
 approximate regardless of empire state; the scaling rate is the one figure the card can state
-truthfully) and the "Prerequisites"/schema sections for how a null `cost` (15/980 rendered nodes,
+truthfully) and the "Prerequisites"/schema sections for how a null `cost` (5/977 rendered nodes as
+of D-18 — a later correctness pass resolved 10 of the originally-reported 15 via their `cost`
+block's own `factor` sub-field, see `pipeline.dataset_emit._resolve_cost`'s docstring —
 unresolvable, never guessed at) is represented.
 
 **This is D-13's one declared exception to "bands are declared tier, full stop"**: a repeatable
@@ -453,6 +557,62 @@ English only for v1. The pipeline is language-parameterised so more languages ar
   away to make a build green: each is reviewed, and only a reviewed, adjacency-only,
   cannot-lex-differently mismatch is added to the checked-in `tests/clausewitz/
   roundtrip_allowlist.json` — read that file before touching it.
+- **The pipeline owns all geometry; the renderer consumes emitted positions and never recomputes
+  them from a parallel formula.** Any renderer-side value that is derivable from emitted geometry
+  (row/band extents, a cell's populated width, anything of that shape) MUST be derived from the
+  real emitted positions (`nodePositions`/`edgePolylines`, per `00-overview.md`), never
+  reimplemented client-side from the same inputs `pipeline/layout.py` consumes. Found the hard
+  way: `client/src/main.ts` once re-derived row/band geometry via its own copy of
+  `pipeline/layout.py`'s wrap/width formulas, and D-17's same-band depth-slot fix silently
+  desynced it — row panels, tier tints and cell labels drew nowhere near their actual cards, with
+  no error, no failing test, no warning, caught only by a headless screenshot. Two independent
+  implementations of the same geometry WILL drift the moment either one changes, and nothing
+  forces them to change together. The permanent fix, and the rule going forward: derive from the
+  real positions (min/max over the emitted `nodePositions`, grouped by row/band), so client and
+  server geometry cannot drift apart again regardless of how the underlying layout formula changes
+  in the future — not a periodic re-sync. **Audited for other instances of this pattern**: the
+  severe form (recomputing a multi-step DERIVED formula that can produce a different value than
+  the pipeline's own) is now eliminated for row/band geometry, the only place it existed. What
+  remains is a milder, harder-to-avoid form: a set of mirrored SCALAR constants
+  (`CARD_WIDTH`/`CARD_HEIGHT`, the gutter constants, `SUBGRID_WIDTH`, `AREA_ORDER`,
+  `FLOATS_PER_EDGE_POLYLINE`, `MIN_STUB`) that must still be kept numerically in sync with
+  `pipeline/layout.py`/`pipeline/geometry.py` by hand, since the dataset schema doesn't carry them
+  as data. Their blast radius if they drift is smaller than the row/band bug was — most now feed
+  only the degenerate zero-population-row/band fallback path or are diagnostic-only (`MIN_STUB`,
+  used only by `checkMinStubLength`). `CARD_WIDTH`/`CARD_HEIGHT` are the one genuinely
+  load-bearing pair, since they size the actual card draw call and the dataset carries corner
+  positions, not card dimensions. Not fixed this session (would mean adding card dimensions to the
+  schema) — flagged as a scoped follow-up rather than silently left looking fully closed.
+- **A second, DIFFERENT defect class produced the same visible symptom (rows overlapping) a later
+  session, and must not be confused with the parallel-formula bug above.** The screenshot-review
+  session's Item 4 (short-sub-grid-column vertical centring, `pipeline/layout.py`) introduced a
+  hard regression: `column_member_count`, a dict tracking each sub-grid column's own member
+  count, was keyed by `(row_id, col)` alone. `col` is BAND-RELATIVE — `depth_slot_start[(band_
+  index, depth)]` resets its own cursor to 0 for every band — so col 0 in one band and col 0 in a
+  LATER band of the SAME row are physically different columns (different x) but shared the same
+  dict key, silently SUMMING their member counts into one entry. That corrupted count could
+  exceed the row's real max (`row_row_counts[row_id]`) and drive the centring offset NEGATIVE,
+  shifting a column's cards upward past row 0 into the row above — real corpus example:
+  `column_member_count[('voidcraft', 0)]` corrupted to 37 against a real `row_row_counts` of 6,
+  producing `giga_tech_birch_world_1` at row **−16**. **This is a plain dict-keying bug (a missing
+  discriminator field), not a parallel-geometry violation** — nothing client-side re-derived
+  anything; `client/src/main.ts` correctly derived row panels from the (corrupted) emitted node
+  positions exactly as the rule above requires, and faithfully reproduced the bug rather than
+  masking or independently causing it. Confirmed directly (not assumed) that this rules out the
+  parallel-geometry rule as a second cause here. Fixed by keying on the full `(row_id, band_index,
+  col)` triple, which is unique by construction, plus a same-turn `assert centre_offset >= 0` in
+  `pipeline/layout.py` itself as a second line of defence. **The real lesson, and why it reached
+  the user**: the existing test suite stayed fully green through this regression — canvas
+  dimensions were genuinely unaffected (row HEIGHT is computed from `row_row_counts`, set in the
+  first pass and never touched by the buggy second pass; only individual cards' position WITHIN
+  their row was corrupted), and nothing asserted the actual invariant that matters (no two rows'
+  card-occupied extents may intersect, no node's row index is ever negative). A green suite proved
+  self-consistency, not correctness — the same lesson D-17's unbounded-stacking bug already taught
+  this project once, now recorded as a second occurrence.
+  `tests/test_layout_corpus.py::test_no_row_overlaps_and_every_card_within_its_own_row_bounds`
+  (real corpus) and `tests/test_layout.py::test_no_row_overlaps_when_the_same_row_spans_multiple_
+  bands` (fast synthetic regression case) are the missing invariant, added after this regression,
+  each proven capable of failing against the actual broken code before being trusted on the fix.
 
 ## Commands
 
@@ -479,875 +639,112 @@ session so far.
 
 ## Open items
 
-- Pattern tile for Blokkats needs tracing to clean SVG from the supplied flag image.
-- **Stage 1 (Extract) is complete**, and the dataset schema — the cross-language contract Stage 2
-  and Stage 3 both build against — is now written. See HANDOFF.md for the full picture.
-  `pipeline/clausewitz/` (tokeniser + recursive-descent parser, lossless AST, plus a round-trip
-  serialiser and corruption detector — see the Rules section) is built and green against every
-  fixture in `tests/fixtures/`. `pipeline/variables.py` (`@variable` resolution),
-  `pipeline/inline_scripts.py` (`inline_script` expansion), `pipeline/localisation/` (hand-written
-  parser for the YAML-*like* localisation format — not YAML, see the Rules section), and
-  `pipeline/icons/` (technology/ascension-perk icon resolution, DDS decode, deterministic,
-  size-capped atlas packing — see the Rules section) are all built, each with its own test module
-  (`tests/test_variables.py`, `tests/test_inline_scripts.py`, `tests/localisation/`,
-  `tests/icons/`).
-- **`schema/`** carries the JSON Schema for all five dataset artefacts (base dataset, empire
-  overlay, detail payload, search index, diagnostics — see "Dataset structure" above and
-  `spec/implementation-notes.md`'s Stage 2 section for the full field assignment).
-  `schema/generated/dataset-types.ts` is generated from it by
-  `tools/generate_typescript_types.py` (hand-written in Python — no Node/npm toolchain in this
-  environment, and D-12 already commits the pipeline to Python end to end) and checked in;
-  `tests/schema/test_typescript_drift.py` re-runs the generator and fails if the checked-in copy
-  doesn't match, so the two sides of the contract can't drift by hand-editing either end.
-  `pipeline/dataset_schema/` validates Python-side output against the schema (structural
-  validation, then a separate `schemaVersion`-support check — see
-  `UnsupportedSchemaVersionError`) and owns the canonical `EmpireProfileIndex` derivation
-  (`pipeline/dataset_schema/empire_profile.py`, strides derived from axis cardinalities at import
-  time, never hardcoded, with an import-time bijection assertion) plus the
-  `availabilityMatrix`/overlay consistency check. `tests/schema/` covers a minimal valid document
-  per artefact and the four required rejection shapes (unsupported version, missing required
-  field, invalid edge kind, boolean-where-three-state).
-  ~~**TODO(Stage 3):** `schema/generated/dataset-types.ts` has never actually been typechecked~~
-  **Closed, later session — see "Stage 3 toolchain foundation is built" below.** Zero `tsc`
-  errors, verified three ways, not just by the drift test's self-consistency check.
-- ~~One remaining Stage 2 handoff, recorded as a `TODO(Stage 2)` in `pipeline/icons/resolve.py`:
-  the atlas currently packs every resolvable icon across all four sources unconditionally.~~
-  **Done** (later session): `pipeline/icons/build.py`'s `filter_result_to_rendered_scope` filters
-  technology icon candidates to the P-16 980-node rendered set (ascension-perk icons deliberately
-  stay unfiltered — see HANDOFF.md's "Atlas content scope" note for why filtering them by the
-  technology closure would be the wrong criterion entirely). Real filtered figures: technology
-  atlas 4 sheets/8,387,616 bytes (unfiltered) → **2 sheets/4,564,314 bytes** (filtered); combined
-  with the unchanged 262,676-byte perk sheet, **total ~4.83 MB, down from ~8.65 MB unfiltered**.
-  `MAX_TOTAL_ATLAS_BYTES` re-calibrated from 12 MB to **6 MB** — deliberately kept below the old
-  unfiltered ceiling, unlike 12 MB, so a regression that silently disables filtering is now
-  actually caught by the tripwire. Icon atlas bytes remain excluded from P-10's ≤2 MB base-dataset
-  budget (P-9/`implementation-notes` require lazy icon loading; P-10's budget is defined as the
-  base dataset's compressed transfer size specifically). The other `TODO(Stage 2)` from the icon
-  pipeline — 19 technology/swap and 6 ascension-perk candidates recorded as unresolved diagnostics
-  — is now partially resolved by the filter: only 4 of the 19 technology candidates survive it
-  (their owning technology is actually rendered); the 6 ascension-perk candidates are unaffected
-  (perks aren't filtered) and still stand uninterpreted, same as before.
-- **D-10/P-13 availability evaluator is built**: `pipeline/availability.py` — the partial trigger
-  evaluator described above (three-valued short-circuit boolean evaluation, the 3 documented
-  ground-fact assumptions, `has_technology`/`has_ascension_perk`/`has_gigastructural_constructs`/
-  `has_galactic_wonders` exclusion — the latter two added after direct inspection showed they're
-  ascension-perk gates wearing a different name, not a new kind of undecidable leaf). Boolean
-  wrapper keys (`AND`/`OR`/`NOT`/`NOR`) are matched case-insensitively — the corpus genuinely uses
-  both `NOT = { ... }` and `not = { ... }` for the same semantics (found while building Task 3's
-  category survey; missing this silently treated real lowercase wrappers as unrecognised leaves).
-  Output is `AvailabilityResult(state, reason, description, category)` per `(technology, profile)`
-  pair. `pipeline/rendering_scope.py` implements P-16's closure as real code (BFS over resolved
-  `prerequisites`, matching HANDOFF.md's hand-computed 7-technology/980-rendered-node measurement
-  exactly) so both D-10 metrics are computed over the EXACT rendered set, not an approximation.
-  `pipeline/trigger_text.py` is the shared trigger-condition -> text/category component HANDOFF.md
-  flagged as missing — `describe_condition()` (best-effort human-readable phrasing, also usable
-  for P-12.8's weight-modifier condition text) and `categorize_leaf()` (classifies an undecidable
-  leaf into a `ReasonCategory`, corpus-derived, not designed up front — see that module).
-  `pipeline/lock_reason_overrides.py` loads `config/lock_reason_overrides.txt` (same format/review
-  bar as `config/overwrite_overrides.txt`, seeded empty — the real corpus currently has zero
-  LOCKED results that fall back to unphrased raw trigger text) and
-  `needs_lock_reason_override()`/`resolve_lock_reason()`/`build_missing_lock_reason_overrides()`
-  wire P-13's "warn when an override is missing" requirement. `survey_uncertainty()` computes the
-  D-10 metric split; `classify_d10_status()`/`build_d10_diagnostics_section()` apply the
-  3%/10%/ratchet thresholds and produce the `schema/diagnostics.schema.json`-shaped
-  `profileDependentUncertainty`/`unconditionalUncertainty` sections (that schema was updated in
-  the same session — see below). Tests: `tests/test_availability.py`,
-  `tests/test_trigger_text.py`, `tests/test_lock_reason_overrides.py`,
-  `tests/test_rendering_scope.py` (all synthetic, mechanism coverage), plus
-  `tests/test_availability_corpus.py`/`tests/test_rendering_scope.py`'s real-corpus tests (skipped
-  when `vendor/` isn't populated).
+Full build history — every decision, measured figure, and defect found in past sessions — moved
+to `docs/BUILD-LOG.md` in a reconciliation session (CLAUDE.md had become an append-only session
+log rather than a list of open items; see that file's own header note). This section states only
+what is genuinely still open, with a pointer to detail elsewhere. Locked, load-bearing decisions
+live in this file's own body above and in `spec/decisions.md`, not here.
 
-  **Real measured rates, over the EXACT 980-rendered-node P-16 closure (both metrics share this
-  denominator, per this file's D-10 section)**: **3.37% worst-case profile-dependent uncertain**
-  (below HANDOFF.md's 5.3% upper-bound projection, as expected — the projection counted "could
-  vary by profile", the real short-circuit logic pins it lower; **confirmed to actually cross the
-  3% warn threshold** — `classify_d10_status(0.0337) == "warn"`, asserted directly in
-  `tests/test_availability_corpus.py`, not just eyeballed from a printed rate) and **21.33%
-  unconditional uncertain (209/980)**.
-
-  **This figure moved twice** (209 → 259 → 209) **before settling here — see the "`giga_tech_
-  repeatable_*_cap` correctly categorized — CONFIG_GATED" bullet further down this section for
-  the full history, both corrections, the re-derived category-distribution table, and why 209
-  landing back where it started is a coincidence of arithmetic, not evidence nothing changed.**
-  In short: the original 209 was wrong (raw-block parsing skipped 50 real technologies' gating
-  conditions entirely); 259 was also wrong, differently (those 50, once evaluated correctly,
-  were classified `uncertain` when their `potential` actually resolves determinately); 209 is
-  now right, because those 50 correctly resolve to `config-gated` — a fourth `AvailabilityState`,
-  not `uncertain` and not `locked` — and so belong in neither this metric nor its `locked`
-  counterpart. The category distribution over this final 209-set is byte-identical to the
-  original pre-correction table (89/41/34/34/7/4 — crisis/story, origin, opaque-country-state,
-  ethics/civic, unclassified, mod-content) — restated below rather than in this paragraph, since
-  it's identical to what was already documented before any of this session's or the previous
-  session's corrections began. `has_country_flag`'s crisis/story sub-split is still a
-  name-pattern heuristic, not individually verified per flag (see `_looks_like_story_progress`).
-
-  **Defect class, not three unrelated bugs (Stage 2 cleanup session).** Three components have now
-  independently produced a plausible-but-wrong answer, with no error raised, by reading
-  `giga_tech_repeatable_*`-family technology data by a route other than the full expanded
-  canonical record: (1) tier resolution — 50 `_cap` nodes have no `tier` field pre-expansion (P-2's
-  tier-source audit); (2) `pipeline.layout.is_repeatable` — a related but mechanistically distinct
-  bug (a sign-only `levels < 0` predicate missing 12 finite-level repeatables in the SAME family,
-  not itself a raw-vs-expanded input problem, since layout's real-corpus path was already
-  expansion-fed — see the "Repeatables" section); (3) this section's `unconditionalUncertainty` —
-  50 `_cap` nodes have no `potential` field pre-expansion. (1) and (3) are the same mechanism
-  (expansion-only field) applied to two different fields; (2) shares the same *family* and the
-  same *symptom* (a plausible wrong answer, zero errors, discovered only by independently checking
-  against real evidence — a screenshot for (2), a hand-recomputation for (3)) without sharing the
-  exact cause. **The actionable generalisation**: any component that acquires technology data by a
-  route other than the full expanded canonical record is at risk of this failure mode, and the
-  `giga_tech_repeatable_*` family is the reliable canary for it, because enough of that family's
-  own data (tier, potential, and — via `giga_mega_repeatable.txt`'s shared template — probably
-  other fields too) exists ONLY post-expansion that a raw-block consumer fails silently rather
-  than loudly. See the audit below for which of this pipeline's other components read technology
-  blocks, and by which route.
-
-  **Audit: every component that reads a technology block, and its input route** (Stage 2 cleanup
-  session, reported not fixed — see HANDOFF.md for the one gap found and its scoped follow-up):
-
-  | Component | Reads technology blocks via | Expanded? |
-  | --- | --- | --- |
-  | `pipeline/overwrites.py` (`collect_technology_definitions`, diffing, `ordered_prerequisites`, `alternative_prerequisite_groups`) | `Document`s passed in by the caller | Caller-dependent — never expands itself |
-  | `pipeline/rendering_scope.py` | `TechnologyDefinition.block` from `overwrites`' history | Caller-dependent, same as above |
-  | `pipeline/crisis_faction.py` | Same | Caller-dependent, same as above |
-  | `pipeline/layout.py` (`compute_layout`, `resolve_declared_tier`, `is_repeatable`, `category_of`) | `TechnologyLayoutInput.block`, supplied by the caller | Caller-dependent; every real corpus test/emission call site feeds it expanded blocks (verified) |
-  | `pipeline/edges.py` (`compute_typed_edges`) | `dict[str, Block]` passed in by the caller | Caller-dependent, same as above |
-  | `pipeline/availability.py` (`evaluate_trigger_block` and friends) | A `Block` passed in by the caller | Caller-dependent — **this is exactly where the bug lived**: the evaluator itself was always correct, its caller (the old test fixture) fed it the wrong input |
-  | `pipeline/dataset_emit.py` | Loads and expands technology documents itself, once, in `build_context` | Always expanded — verified, this is the one component with its own loading path rather than depending on a caller |
-  | `pipeline/icons/resolve.py`/`build.py` (`collect_candidates`) | Parses technology/ascension-perk files directly via `parse_file`, no caller-supplied option at all | **NOT expanded — reads raw, unexpanded blocks unconditionally, no way to pass expanded documents in.** |
-
-  **Every pipeline module above that takes a block as a parameter is correct-by-construction and
-  depends entirely on its caller** — none of them expands internally, and none of them is wrong on
-  its own terms. The failure mode lives at the CALL SITE, not in these modules, which is exactly
-  why the bug was invisible: `pipeline/layout.py`'s and `pipeline/dataset_emit.py`'s real call
-  sites already expand correctly (verified, not assumed), so the same shared functions are
-  correct when called from there and were wrong only when called from
-  `tests/test_availability_corpus.py`'s own fixture.
-
-  **One real, not-yet-audited-away gap found**: `pipeline/icons/resolve.py`'s `collect_candidates`
-  parses `common/technology`/`common/ascension_perks` files directly with `parse_file`, with no
-  `inline_script`-expansion step anywhere in the icon pipeline, and no parameter to accept
-  pre-expanded documents even if a caller wanted to supply them. Every one of the 50
-  `giga_tech_repeatable_*_cap` technologies' icon resolution consequently runs off a raw block —
-  **unaffected in practice today** (their `icon` field, if any, and their filename-convention
-  fallback don't come from anything the `giga_mega_repeatable.txt` template splices in — checked:
-  none of the 50 candidates is unresolved for a reason traceable to a missing expansion), but this
-  is exactly the shape of gap that produced all three defects above, just not yet triggered for
-  icons. **Not fixed in this session** (audit only, per this session's scope) — a follow-up should
-  scope whether icon candidate collection needs the same `inline_script` expansion pass every
-  other Stage 2 consumer already gets, or whether icon resolution's specific field set (`icon`,
-  `technology_swap`/`tradition_swap`, `inherit_icon`) is safely never inline_script-templated in
-  the real corpus (unverified either way — this audit checked today's zero-impact outcome, not the
-  general question).
-
-  **Leaf-matcher case-sensitivity audit** (prompted by the boolean-wrapper case bug above):
-  checked every known leaf key (`is_nomadic`, `is_gestalt`, `country_uses_bio_ships`,
-  `has_country_flag`, `has_global_flag`, `has_dlc`/`host_has_dlc`, `has_technology`,
-  `has_ascension_perk`, `is_fallen_empire`, `has_ethic`, `has_origin`, `has_valid_civic`, ...) for
-  case variants and found none in the real corpus; `= yes`/`= no` values are always lowercase
-  (1,824 / 667 occurrences, zero `Yes`/`YES`/`No`/`NO` variants); every mod-config toggle suffix
-  match (`_forbidden`/`_disabled`/`_OFF`) has no lowercase counterpart being missed; and every
-  axis-fact leaf in the corpus uses `=` exclusively, never `!=`/`<>`. No further case- or
-  syntax-variant bug found — the boolean-wrapper case bug was real but isolated, not a symptom of
-  a broader pattern in leaf matching.
-- **D-7/P-5 crisis-faction derivation is built**: `pipeline/crisis_faction.py` implements the
-  three-step rule D-7 only stated before now — technology ID (`classify_by_tech_id`), then
-  prerequisite-chain inheritance (`classify_by_prerequisite_inheritance`, iterated to a fixed
-  point so a chain of inherited classifications propagates fully regardless of processing order),
-  then `config/crisis_faction_overrides.txt` (loaded by `pipeline/crisis_faction_overrides.py`,
-  same format/review bar as the other override tables — seeded empty, and uniquely among this
-  project's override tables explicitly allowed to CORRECT an automatic result, not just fill a
-  gap, since faction membership is closer to an editorial call). **Deliberately does NOT
-  implement `potential`-block flag inspection** as part of step 2, despite D-7's "potential and
-  prerequisite inspection" wording — tried against the real corpus and found to produce two
-  confirmed false positives (`tech_sm_autocannons` is EHOF/Urmazin-trader content referencing a
-  Compound weapon-compatibility bypass flag, not Compound membership; `giga_tech_
-  tetradimensional_engineering` is a standard physics tech with an alternate Blokkat-crisis
-  unlock path, not a Blokkats-lane technology) — both confirmed by reading the actual block, not
-  guessed from the flag name. **Real derived counts, over the 980-node P-16 rendered set**:
-  Standard 925, Blokkats 42, Sirenalia 7, Aeternum 3, Katzenartig Imperium 3, **Compound 0**.
-  Compound's zero is a confirmed real zero, not a classifier gap: `giga_08_ehof_components.txt`
-  contains seven `tech_compound_*` technology blocks, every one commented out in the vendored
-  source — Compound's technology content doesn't exist as live, parseable data in this corpus
-  snapshot. **Do not rebuild or extend the classifier chasing Compound content on this basis** —
-  there is nothing in the current corpus for a smarter derivation to find; re-check only after a
-  Gigastructures version bump that could plausibly have uncommented the content (re-run
-  `tests/test_crisis_faction_corpus.py::test_compound_technologies_are_commented_out_in_the_vendored_corpus`,
-  which fails loudly the moment that's no longer true). **The Compound lane MUST still be
-  supported end-to-end in the schema and renderer despite its current zero population** — D-7
-  names five factions unconditionally, `pipeline/crisis_faction.py`'s `CRISIS_FACTIONS` already
-  enumerates all five regardless of live content, and the content may be uncommented in a later
-  mod release without any pipeline change being needed if the lane was never special-cased down
-  to "four factions" anywhere. Step 2 and step 3 both contribute zero additional nodes beyond
-  step 1 for the current corpus — step 1 (technology ID) is confirmed to be the entire
-  currently-derivable signal, a finding, not an assumption. Tests: `tests/test_crisis_faction.py`,
-  `tests/test_crisis_faction_overrides.py` (synthetic), `tests/test_crisis_faction_corpus.py`
-  (real corpus, skipped when `vendor/` isn't populated — asserts the corrected per-faction counts
-  above so a future corpus refresh that changes them fails a test instead of drifting silently,
-  and directly asserts both false-positive candidates resolve to the standard lane).
-- **P-2/D-13 layout is built**: `pipeline/layout.py` (band/lane/sub-grid position computation)
-  and `pipeline/geometry.py` (packs it into `float32` typed-array side-files + `GeometryRef`
-  pointers, per `00-overview.md`). Two correctness gaps the tier-source audit found were closed
-  first, both tested: `pipeline.overwrites.resolve_variable_overwrites` now checks `tier` for
-  cross-source `@variable` overwrites (not just `cost`/`weight`); `pipeline.layout.
-  resolve_declared_tier` hard-fails (`UnresolvedTierError`) on any rendered node whose declared
-  tier can't be resolved after `inline_script` expansion, never a silent default. Bands are a
-  node's own declared `tier` — D-13's model, not the superseded computed-column one. Computed
-  longest-path position is internal only: it orders nodes within a band's category-grouped
-  N=4-wide sub-grid (`(category, computed_position, key)`, deterministic) and gives backward-edge
-  routing a consistent signal. Lanes are the fixed D-7 order (`LANE_ORDER`, standard + 5 crisis
-  factions), always all six, including Compound at its confirmed-real zero population. Edges are
-  routed as simple 4-point orthogonal polylines (H-V-H) with a deterministic hash-based channel
-  offset (the hash now includes `kind`, not just `from`/`to`, so the 4 pairs that are both a
-  `prerequisite` and a `potential-gate` edge don't draw identical overlapping polylines) — a
-  first-pass router, not a full crossing-minimising/obstacle-avoiding one; that remains open
-  follow-on work, noted in P-2 rather than silently claimed done. `edges[].backward`
-  (`schema/common.schema.json`) flags a backward edge for distinct rendering treatment;
-  `edges[].bandSpan` (added for P-14 edge typing, see below) carries the signed band distance on
-  every edge, not just backward ones.
-
-  **Real run over the exact 980-node P-16 rendered set** (`tests/test_layout_corpus.py`): all 980
-  resolve — 0 `UnresolvedTierError`, 0 `LayoutCycleError` (the rendered prerequisite graph is
-  confirmed acyclic). 34 of 989 rendered edges are backward (25 `prerequisite` + 2 `alternative` +
-  7 `potential-gate` — see the P-14 edge-typing bullet below for the full breakdown; this figure
-  superseded the original 27/964 `prerequisite`-only measurement in the same session it was made).
-  Tests: `tests/test_layout.py`, `tests/test_geometry.py` (synthetic, mechanism coverage),
-  `tests/test_layout_corpus.py` (real corpus, skipped when `vendor/` isn't populated — asserts the
-  real canvas dimensions, densest cell, and backward-edge count so a corpus refresh that silently
-  changes any of them fails a test). Schema updated to match (`schema/base-dataset.schema.json`'s
-  stale per-technology `column` field — described as "may exceed tier after promotion", the
-  superseded model — removed entirely; `tierBands[].column` renamed `bandIndex` with a description
-  matching D-13; `schema/common.schema.json`'s `Edge` gained the required `backward` field); TS
-  types regenerated; fixtures updated; schema tests green.
-
-  **Repeatable-membership correction (later session, found against a user's v1 screenshot, not by
-  any test)**: `is_repeatable` widened from "`levels < 0`" to "`levels` field present at all" —
-  see "Repeatables" above for the corpus finding (12 additional finite-level repeatables) and D-13
-  in `spec/decisions.md` for the exception this membership rule feeds. Real figures shift
-  accordingly: **canvas 12,544 × 8,146px** (was 8,350px — the 12 newly-recognised repeatables
-  shrink their old declared-tier band rows and grow the Repeatables band), densest actual band
-  cell **Standard × T5 = 253 nodes** (was 261 — 8 of the 12 were Standard-lane, declared-T5
-  nodes that moved into Repeatables). Sink property re-verified over the corrected 88-node set:
-  881 non-repeatable-to-non-repeatable prerequisite edges + 83 non-repeatable→repeatable edges =
-  964 total (cross-checks the earlier 891-vs-964 reconciliation); 0 repeatable→non-repeatable, 0
-  repeatable→repeatable, so a repeatable node can never source an edge, let alone a backward one.
-  The 27 backward edges are the same 27 by key under both the old and corrected membership — none
-  touches a repeatable node either way. `schema/base-dataset.schema.json`'s `repeatable` field
-  changed shape from an always-present object to `null | { levels }` (`null` = not repeatable;
-  object = repeatable, `levels` finite int or `null` for unbounded) — the old always-object shape
-  had no way to represent "not repeatable" without also (incorrectly) claiming "unbounded
-  repeatable" via `{"levels": null}`, which is what the four base-dataset fixtures were doing for
-  their non-repeatable example technology before this session corrected them. TS types
-  regenerated; `tests/schema/test_validation.py` gained explicit coverage of all three shapes
-  (null / finite / unbounded) plus the zero-level rejection.
-
-- **P-14 full edge typing is built** (later session): `pipeline/edges.py` — the last structural
-  gap in Stage 2 before dataset emission. Layout previously built `prerequisite` edges only
-  (`pipeline.overwrites.ordered_prerequisites`, called from `pipeline.layout._route_edges`); all
-  three P-14 kinds are now real, extracted and typed:
-  - **`prerequisite`** — `pipeline.overwrites.ordered_prerequisites`, corrected to exclude nested
-    `OR`-branch members (see "Prerequisites" above) — 888 edges.
-  - **`alternative`** — `pipeline.overwrites.alternative_prerequisite_groups`, the OR-branch
-    members `ordered_prerequisites` used to wrongly flatten in — 76 edges across 35 groups (32
-    technologies), each group carrying a `groupId` (`f"{owner}#alt{index}"`,
-    `pipeline.edges.extract_alternative_edges`).
-  - **`potential-gate`** — `pipeline.edges.extract_potential_gate_edges`, `potential`-only,
-    scope-disciplined to match `pipeline.availability._evaluate_node` exactly (only descend into
-    `AND`/`OR`/`NOT`/`NOR`; any other block-valued field is an opaque leaf) — 25 edges. This
-    discipline is load-bearing, not style: an earlier, unscoped draft of the extraction found a
-    false self-loop on `tech_ehof_sentient_tier_7`, whose `potential` nests
-    `has_technology = tech_ehof_sentient_tier_7` inside `count_country = { limit = { OR = {...}
-    } } }` — checking OTHER empires in the galaxy for a scarcity mechanic, not the researching
-    empire's own state.
-    `tests/test_edges.py::test_count_country_nested_has_technology_does_not_produce_an_edge` and
-    `tests/test_layout_corpus.py::test_tech_ehof_sentient_tier_7_has_no_self_loop_edge` are the
-    permanent regression guards.
-
-  **Two standing diagnostics** (`pipeline.edges.EdgeExtractionDiagnostics`, never a build
-  failure): `has_technology_under_allow` (P-3's "potential and allow" framing is aspirational —
-  `allow` never occurs on a rendered technology today, 0/980, verified; fires if a future mod
-  update introduces one) and `negated_potential_gate` (a `has_technology` inside an odd `NOT`/
-  `NOR` nesting is a negative dependency with no `EdgeKind` representation today — 0 real
-  occurrences; excluded from edge output and diagnosed rather than emitted as a wrong-polarity
-  edge). Both confirmed empty on the real corpus
-  (`tests/test_layout_corpus.py::test_no_has_technology_under_allow_on_real_corpus`,
-  `::test_no_negated_potential_gate_on_real_corpus`).
-
-  **Edge-kind membership is NOT mutually exclusive per `(from, to)` pair** — 4 real pairs are both
-  a `prerequisite` and a `potential-gate` (e.g.
-  `tech_mega_engineering -> giga_tech_arkship_neutronium_harvester`); both are emitted as distinct
-  `TypedEdge` records. Collapsing them for display, if ever wanted, is a Stage 3 rendering
-  decision over the emitted data, not a data-model one (`spec/P-14-unconventional-prereqs.md`).
-
-  **P-16's rendering-scope closure stays `prerequisite`-only**, decided on evidence
-  (`spec/P-16-mod-requirements.md`): recomputing it with `alternative` treated as traversable
-  changes nothing on the real corpus (identical 7-technology closure, identical 980 rendered
-  nodes, all four "supertensile" trigger technologies reach ACOT/AoT via a true prerequisite
-  chain). The forward-looking risk is mitigated by a standing diagnostic, not a closure change:
-  `pipeline.rendering_scope.compute_alternative_only_gaps`, empty on the real corpus
-  (`tests/test_rendering_scope.py::test_real_corpus_has_no_alternative_only_gaps`).
-
-  **`pipeline/rendering_scope.py` and `pipeline/crisis_faction.py` needed zero code changes** —
-  both already consumed `ordered_prerequisites()`, so correcting that function to exclude
-  `OR`-branch members fixed both automatically. Measured effect of the fix (Task 1's audit, before
-  implementing): `crisis_faction.py`'s D-7 step-2 inheritance — a real 0-technology change (no
-  real-corpus classification ever actually depended on an OR member); `pipeline.layout`'s internal
-  `computed_position` (never displayed, D-13) — 142 nodes shift by 1-3 internally, with **canvas
-  dimensions and densest band cell confirmed unchanged** (12,544×8,146px, Standard×T5=253) since
-  bands are declared tier and `computed_position` only orders within a band — asserted explicitly
-  in `tests/test_layout_corpus.py::test_densest_actual_band_cell_and_canvas_dimensions`'s own
-  docstring, not just carried as an assumption. `pipeline/availability.py` was confirmed to never
-  consume `prerequisites` at all (P-16's per-profile structural-reachability check — the consumer
-  that WOULD have turned OR-conflation into a false `locked` result — is specified but still not
-  built; fixing the flattening now, before that check exists, is exactly the point: the bug was
-  free to fix today and becomes a reachability bug the moment that check is written against the
-  conflated list).
-
-  **Final real figures, over the 980-node rendered set** (`tests/test_layout_corpus.py`,
-  `tests/test_edges.py`, `tests/test_rendering_scope.py`): **989 total edges = 888 prerequisite +
-  76 alternative + 25 potential-gate.** Sink property holds over the full set: 906
-  non-repeatable-to-non-repeatable + 83 non-repeatable→repeatable = 989, 0 repeatable→non-
-  repeatable, 0 repeatable→repeatable. Backward: 34 = 25 + 2 + 7 (see the "Tiers" section above
-  for the full reconciliation against the earlier 27/891 and 27/881 figures). `schema/
-  common.schema.json`'s `Edge` gained `groupId` (nullable, `alternative`-only) and `bandSpan`
-  (signed, every edge); TS types regenerated; the one Edge-bearing schema fixture updated;
-  `pipeline/geometry.py`'s `pack_edge_polylines` index dicts gained the same two fields.
-  `spec/P-14-unconventional-prereqs.md`'s Requirement section reworded: an earlier draft described
-  `alternative` as a profile-relative relabeling of whichever kind is "active" for the selected
-  empire profile, which is architecturally impossible (`Edge.kind` lives in the profile-invariant
-  base dataset; only the *active edge set* varies per profile, in the empire-overlay artefact) —
-  `alternative` is, and operationally always was, the nested-`OR`-inside-`prerequisites`
-  construct P-08 already defined edge direction for. `spec/P-08-connectors.md`'s backward-edge
-  characterization ("1-2 bands back, small and short-range") is now explicitly rescoped to
-  `prerequisite`/`alternative`; `potential-gate`'s real distribution (up to 5 bands back) is
-  recorded separately with its own `TODO(Stage 3)` routing decision, deliberately not designed
-  here. Tests: `tests/test_edges.py` (synthetic, mechanism coverage — scope discipline, group IDs,
-  the count_country regression, the two diagnostics, dual-kind pairs),
-  `tests/test_overwrites.py`/`tests/test_overwrites_corpus.py` (updated for
-  `ordered_prerequisites`'s corrected contract and the new `alternative_prerequisite_groups`),
-  `tests/test_rendering_scope.py` (the new tripwire diagnostic), `tests/test_layout.py`/
-  `tests/test_layout_corpus.py` (the full three-kind edge set wired through real layout output).
-- **Stage 2 dataset emission is built** (later session): `pipeline/dataset_emit.py` assembles all
-  five schema'd artefacts from every already-built Stage 2 component (P-15 overwrites, P-13
-  availability, P-16 rendering scope, D-7 crisis faction, P-2/P-14 layout+edges, filtered icon
-  atlases) and validates every one against its schema as part of the build
-  (`pipeline.dataset_schema.validate_*`) — an invalid artefact raises during assembly, never a
-  separate optional check. `tests/test_dataset_emit.py` runs the real build end to end against the
-  vendored corpus: all 980 technologies, all 989 edges, all 12 empire overlays, all 980 detail
-  payloads, the search index, and diagnostics — every one schema-valid, plus a direct
-  `availabilityMatrix`/overlay consistency cross-check
-  (`pipeline.dataset_schema.empire_profile.check_availability_matrix_matches_overlays`).
-
-  **Real measured base-dataset transfer size: ~64 KB compressed** (65,585 bytes: 54,264 JSON +
-  2,911 node side-file + 8,410 edge side-file, gzip level 9) — comfortably under P-10's 2 MB
-  budget, but a real finding worth its own writeup rather than a quiet update: the pre-build
-  projection was ~275-305 KB, and the **real measured compression ratio is 14.29x**, well above
-  the 6-9x range the projection assumed (itself drawn from the deploy-spike's 9.34x synthetic
-  ratio, with an explicit caveat that real content should compress *worse* than synthetic, not
-  better). The projection held directionally (comfortably under budget) but its specific method
-  was wrong, not just imprecise: the deploy-spike's synthetic ~1,878-record blob was dominated by
-  free-text name/description-shaped content, while the real base dataset's size is dominated by
-  small, highly-repetitive structured JSON — 980 near-identically-shaped technology records, each
-  carrying a 12-slot enum array (`availabilityMatrix`), mostly-empty arrays (`gates`, `requiresMods`
-  for 95%+ of nodes), and `null` (`crisisFaction` for 925/980) — exactly the shape gzip compresses
-  far better than prose. Free-text content (descriptions) isn't even in the base dataset; it's in
-  the lazy detail payloads. The lesson: a synthetic-content compression estimate is not a reliable
-  stand-in for real structured-JSON compression, in either direction — re-measure against the real
-  shape once it exists, don't extrapolate from a differently-shaped proxy.
-
-  **Other four artefacts, measured for the first time** (never part of P-10's budget, but Stage 3's
-  loading design needs real numbers): empire overlays ~486 KB raw / ~43 KB gz each (12 total: 5.8 MB
-  raw / 512 KB gz); detail payloads 630 KB raw combined, 384 KB gz fetched individually per
-  technology vs. 90 KB gz if batched into one file (batching wins substantially — worth deciding
-  before Stage 3 commits to a fetch granularity); search index 297 KB raw / 64 KB gz; diagnostics
-  48 KB raw / 4.4 KB gz.
-
-  **Real finding, not a bug in this emission code**: `unconditionalUncertainty.count` is **259**
-  (26.4%), not the previously-published **209** (21.33%) — CLAUDE.md's "Availability evaluator"
-  section below is corrected to match. Same evaluator, same 980-node closure; the difference is
-  that `pipeline/dataset_emit.py` evaluates `potential` blocks from `inline_script`-EXPANDED
-  technology definitions throughout, while `tests/test_availability_corpus.py` (the source of the
-  209 figure) parses raw, unexpanded blocks. All 50 `giga_tech_repeatable_*_cap` technologies —
-  the exact same group P-2's tier-source audit already found only gets a `tier` field via
-  `inline_script` expansion — likewise only get their real `potential` field via expansion; on the
-  raw block they have no `potential` at all, so the unexpanded survey silently treats all 50 as
-  unconditionally AVAILABLE regardless of their actual (real, inline_script-supplied) gating
-  condition. 259 − 209 = 50, exactly the cap-group size — confirmed directly, not inferred from
-  the arithmetic coincidence alone (`tests/test_dataset_emit.py::
-  test_diagnostics_validates_and_reports_the_unconditional_uncertain_finding` asserts every one of
-  the 50 has a real `potential` block post-expansion). ~~`tests/test_availability_corpus.py` itself
-  is not fixed in this session.~~ **Fixed in the following Stage 2 cleanup session** — see this
-  file's "Availability evaluator" section for the full writeup, the re-seeded ratchet, the moved
-  category-distribution proportions, and the defect-class note this joined. The profile-dependent
-  worst-case figure (3.37%) is UNCHANGED and matches exactly — expansion only affects technologies
-  whose `potential` itself is inline_script-templated, and none of those 50 happens to be the
-  profile-dependent worst case.
-
-  **Known v1 scope limitations** (each schema-valid, none silently fabricated — see the module
-  docstring for the full list): `appliesToEmpireTypes` is unconstrained on every edge (a real
-  per-edge empire-type constraint extractor is new scope beyond what P-14 built); `activeEdgeIds`
-  is therefore every edge index for every profile; `gates` is always `[]`
-  (P-3's gate-pattern-registry classification pass isn't built — already tracked as open before
-  this session); `repositoryLink`'s wiki URLs aren't live-validated (no network access) and its
-  `lineRange` uses the block's start line for both ends (no end-of-block line is tracked in the
-  AST). ~~`swapMappings` is always `[]`~~ **Closed in a later session — see D-14 below.**
-- **Small targeted correctness pass, prompted by a manual review of `giga_mega_repeatable.txt`**
-  (later session, three independent items):
-
-  1. **Boolean-operator case-sensitivity — audited, not a bug.** The template's `potential` block
-     uses lowercase `not = { has_global_flag = $name$_disabled }`. Both walkers that descend only
-     into `AND`/`OR`/`NOT`/`NOR` (`pipeline/availability.py`'s `_evaluate_node`,
-     `pipeline/edges.py`'s `_scoped_has_technology`) already normalise to uppercase before
-     comparing (`key.upper()`) — confirmed by reading the code, not assumed from the earlier
-     "case-insensitive" claim. **Real corpus case survey, scoped to `potential` blocks across all
-     1,879 canonical technologies**: `NOT`=111/`not`=50, `OR`=62/`or`=5, `AND`=29 (0 lowercase in
-     this scope), `NOR`=17 (0 lowercase in this scope). **54 distinct rendered technologies carry
-     a lowercase operator in `potential`** — 50 are the `giga_tech_repeatable_*_cap` family (all
-     `not`), but **4 are outside it** (`giga_tech_birch_world_1` — 2×`or`,
-     `giga_tech_planetary_seeder_nexus`, `tech_qnm_disruptors`, `tech_sm_autocannons` — 1×`or`
-     each), confirming lowercase isn't confined to the repeatable-cap family, as expected. No fix
-     needed; added a case-insensitivity regression test to `pipeline/edges.py`'s test suite
-     (`tests/test_edges.py::test_extract_potential_gate_edges_boolean_wrappers_are_case_insensitive`
-     — this walker had none before) and extended `pipeline/availability.py`'s existing one to
-     cover lowercase `and`/`nor` too (it only covered `not`/`or`).
-
-  2. **`cost`/`costPerLevel` added to the base dataset.** Neither was carried in
-     `schema/base-dataset.schema.json` before this session — `cost` wasn't in the schema at all
-     despite `00-overview.md`'s glossary naming "research cost" as a card field, and repeatables'
-     `cost_per_level` (the real v1 gap: a repeatable card showing only the bare first-level cost
-     misrepresents the commitment) existed nowhere in any artefact. Added: a top-level `cost`
-     field (`number | null` — null when unresolvable, never guessed/defaulted to 0, matching D-4's
-     "no evaluated weight" discipline) and `repeatable.costPerLevel` (`number | null`, required
-     alongside `levels` whenever `repeatable` is non-null). **Decision, recorded in
-     `spec/P-02-layout.md`'s new "Cost display" section**: base `cost` is the primary displayed
-     figure, `costPerLevel` a secondary indicator — in-game cost shifts heavily with empire size
-     and other live modifiers, so any absolute number is approximate regardless of which is shown;
-     the scaling RATE is the one thing the card can state truthfully for a repeatable technology.
-     Exact visual treatment is Stage 3's; this session emits semantic data only. **Real corpus,
-     verified**: exactly the 88-node repeatable set carries a resolvable `costPerLevel` (0
-     non-repeatable technologies do). Separately (found while wiring `cost` itself, not part of
-     the original ask): **15 of 980 rendered technologies have an unresolvable `cost`** — 5 with
-     no `cost` field at all (apparently-free starting technologies:
-     `tech_missiles_1`/`tech_flak_batteries_1`/`tech_solar_panel_network`/others) and 10 vanilla
-     "cosmic storm" technologies whose `cost` is a dynamic modifier block
-     (`cost = { factor = @var inline_script = {...} }`, a previously-unseen shape in this
-     codebase's cost handling) rather than a scalar — both emit `cost: null`, never a guessed
-     value. TS types regenerated; all four base-dataset fixtures updated; `tests/schema/
-     test_validation.py` and `tests/test_dataset_emit.py` gained coverage for both fields.
-
-  3. **`pipeline/icons/resolve.py`'s raw-block gap — closed.** The previous session's audit found
-     `collect_candidates` read raw, unexpanded technology/ascension-perk blocks unconditionally,
-     with no way to supply expanded documents — the same shape as the defect class above (tier
-     resolution, `unconditionalUncertainty`), just not yet triggered for icons.
-     `collect_candidates`'s signature changed from `(source_name, Path)` to
-     `(source_name, Document)` pairs; `pipeline/icons/build.py::resolve_kind` now parses AND
-     `inline_script`-expands every technology/ascension-perk document itself (mirroring
-     `pipeline/dataset_emit.py`'s own loading pattern) before handing it to `collect_candidates`.
-     **Verified zero-impact on the real corpus, as predicted**: every existing exact-count
-     assertion (2,103/19 unfiltered, 1,192/4 filtered technology candidates; 63/6 ascension-perk
-     candidates) passed unchanged after the fix, including the SPECIFIC unresolved-candidate key
-     lists — strong enough evidence of byte-identical results that no separate diff was needed.
-     Added `tests/icons/test_resolve.py::
-     test_collect_candidates_sees_an_inline_script_supplied_icon_field`, a synthetic template that
-     DOES define an `icon =` field, proving the expanded-vs-raw distinction actually matters (raw
-     input falls back to filename convention; expanded input picks up the template's icon) rather
-     than merely proving the plumbing compiles.
-- **`giga_tech_repeatable_*_cap` correctly categorized — CONFIG_GATED, a fourth availability
-  state** (later session). Follow-up to the "Small targeted correctness pass" bullet above: the
-  50-node family's `unclassified` jump (7→57, "Availability evaluator" section) turned out to be
-  a real classification GAP, not just missing corpus coverage. The template's `potential` —
-  `NOT{has_global_flag=$name$_disabled} AND has_global_flag=$name$_capped_r` — is two
-  mod-configuration toggles; the user confirmed `_capped_r` specifically (no core Gigastructures
-  preset sets a cap to the "1+r" mode it names, so it's unset by default) is the SAME "assume
-  documented default" shape as the already-recognised `_forbidden`/`_disabled`/`_OFF` suffixes,
-  just not yet taught to the evaluator.
-
-  **`pipeline.trigger_text.MOD_CONFIG_TOGGLE_SUFFIXES`** is now the single source of truth for
-  this pattern (`_forbidden`/`_disabled`/`_OFF`/`_capped_r`) — moved out of
-  `pipeline/availability.py`'s own private copy so the evaluator's resolution logic and
-  `categorize_leaf`'s classification can't drift apart. **Corpus survey, scoped to `potential`
-  blocks across all 1,879 canonical technologies** (not assumed confined to the known 50): every
-  rendered technology using a `_capped_*`-shaped flag uses exactly `_capped_r`, and exactly the
-  50 `giga_tech_repeatable_*_cap` technologies do so — `_capped_1`/`_capped_2`/`_capped_3`/
-  `_capped_u`/`_capped_s` exist in the corpus (menu/button-effect files) but never in a rendered
-  technology's `potential`, so nothing beyond the known 50 was in scope.
-
-  **A new `AvailabilityState` (`schema/common.schema.json`, renamed from `ThreeState`) value:
-  `config-gated`.** Elsewhere, `locked` means "your empire cannot obtain this" — an empire-state
-  property, which is why D-10's states are keyed to the twelve-profile axis model at all. That
-  framing is false for this family: their `potential` resolves definitively FALSE for every
-  profile identically, but nothing about authority/shipset/nomadic status is the cause — a game
-  OPTION is. Rendering them `locked` would misrepresent a one-toggle-away technology as
-  empire-gated. `pipeline/availability.py`'s `evaluate_trigger_block` now checks whether the
-  FALSE-causing leaf categorizes as `ReasonCategory.MOD_CONFIGURATION`
-  (`pipeline.trigger_text`, new category) and emits `CONFIG_GATED` instead of `LOCKED` when it
-  does — a mechanism that applies to any mod-config-toggle-caused FALSE result generally, not
-  hardcoded to `_capped_r`; **verified against the real corpus that this generality costs
-  nothing**: `config-gated` fires for exactly the 50 cap-family technologies and no others (every
-  other real `_forbidden`/`_disabled`/`_OFF` occurrence is wrapped in `NOT{}`, contributing to
-  AVAILABLE, never a bare FALSE). `$defs`/type renamed `ThreeState` → `AvailabilityState`
-  deliberately (a value-count-independent name, so a fifth value later doesn't leave a stale name
-  behind again) — TS types regenerated; both `$ref` sites (base-dataset's `availabilityMatrix`,
-  empire-overlay's `availability[].state`) updated; empire-overlay's `reason`-required-when-
-  non-available prose extended to cover `config-gated` too (this requirement was already
-  documentation-only, not schema-enforced, for `locked`/`uncertain` — a pre-existing gap, found
-  and reported, not fixed, since fixing it is unrelated new scope).
-
-  **Real corrected figures, over the same 980-node rendered set (recomputed, not assumed)**:
-  profile-dependent worst-case uncertainty **unchanged**, 3.37% (same profile, same rate to 5
-  decimal places — none of the 50 was ever profile-dependent, since their `potential` has no axis
-  check). Unconditional uncertainty **209/980 (21.33%), down from 259/980 (26.4%)** — the 50 that
-  the earlier `_capped_r`-recognition fix had moved into `unconditionalUncertainty` now leave for
-  `config-gated` instead. **209 is the same number the ORIGINAL raw-block-survey code reported,
-  by coincidence, not by the same reasoning** — that number was wrong for skipping these 50 nodes
-  entirely; this number is right for evaluating all 980 correctly and finding the 50 belong in a
-  fourth state neither `uncertain` nor `locked` capture.
-
-  **Category distribution over the final, corrected 209-node unconditional-uncertain set** —
-  byte-identical to the table this project had before either correction began:
-
-  | Category | Count | % of unconditional |
-  | --- | ---: | ---: |
-  | Crisis/story-chain progression | 89 | 42.6% |
-  | Origin requirement | 41 | 19.6% |
-  | Opaque mid-game country state | 34 | 16.3% |
-  | Ethics/civic requirement | 34 | 16.3% |
-  | Unclassified (honest fallback) | 7 | 3.3% |
-  | Mod-content requirement (ACOT) | 4 | 1.9% |
-
-  **~80% of unconditional uncertainty is explainable** (crisis/story + origin + ethics/civic + mod
-  content), ~20% genuinely opaque or unclassified — restored exactly, since the intermediate
-  259-node table's only difference (an `unclassified` count of 57, all 50 cap-family nodes
-  landing there because `categorize_leaf` had no category for `_capped_r` yet) is now moot: those
-  50 never reach `categorize_leaf` for the unconditional-uncertain path at all, because they
-  resolve to `config-gated` before that classification would run. See `pipeline/trigger_text.py`'s
-  own comments for the individual per-leaf verifications behind each row (`has_ancrel`,
-  `is_world_forger_empire`, `giga_can_use_habitables`, etc.). See `spec/decisions.md`'s new D-10
-  "CONFIG_GATED" subsection for the full
-  evidence, the "first real application of the mod-config assumption to a bare flag" framing, and
-  the explicit caveat that a non-core/custom Gigastructures preset may set a cap differently (a
-  Stage 3 presentation concern, not a data one). Tests: `tests/test_availability.py`/
-  `tests/test_trigger_text.py` (synthetic mechanism coverage, including that the suffix pattern
-  applies only to `has_global_flag`, never `has_country_flag`), `tests/test_availability_corpus.py`
-  (real-corpus figures, the corrected category-distribution table, and a two-layer regression
-  guard — expansion AND correct-state — for all 50 cap technologies),
-  `tests/schema/test_validation.py` (the new state's shape, plus the found-not-fixed
-  reason-requirement gap recorded honestly), `tests/test_dataset_emit.py` (the real base dataset
-  emits `config-gated` in all 12 `availabilityMatrix` slots for exactly the 50 cap technologies,
-  never elsewhere).
-
-  **The 209 → 259 → 209 sequence, recorded explicitly so it cannot be misread**: the two 209s
-  above are not a no-op round trip — they exclude the same 50 nodes from
-  `unconditionalUncertainty` for opposite reasons. Step 1 (original raw-block survey): 209,
-  because a raw/unexpanded read never saw these 50 nodes' `potential` block at all — excluded by a
-  defect, and (wrongly) counted `AVAILABLE`. Step 2 (after `inline_script` expansion, before
-  `_capped_r`/`config-gated` existed): 259 = 209 + 50, because the now-visible `potential` made
-  all 50 genuinely `uncertain`. Step 3 (current, after `_capped_r` joins
-  `MOD_CONFIG_TOGGLE_SUFFIXES` and `config-gated` is introduced): 209 again, because those same 50
-  now evaluate correctly to a fourth state, `config-gated`, that didn't exist at step 1 — same
-  count, same 50 members, different (correct) reasoning. See `spec/decisions.md`'s D-10 section
-  ("The 209 -> 259 -> 209 sequence...") for the full table.
-
-  **The real change is visible in the AVAILABLE-state count, not the uncertainty count**: all 50
-  moved from `AVAILABLE` (step 1's wrong reading) to `CONFIG_GATED` (step 3's correct one) — an
-  **available-count delta of exactly -50**, confirmed directly
-  (`tests/test_dataset_emit.py::test_repeatable_cap_family_available_count_delta_is_exactly_minus_50`):
-  evaluating with no `potential` visible (the step-1 counterfactual) is unconditionally AVAILABLE
-  for all 50; the real expanded evaluation is AVAILABLE for 0 of them. **Ratchet status**: having
-  gone 209 → 259 → 209 across two sessions, the D-10 unconditional-uncertainty ratchet is back at
-  its original seed value — no regression, no ratchet action needed.
-
-  **Config-gated reason wording (P-13)**: display text is user-supplied, matching Gigastructures'
-  own in-game option label — `Requires <Megastructure Name> cap: 1 + Repeatables`, e.g. "Requires
-  Alderson Disk cap: 1 + Repeatables". Emitted as semantic data only, never a pre-composed
-  sentence: the empire overlay's `availability[key].configGatedSubject`
-  (`schema/empire-overlay.schema.json`) carries just the megastructure name; Stage 3 substitutes
-  it into the fixed template, which lives in `spec/P-13-empire-locking.md`, not in the dataset.
-  The name is sourced from the technology's own resolved localised name
-  (`<Name> Management Protocols`, suffix stripped).
-
-  **Corrected in a later session: all 50/50 resolve, not 42/50.** The suffix-stripped name is
-  frequently itself a `$token$` (e.g. `giga_tech_repeatable_alderson_cap` -> `$name_alderson$`).
-  An earlier pass assumed such a token was an unresolvable Stellaris runtime name-pool reference
-  and returned `null` for all 8 real occurrences — including the flagship Alderson Disk example
-  the reason wording was designed around. **That assumption was wrong**, found by re-inspecting
-  raw localisation source (CLAUDE.md's own "inspect raw bytes, never conclude from a formatted
-  read" rule, applied here to the previous session's own unverified claim): every `$token$` is
-  ordinary Stellaris `$key$` loc-variable substitution — `token` is itself a plain,
-  statically-resolvable loc key one hop away (`name_alderson: "Alderson Disk"`, Gigastructures'
-  own localisation). Two of the 8 (`dyson_swarm_3`, `orbital_arc_furnace_4`) are **vanilla**
-  megastructures Gigastructures extends with a repeatable cap, and their name lives in vanilla's
-  own localisation — confirming the fix (`pipeline/dataset_emit.py`'s `_resolve_loc_tokens`) must
-  search the full cross-source `ctx.loc_table` (vanilla, Gigastructures, ACOT, AoT, in load
-  order), bounded to a small hop count (some tokens chain through a second token, e.g. vanilla's
-  `dyson_swarm_1: "$dyson_swarm_3$: Array"`) so an unexpected cycle fails cleanly to `null` rather
-  than looping. `configGatedSubject` stays nullable in the schema and the resolver still returns
-  `None`, never a guess, if a technology has no loc entry at all or a token can't be resolved
-  within the hop limit — no case in the current corpus hits either path.
-
-  **Real corpus, corrected: 50/50 resolve** to a literal megastructure name — the 8 previously-null
-  cases: `giga_tech_repeatable_alderson_cap` -> "Alderson Disk" (the user's own flagship example),
-  `_asteroid_manufactory_cap` -> "Asteroid Industrial Site", `_dyson_swarm_cap` -> "Dyson Swarm",
-  `_furnace_cap` -> "Arc Furnace", `_observatory_cap` -> "Atmospheric Storm Observatory",
-  `_orbital_naval_logistics_cap` -> "Orbital Naval Logistics Office", `_warmoon_cap` -> "Attack
-  Moon", `_warplanet_cap` -> "Behemoth Planetcraft". Implementation:
-  `pipeline/dataset_emit.py`'s `_config_gated_subject`/`_resolve_loc_tokens`. Test:
-  `tests/test_dataset_emit.py::test_config_gated_subject_resolves_all_50_megastructure_names`
-  (supersedes the retired `..._resolves_42_of_50_...` test of the same name pattern).
-- **P-15 overwrite resolution is built**: `pipeline/overwrites.py` (technology-block whole-key
-  resolution, field-level diff against the immediately-preceding definition in load order —
-  never hardcoded to vanilla — cost/weight compared through `@variable` resolution with the raw
-  pre-resolution form retained alongside, prerequisites/category diffed as sets, flags diffed as
-  a single composite field, declaration-order prerequisite display list kept separate from the
-  diff) plus `pipeline/overwrite_overrides.py` (loader for `config/overwrite_overrides.txt`,
-  seeded empty — no case in the corpus needs one; format and required-warning mirror
-  `pipeline/icons/overrides.py`). `pipeline.overwrites.resolve_variable_overwrites` is the
-  distinct scripted-variable overwrite layer (Finding 5: a technology's effective cost/weight can
-  change without its own block being touched). Tests: `tests/test_overwrites.py` (synthetic,
-  mechanism coverage), `tests/test_overwrite_overrides.py` (loader), `tests/test_overwrites_corpus.py`
-  (real vendored corpus, skipped when `vendor/` isn't populated — asserts the corrected 25-overlap
-  survey counts so a future corpus refresh that silently changes them fails a test). `schema/`
-  (`common.schema.json`'s new `SourceMod` def, `detail-payload.schema.json`'s `source`/
-  `overwriteDiff`, `diagnostics.schema.json`'s two-section `overwriteReport`) and
-  `spec/P-15-overwrites.md` were updated to match — overwriting is not vanilla-only, and most of
-  the corpus's overwrites (19 of 25) have no vanilla baseline at all. (Status at the time this
-  bullet was written: trigger evaluation, tier/layout/edge computation and dataset emission were
-  still open — all but dataset emission are built now; see the later bullets in this section and
-  HANDOFF.md's "Ordered next steps" for current status.)
-- **D-14: `technology_swap` per-profile name/icon substitution is built** (later session,
-  prompted by a report that a bio-shipset player's card would show "Fission Power," a name that
-  doesn't exist in their game). `pipeline/technology_swaps.py` (new module) parses every
-  `technology_swap` sub-block and classifies its trigger against `pipeline.availability.AXIS_FACTS`
-  (the SAME dict the evaluator uses for `potential` blocks — reused directly rather than a second,
-  competing axis-leaf definition). **Real corpus: 214 swaps across 185/980 rendered
-  technologies — 128 axis-expressible, 86 non-axis** (corrected from a pre-implementation
-  ad-hoc survey's 126/88: `AXIS_FACTS` also resolves `is_mechanical_empire`/`is_robot_empire`/
-  `is_regular_empire`, which that survey's own classification omitted).
-
-  **Two treatments, never a third.** Axis-expressible swaps (128 swaps / 123 technologies)
-  substitute per profile — `schema/empire-overlay.schema.json`'s `swapMappings` is redesigned
-  (the old `{baseTechnologyId, activeVariantId}` shape assumed a variant had its own node id,
-  which D-1's "a swap never becomes its own node" rules out) to carry
-  `{technologyId, name, icon, area, category}` directly, `area`/`category` null meaning
-  "unchanged from base." Non-axis swaps (86 swaps / 72 technologies — origin/civic/species-trait/
-  ascension-perk/galaxy-situation leaves the 3-axis model can't express) NEVER substitute — listed
-  instead in the detail payload's new `variants` field (`{name, icon, conditionText}`,
-  `conditionText` via `pipeline.trigger_text.describe_condition`/new `describe_trigger_block`),
-  popup-only, same precedent as ascension-perk gates. 10 technologies carry both (one swap
-  substitutes, a different swap on the same technology lists as a variant). **The rendered node
-  count stays exactly 980 regardless — asserted directly, not left as an unstated consequence.**
-
-  **`tech_ring_world` exception, decided explicitly in chat, no special-casing**: its 2 swaps mix
-  one axis leaf (`country_uses_bio_ships`) with one non-axis leaf
-  (`giga_can_use_habitables`) in a single compound trigger — treated as WHOLLY non-axis (matches
-  the evaluator's own Kleene "no partial credit on a compound condition" discipline). Cost is
-  named: `tech_ring_world` keeps its base `society`/`voidcraft` presentation for every profile,
-  with all 3 of its non-axis swaps listed as popup variants instead. Of the real corpus's 8
-  area/category-changing swaps, all 8 fall out of this same classification for free — 6
-  axis-expressible bio-shipset ones substitute automatically, `tech_ring_world`'s 2 non-axis ones
-  never do — no separate area/category mechanism was needed.
-
-  **Icon inheritance, item 6**: one real swap, `giga_tech_ring_world_swap_no_habitables`, declares
-  `inherit_icon = no` with no icon file of its own. `pipeline/icons/resolve.py` still correctly
-  leaves it an unresolved atlas candidate (unchanged — redirecting AT THAT LAYER would override an
-  explicit authorial refusal, per that module's own docstring). A SEPARATE, presentation-layer
-  fallback in `pipeline.dataset_emit`'s `_swap_icon_ref_map` shows the owning technology's icon for
-  display instead, tracked via the new `diagnostics.swapsRenderingOnInheritedIcon`
-  (`{technologyId, swapKey}[]`) — today exactly this one entry, confirmed to never fire for the 87
-  swaps that legitimately keep the base icon via `inherit_icon` defaulting to `yes` (those resolve
-  through the ordinary channel and are never `unresolved` candidates). No `config/
-  icon_overrides.txt` entry was used deliberately — that would need a human to notice and remove it
-  once upstream ships a real icon, and would silently shadow it until they did; the fallback
-  instead yields automatically the moment a real icon resolves.
-
-  **Trigger-text coverage gap reported, not invented**: 9 non-axis leaf names have no dedicated
-  `describe_condition` phrasing and fall back to raw trigger text —
-  `is_wilderness_empire` (41, by far the largest), `is_beastmasters_empire` (16),
-  `giga_can_use_habitables` (3), `is_tankbound_empire`/`is_reanimator`/`is_eager_explorer_empire`
-  (2 each), `has_void_dweller_origin`/`is_cloning_authority`/`is_situation_type` (1 each) — an open
-  item for `pipeline/trigger_text.py`'s phrase table, not silently accepted or papered over.
-
-  **`weight` (94/214 swaps) and `prereqfor_desc` (39/214) remain deliberately unsurfaced**,
-  consistent with D-4's no-evaluated-weight precedent — seen during this decision's own survey,
-  recorded so a future session knows it wasn't missed.
-
-  **Real payload delta, measured**: the base dataset itself (P-10's budget) is unchanged —
-  `swapMappings`/`variants` live in the lazy empire-overlay/detail-payload artefacts.
-  `swapMappings` across all 12 overlays adds **~17.5 KB gzip** (~141 KB raw, 745 entries);
-  `variants` across all 980 detail payloads adds **~2.8 KB gzip** (~15 KB raw, 86 entries) —
-  both small next to the ~64-67 KB base-dataset reference point, well above the
-  pre-implementation ~9.7 KB gz worst-case guess (icon-ref objects are heavier than bare
-  strings) but nowhere near a concern either way. See `spec/decisions.md`'s D-14 for the full
-  writeup. Tests: `tests/test_technology_swaps.py` (synthetic classification, including the
-  compound-trigger and `is_robot_empire` cases), `tests/test_dataset_emit.py`'s D-14 section
-  (real-corpus substitution/variant/icon-inheritance/payload-delta assertions).
-- ~~**Deploy spike confirms P-10's compressed-transfer assumption.**~~ **Superseded, later
-  session — `deploy-spike/` is deleted, replaced by the real pipeline below**, which re-confirms
-  the same findings (relative-path base resolution, real hosting round-trip) against the ACTUAL
-  toolchain and dataset rather than a throwaway synthetic stand-in. Historical record of what the
-  spike proved before deletion: GitHub Pages serves both a JSON artefact and a binary typed-array
-  side-file gzip'd (9.34x measured on a ~982 KB synthetic dataset), confirming P-10's ≤2 MB
-  compressed-transfer budget assumption wasn't speculative.
-
-- **P-12.9 (research path) is fully specced, not yet implemented** — `spec/P-12.9-research-path.md`
-  (new file; the old P-12-detail-popup.md row is now a summary pointing to it). Fixes v1's second
-  reported failure (profile-blind path, unexpanded `OR` branches, e.g. "or Arkship Mastery" never
-  showing its own prerequisites). Per-profile traversal over true `prerequisite` edges + resolved
-  `OR`-group selection (cheapest total cost among viable available/uncertain candidates — real
-  corpus: 0 disagreements with fewest-steps across 72 genuine multi-candidate choices). `uncertain`
-  steps stay in the path with the total marked an estimate; `config-gated` steps are excluded from
-  the total and — confirmed structurally, not assumed — can ONLY ever be the path's own target,
-  never a mid-path step (config-gated technologies are edge sinks, D-13's Repeatables finding
-  extended to `alternative` edges too). **Pinned figure, corrected in a follow-up session**: the
-  uncertain-path count is per SELECTED PROFILE (matching the path itself), not a single number —
-  the original "163-182" was an unlabelled per-profile min/max range; canonical headline is
-  **182/980 (18.6%), the worst profile** (machine_intelligence/biological/non-nomadic), with the
-  full 12-profile table and the separately-labelled across-any-profile (191/980) and intersection
-  (156/980) figures recorded in the spec. Also recorded: the path is selection-triggered, exactly
-  as v1 (pinning a goal technology for persistent display is a deferred QOL feature, explicitly
-  out of scope for the first renderer); a tripwire diagnostic
-  (`diagnostics.unresolvableResearchPaths`) for the "target looks researchable but has no route"
-  case that has zero real occurrences today. Real worked-example validation against the user's own
-  v1 bug report: `tech_mega_engineering` for regular/mechanical/non-nomadic recomputes to exactly
-  **74,750** (v1's reported figure); nomadic correctly routes through Arkship Mastery instead of
-  the `is_nomadic = no`-gated Starbase line (**99,750**, higher — correctness, not flattery);
-  bio-shipset correctly routes through Stingers with Battleships excluded as locked (**73,750**).
-- **Stage 3 toolchain foundation is built** (later session): `client/` — TypeScript + PixiJS +
-  Vite, no rendering logic yet (explicitly out of scope for this session; see spec/00-overview.md
-  for what Stage 3 actually renders). **Node/npm now exist in this environment**, installed
-  user-level via Homebrew/linuxbrew (`/home/linuxbrew/.linuxbrew`, owned by the working user, no
-  root at any point) — CLAUDE.md's and `tools/generate_typescript_types.py`'s prior "no Node/npm
-  toolchain in this environment" notes are now historical, not current. **A first attempt to set
-  up headless-browser verification via `npx playwright install --with-deps chromium` tried to
-  shell out to `apt-get` as root and was abandoned mid-session** (per-user instruction — it failed
-  harmlessly here since this host has no `apt-get`, but the attempt itself was wrong regardless of
-  whether it succeeded); the corrected, fully user-level equivalent (`npx playwright install
-  chromium`, no `--with-deps`, browser binary in `~/.cache/ms-playwright/`) was used transiently
-  for verification only and was never added to `client/package.json` — confirmed by a full
-  `rm -rf node_modules && npm install` reproducing the working toolchain from the committed
-  lockfile alone with zero trace of it.
-
-  **Reproducibility, pinned properly**: `client/.nvmrc` (`26.7.0`, the exact version everything
-  was verified against) for `nvm`/`fnm`/`actions/setup-node`'s `node-version-file`;
-  `client/package.json`'s `engines.node` (`>=22`) as a looser compatibility floor. No
-  `npm install -g` anywhere — every tool (`typescript`, `vite`) is a `devDependency`, run via
-  `npm run <script>` or `npx`.
-
-  **`tsc --noEmit` against `schema/generated/dataset-types.ts`: zero errors**, verified three ways
-  — as part of the client project's full compile (confirmed via `tsc --listFiles` that the file is
-  actually type-checked, not silently excluded), standalone in isolation under
-  `--strict --exactOptionalPropertyTypes --noImplicitOverride --noPropertyAccessFromIndexSignature`
-  (stricter than the project's own baseline `tsconfig.json`), and by importing/using several of
-  the generated types (`BaseDataset`, `GeometryRef`, `EmpireOverlay`) in real, working client code.
-  `tools/generate_typescript_types.py`'s hand-written generator produces valid, well-typed
-  TypeScript — a genuine negative result (the module's own docstring expected possible real
-  problems; there weren't any), not a gap in the check. `.github/workflows/typecheck.yml` runs
-  this on every change to `client/**` or `schema/generated/dataset-types.ts`.
-
-  **Real dataset wired in, content-hashed, and verified against a real browser.**
-  `tools/build_dataset.py` runs the full Stage 2 pipeline against `vendor/` and writes all five
-  artefacts + geometry side-files into `client/public/dataset/`, every filename content-hashed
-  (`<name>.<sha256[:10]>.<ext>`) except two stable, unhashed entry points: `manifest.json` — the
-  cache-busting mechanism GitHub Pages needs, since its cache headers aren't configurable (same
-  pattern Vite's own `index.html` → hashed-JS-bundle already uses) — and `integrity.json` (see
-  D-15, below). `client/src/dataset.ts` fetches `manifest.json` first, then every other artefact
-  only through the path it names — `base-dataset.json`'s own `geometry.nodePositions`/
-  `edgePolylines`/`iconAtlases[].webp`/`.png` fields are set to their files' final hashed names
-  BEFORE `base-dataset.json` itself is serialised and hashed, so every reference is always
-  correct. **Real corpus, not synthetic**: 980 technologies, 989 edges, 12 empire overlays, 980
-  detail payloads, search index, diagnostics.
-
-  **Verified against a REAL headless browser** (Chromium via a transiently-installed
-  `playwright-core`, never added to `client/package.json` — confirmed by a full
-  `rm -rf node_modules && npm install` reproducing the working toolchain with zero trace of it):
-  fetched `manifest.json` → `base-dataset.json` → both geometry side-files → a sample empire
-  overlay → a real WebP icon atlas texture, decoded and drawn as a PixiJS `Sprite`, all through
-  the real Vite dev/preview server AND a manually-simulated GitHub Pages project-subpath layout
-  (`http://localhost/Gigastructural-Engineering-Tech-Tree/`, matching deploy-spike's own base-path
-  finding) — 980 technologies, 989 edges, 1,960 float32 node-position values (980 × 2, exactly as
-  expected, all finite/non-NaN — the little-endian `struct.pack("<Nf", ...)` packing round-trips
-  against a real browser's `Float32Array`, not just Python's own encoder). One harmless console
-  message (`favicon.ico` 404 — no favicon was added; cosmetic) was the only anomaly found.
-
-  **D-15 (spec/decisions.md, later session): deploy model is local build, manual deploy — a
-  PERMANENT constraint, not an interim gap.** The dataset cannot be built in GitHub Actions at
-  all: vanilla Stellaris requires a Steam account that owns the game, so CI-side building would
-  mean storing real Steam credentials as a secret (security/ToS exposure) or redistributing
-  extracted game files (foreclosed outright by this project's own never-redistribute-vendor-
-  content rule). No automation closes this — investigated and confirmed directly (a prior
-  session's vendoring-automation investigation), not assumed. Consequently:
-  - `client/public/dataset/` is **gitignored**, reversed from this session's own earlier
-    decision to commit it. It's derived from vendored third-party content (a real, if lesser,
-    redistribution question than `vendor/` itself); git would retain every ~7–18 MB version
-    permanently; and a committed artefact can silently disagree with the pipeline commit that
-    claims to produce it — exactly the staleness problem content-hashed filenames exist to
-    prevent, reintroduced one layer up. Confirmed nothing from the prior session was ever
-    actually staged/committed (`client/` was entirely untracked the whole time).
-  - `tools/deploy_local.sh` (new) orchestrates the local side: build dataset, build client, zip
-    `client/dist/`, publish it as a GitHub Release asset via the `gh` CLI, print the exact
-    `gh workflow run` command. **Not executed for real this session** — creating a live Release
-    is a "visible to others" action, left for the user to run themselves.
-  - `.github/workflows/deploy.yml` is now `workflow_dispatch`-only, takes a `release_tag` input,
-    downloads that release's `dist.zip`, sanity-checks it, and deploys it via the ordinary
-    `actions/upload-pages-artifact`/`deploy-pages` steps — it builds nothing itself. Confirms
-    Pages CAN deploy a build that happened elsewhere; the trade is a weaker integrity story than
-    a full CI build (see below), stated honestly rather than glossed over.
-  - `client/public/dataset/integrity.json` (unhashed, stable name): the pipeline commit SHA
-    (+ dirty-tree flag), `vendor/manifest.json`'s per-source provenance (Vanilla's
-    `game_version`; each mod's pinned commit/Workshop ID/content hash), which sources were
-    loaded, and a sha256 checksum of every other artefact. **States provenance, does not verify
-    it** — a mismatch between deployed bytes and claimed provenance is detectable (recompute,
-    compare); a mismatch between the claimed commit and what a human actually ran is not, beyond
-    trusting whoever ran `tools/build_dataset.py`. Never presented as CI-grade auditability.
-  - Options considered and rejected as the PRIMARY model: (A) a private artefact store the CI
-    workflow fetches from — still needs a human to build+publish, so it's just the chosen model
-    plus an extra hop and, usually, another credential; (C) CI builds without ACOT/AoT — doesn't
-    solve vanilla either way, and would make the CANONICAL deployed site quietly different
-    (977 nodes, not 980) by default, the wrong default for real users. Kept as a genuinely useful
-    LOCAL option instead (below).
-
-  **Icon atlases now actually written — closed a real, previously-unnoticed gap.**
-  `tools/build_dataset.py` never wrote atlas image bytes at all before this session:
-  `base-dataset.json` referenced `technologies_0.webp` etc. and none of those files existed
-  anywhere — the site could not render a single icon. Fixed: every sheet (`ctx.tech_sheets` +
-  `ctx.perk_sheets`) is now encoded to both WebP and PNG (`pipeline.icons.pack.encode_webp`/
-  `encode_png`), content-hashed, and `base-dataset.json`'s `iconAtlases[].webp`/`.png` fields are
-  rewritten to the real hashed paths before that document is itself hashed. **Real measured
-  total: 4,826,990 bytes WebP (4.60 MB) + 5,994,998 bytes PNG (5.72 MB) = 10,821,988 bytes
-  combined** across 3 sheets (`technologies_0` 1008×2016, `technologies_1` 1008×1468,
-  `ascension_perks_0` 504×384) — matches the figure a prior session's vendoring-automation
-  investigation had already measured directly, confirming consistency. Verified end to end in
-  the real headless-browser check above, not just "file exists on disk": a real `Assets.load()`
-  fetch of the hashed WebP, a real `Texture`/`Rectangle` tile crop, a real `Sprite` drawn to the
-  PixiJS canvas.
-
-  **ACOT/AoT-absent builds: loud, specific diagnostic, not a generic warning.** A prior session's
-  vendoring-automation investigation found building without ACOT/AoT yields **977 rendered nodes,
-  not 980 − 7 = 973** — the 7 real ACOT/AoT-`requiresMods` technologies correctly disappear, but 4
-  vanilla technologies ACOT overwrites (`tech_adaptive_combat_algorithms`, `tech_biomechanics`,
-  `tech_titan_hull_1`, `tech_titan_hull_2`) are, perhaps surprisingly, **not themselves rendered
-  in the FULL build at all** (their ACOT-overwritten form falls outside the P-16 closure,
-  confirmed directly) — without ACOT they revert to vanilla content, which IS unconditionally
-  rendered, and reappear. `pipeline.dataset_emit.build_diagnostics` now reports this specifically:
-  `vendorSourcesLoaded`, `placeholderTechnologiesAbsent` (the exact 7, each naming which source
-  they need), `vanillaTechnologiesRevertedFromAcotOverwrite` (the exact 4, each flagging whether
-  the reversion is a real content difference — see the user-supplied domain note below).
-  `tools/build_dataset.py` also prints a loud console banner when ACOT/AoT is missing. Both lists
-  are maintained constants (`PLACEHOLDER_TECHNOLOGIES_REQUIRING_ACOT_AOT`,
-  `VANILLA_TECHNOLOGIES_ACOT_OVERWRITES`), deliberately NOT dynamically derived — 3 of the 7
-  placeholders are reached only through ACOT's own internal prerequisite chains, invisible
-  without ACOT loaded, so nothing present in a reduced corpus could ever discover them — each
-  re-verified against the real, full corpus by its own regression test
-  (`tests/test_dataset_emit.py`), so a future re-vendor that changes one of these 11 keys fails a
-  test rather than silently going stale. **User-supplied domain context**: most of ACOT's
-  overwrites of vanilla technologies only add modifiers, invisible to this tool's display either
-  way (`tech_adaptive_combat_algorithms`/`tech_biomechanics`,
-  `contentDiffersFromOverwrite: false`) — the titan hull technologies are the documented
-  exception, where ACOT's content materially differs (`contentDiffersFromOverwrite: true`).
-
-  **Base-path resolution re-verified, not just inherited from the spike's old finding**: built
-  `client/dist/`, served it under a locally-simulated `/Gigastructural-Engineering-Tech-Tree/`
-  path prefix (not domain root), and confirmed the real headless-browser check above still passes
-  identically — `vite.config.ts`'s `base: "./"` (relative, matching the spike's own lesson) plus
-  every hand-written `fetch()` call using a relative path (`./dataset/...`) is what makes this
-  work; an absolute leading-slash path would have passed locally at a domain root and silently
-  broken here, exactly the failure mode the spike existed to catch before Stage 3 built on it.
+- **Gate classification (P-3) is now closed** — `pipeline/gate_patterns.py` classifies real gate
+  data into `gates`; see this file's own "Gates" section above for the full account. Left here
+  only so a future session's memory of "this was still open" gets corrected on sight.
+- **P-12.9 (research path) is specced but not implemented, and is the next open work.** The
+  feature v1 failed at: v1's implementation was profile-blind traversal (didn't vary by empire
+  type) and flattened `OR`-group (`alternative`-edge) branches instead of choosing the cheapest
+  one. `spec/P-12.9-research-path.md` is the normative spec — read it, then survey before
+  implementing (see HANDOFF.md's next prompt). Note: the hover/selection slice's ancestry/
+  dependent highlight is explicitly NOT this algorithm (it's a structural, profile-invariant
+  closure over all edge kinds; P-12.9 is a per-profile cheapest-`OR`-branch resolution) — see
+  `client/src/main.ts`'s `computeAncestryAndDependents` for the distinction stated in code. Gate
+  classification (P-3, above) is now closed, so P-12.9's chain-completeness accounting can reason
+  about gates as a distinct concept from prerequisites, per that section.
+- **`subgrid_width` is settled at 6** — the user's pick from D-17's 4/6/8/12 trade-off survey
+  (`spec/decisions.md`). Not open any more; left here only so a future session's memory of "this
+  was still open" gets corrected on sight.
+- **The `EmpireProfileIndex` parallel-formula gap (this file's own "pipeline owns all geometry"
+  rule, generalised beyond geometry) is now closed** — the base dataset emits `empireProfileAxes`
+  (axis order, values, strides, `totalProfileCount`; `schema/common.schema.json`'s
+  `EmpireProfileAxes`, built by `pipeline.dataset_schema.empire_profile.
+  build_empire_profile_axes`), and `client/src/empireProfile.ts` derives its index purely from
+  that emitted data — no hardcoded stride or axis list survives client-side. Left here only so a
+  future session's memory of "this was still open" gets corrected on sight.
+- **The D-18 off-tree-prerequisite gap is now closed.** `pipeline.rendering_scope.
+  compute_off_tree_prerequisites`'s 3 accepted links now surface in each affected technology's own
+  detail payload (`offTreePrerequisiteNames`) and render in the popup under "Also requires," with
+  a fixed client-side note that the name is outside the rendered scope — see
+  `spec/P-16-mod-requirements.md`'s acceptance criteria, no longer flagged as a gap there.
+- **`appliesToEmpireTypes` is unconstrained on every edge** — a real per-edge empire-type
+  constraint extractor is new scope beyond what P-14 built; `activeEdgeIds` is therefore every
+  edge index for every profile (confirmed directly against a real overlay, screenshot-review
+  session: 984/984, `set(activeEdgeIds) == set(range(len(edges)))`, not just documented as a
+  theoretical gap).
+- **Tech-swap display substitution (`swapMappings`, D-14) is emitted but consumed nowhere in the
+  client** (screenshot-review session finding, confirmed by grep — zero references in
+  `client/src/`). A card, and the popup's Prerequisites/Dependents lists, always show a
+  technology's BASE name/icon regardless of the selected profile — real example, confirmed in
+  the corpus: `tech_zero_point_power` ("Zero Point Power") swaps to `tech_bio_zero_point_power`
+  ("Zero Point Metabolism") for `country_uses_bio_ships = yes`, but a bio-shipset profile never
+  sees the swapped name anywhere today. `swapMappings` only ever carries name/icon/area/category
+  substitution — never prerequisites, never availability, both of which are already correctly
+  profile-scoped elsewhere (`availabilityMatrix`/overlay `availability`); a swap NEVER changes
+  which nodes are prerequisites, only what one node is called. 123 distinct rendered technologies
+  carry at least one axis-expressible swap active for some profile (0 for the default
+  regular/mechanical/non-nomadic profile, up to 123 for machine_intelligence/biological/yes —
+  real per-profile counts, not estimated).
+- **The popup's "Prerequisites"/"Dependents" lists pool all three edge kinds
+  (`prerequisite`/`alternative`/`potential-gate`) unlabelled and unfiltered by profile**
+  (screenshot-review session finding) — `client/src/main.ts`'s `prereqNames`/`dependentNames`
+  filter `base.edges` by direct from/to adjacency with no `kind` check at all. Real corpus
+  example: `tech_mega_engineering`'s "Prerequisites" list shows all 5 of its edges as one
+  undifferentiated list — the one true `prerequisite` (Zero Point Power) alongside all 4
+  `alternative` OR-group members (Arkship Mastery, Battleships, Citadel, Stingers) — with no
+  indication only ONE of the four is actually needed, and no filtering by which one the selected
+  profile can reach. This is the same OR-branch-flattening failure class HANDOFF.md's "Research
+  path" section documents as v1's own reported bug, now confirmed present in the POPUP's
+  prerequisite list too, not just a hypothetical research-path risk. **A per-branch fix is
+  possible from data already emitted, without waiting on the `appliesToEmpireTypes` extractor
+  above**: each alternative-branch member's own `availabilityMatrix` entry already correctly
+  reflects per-profile reachability (confirmed directly: for `tech_mega_engineering`'s 4
+  alternatives at regular/mechanical/non-nomadic, Battleships and Citadel read `available`,
+  Arkship Mastery and Stingers read `locked` — matching expected nomadic/bio-shipset gating
+  exactly) — filtering an `alternative` group's display to non-`locked` members for the selected
+  profile does not require the edge-level constraint extractor, only a client-side change plus
+  labelling edges by kind instead of pooling them.
+- **`repositoryLink` isn't live-validated** (no network access at build time) and its `lineRange`
+  uses the block's start line for both ends (the AST doesn't track an end-of-block line).
+- **Middle-click isolation (P-7) is fully specced (`spec/P-07-isolation.md`) and entirely
+  unbuilt** — confirmed on request, screenshot-review session (a user tried middle-click and got
+  ordinary left-click selection behaviour instead, since no session has ever implemented it).
+  Spec requirement, in full: middle-click (or long-press ≥400ms on touch, P-9) isolates a node
+  together with its direct prerequisites/unlocks (user-adjustable depth, default 1 hop, with a
+  full-closure option), traversing **all three edge kinds** distinctly styled per P-8 — this
+  deliberately differs from the research path (P-12.9), which is prerequisite-edges-only.
+  Dimming/hiding is a visibility mask over the static layout (never a re-layout, P-4's precedent),
+  exitable via a labelled control and `Escape`, with persistent on-screen state naming the
+  isolated technology. Adjacency lists (forward/reverse, per edge kind) must be precomputed in the
+  dataset so traversal is O(1) per node, never a full edge-set scan, to stay inside P-10's 100ms
+  interaction budget. Not started this session — left here as a real, scoped, ready-to-build
+  feature, not a vague future idea.
+- **No pipeline-test CI workflow exists** — `pytest` still runs manually/locally only.
+- **`tools/collect_vanilla.py`'s GitHub-fetch-and-pin automation for Gigastructures, plus a
+  scheduled CI staleness check, is still unbuilt** — see this file's "Source data" section above
+  for the full context; the current manual pin is a deliberate stopgap, not a placeholder waiting
+  passively to be replaced.
+- **Pattern tile for Blokkats** needs tracing to clean SVG from the supplied flag image — the
+  current herringbone motif is a procedural placeholder, not traced art.
+- **Sirenalia's accent shade and Katzenartig Imperium's chevron pattern are both flagged
+  provisional** in `client/src/tokens.ts`'s own comments — Sirenalia's real geometry (curved wave
+  bands) was ported from v1, but its exact accent colour is still a placeholder; Katzenartig has no
+  in-game reference at all and its pattern is Claude's own inference, not described art.
+- **`potential-gate` edges' long-span (up to 5-band) backward routing** was left `TODO(Stage 3)`
+  when P-8 was written, before a real rendered canvas existed to design against — re-check whether
+  the v1-style router + gutter-router fallback (see `docs/BUILD-LOG.md`'s rendering section) has
+  since made this moot before treating it as still open.
+- **ΔE2000/WCAG mechanical colour checks are still unbuilt** — S-1's own CI-enforced acceptance
+  criterion (pairwise contrast across the full token set, including the new `RARE_COLOR`/
+  `DANGEROUS_COLOR` badges-slice additions). Every colour token is a first concrete pick, checked
+  by eye only.
+- **A real, previously-open gap, now closed**: the ACOT/AoT closure rule (depth vs. full
+  transitive closure) was surveyed, decided (depth-1), and implemented as D-18
+  (`spec/decisions.md`) — no longer open. Left here as a pointer only in case a future session's
+  memory of "this was still open" needs correcting.

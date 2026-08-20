@@ -76,6 +76,14 @@ Assignment is derived in order: technology ID, then `potential` and prerequisite
 then a checked-in manual override file for the remainder. The override file is permitted
 hand-maintained configuration under P-10.
 
+**D-7's derivation itself is unchanged by D-16's row re-axis.** What changed is only what
+CONSUMES the classification this derivation produces — see D-16: a faction is no longer the row
+axis itself (the old crisis-faction lane), it's the ROW-SELECTION INPUT that decides, per
+technology, whether that technology's row is its faction (if classified) or its category
+(otherwise). `pipeline/crisis_faction.py` — this section's implementation — did not change at
+all in that session; only `pipeline/layout.py`'s consumer of `classify_crisis_factions`'s output
+did.
+
 ## D-8 — Vanilla corpus provisioning (was OQ-8)
 
 Contributor-local, gitignored, populated by `tools/collect_vanilla.py` from the local Steam
@@ -297,6 +305,13 @@ Python, continuing from the v1 implementation. The dataset schema becomes an exp
 cross-language contract as a result — see `00-overview.md`.
 
 ## D-13 — Layout bands are declared tier, not computed position (corrects an earlier draft)
+
+**Unchanged by D-16's row re-axis.** D-13 governs the BAND (column) axis only — declared tier,
+never promoted, one deliberate repeatables exception. D-16 replaced the OTHER axis (rows, née
+lanes). Every figure and rule in this section (band enumeration, the repeatables exception, the
+34-edge backward decomposition figured by kind) still holds exactly as stated below — band
+membership is computed purely from a node's own declared tier, which the row a node lives in has
+no bearing on whatsoever. See D-16 for what did change.
 
 **A node's tier band is its own declared `tier` field, unmodified by graph depth.** An earlier
 draft of P-2 had layout *promote* a node's displayed position whenever a prerequisite's declared
@@ -673,3 +688,384 @@ the case the diagnostic exists for. Both are re-verified against the real, full 
 `::test_vanilla_technologies_acot_overwrites_constant_matches_full_corpus`, so a future re-vendor
 that adds, removes, or reassigns one of these 11 keys fails a test rather than silently going
 stale.
+
+## D-16 — Layout ROW axis is category-first/faction-first, not the crisis-faction lane (corrects an earlier draft)
+
+**A design divergence found by showing the rendered output to the user against a v1 screenshot.**
+The row axis used to be D-7's crisis-faction lane — `LANE_ORDER`: the standard-progression lane
+(all non-faction technologies, sub-grouped by category only as an internal sub-grid wrap key
+within a lane×band cell) plus one lane per crisis faction. The user confirmed this was never the
+intent: it wastes enormous vertical space reserving a full-height row for as few as 3
+(Aeternum, Katzenartig Imperium), 7 (Sirenalia), or 0 (Compound) technologies — the same vertical
+weight `voidcraft` (123) or `biology` (130) gets.
+
+**The row model now:**
+
+- Rows are the vanilla technology categories, one row each, followed by the 5 crisis-faction rows
+  — unified, NOT sub-split by category or research area the way the old Standard lane's sub-grid
+  used to.
+- Row assignment is **faction-first and mutually exclusive**: a technology with a crisis faction
+  (D-7, unchanged) goes in that faction's row; every other technology goes in its own category's
+  row.
+- Columns (bands) remain declared-tier bands — **D-13 is completely unchanged**; see that
+  section's own note.
+- Colour and pattern move from the CARD to the ROW (superseding CLAUDE.md's old "background
+  encodes research area" per-card rule — see CLAUDE.md's "Colour and pattern" section for the
+  corrected rule and its "research area is not colour-encoded inside faction rows" accepted loss).
+
+**Why the category-row set must be DERIVED, never hand-typed as "the 13 vanilla categories."**
+Gigastructures defines its own technology category, `blokkats`
+(`common/technology/category/giga_category.txt`), carried by exactly the 42 rendered
+technologies the D-7 classifier already places in the Blokkats faction row by technology-ID
+fragment — **42/42, confirmed by direct corpus survey; zero non-faction technology carries
+`category = { blokkats }`.** Under faction-first placement this category has zero remaining
+members once its Blokkats technologies move to the Blokkats row. A hand-typed "13 known vanilla
+categories" list would either need `blokkats` manually excluded (a silent, undocumented special
+case) or would emit a spurious always-empty 14th category row. `pipeline.layout._row_order`
+instead derives the category-row set from whichever categories actually have a non-faction member
+once faction-first assignment has run — the same "enumerate from the dataset, never hardcode"
+discipline `distinct_tiers`/bands already use (P-2). This yields exactly the 13 real vanilla
+category ids with no special-casing anywhere in the code for `blokkats` at all.
+
+**Row order**: the derived categories, grouped by research area (`AREA_ORDER`:
+physics → society → engineering, matching the existing area-colour convention), alphabetically by
+category id within an area (each real category maps to exactly one area 1:1 in the corpus,
+confirmed by direct survey — there is no real tie to break), followed by the 5 crisis-faction rows
+in D-7's own fixed order (`pipeline.crisis_faction.CRISIS_FACTIONS`, reused directly rather than
+re-declared, so the two orderings can never drift apart). Every faction row is always emitted —
+unchanged behaviour from the old lane model, just true of a row instead of a lane now. Compound's
+population was 0 (confirmed-real zero) at the time this decision was written; a later session's
+crisis-faction override (`config/crisis_faction_overrides.txt`, see D-7 and CLAUDE.md's
+crisis-faction section) raised it to 2. The always-emitted-row mechanism this paragraph describes
+is unaffected either way.
+
+**No vanilla category is left empty or near-empty by the faction-first move** — checked, not
+assumed: the largest single departure is Sirenalia's 7 psionics technologies (41 → 34 remaining),
+comfortably populated. Full per-category departure table:
+
+| Category | Total | Faction departures | Remaining (category row) |
+| --- | ---: | --- | ---: |
+| blokkats | 42 | Blokkats ×42 | **0 — excluded from ROW_ORDER entirely** |
+| voidcraft | 125 | Aeternum ×1, Katzenartig Imperium ×1 | 123 |
+| particles | 105 | Aeternum ×1 | 104 |
+| psionics | 41 | Sirenalia ×7 | 34 |
+| materials | 50 | Aeternum ×1 | 49 |
+| military_theory | 44 | Katzenartig Imperium ×1 | 43 |
+| industry | 71 | Katzenartig Imperium ×1 | 70 |
+| (remaining 7 categories) | — | none | unchanged |
+
+**Real measured geometry, over the same 980-node/989-edge rendered corpus** (see CLAUDE.md's
+"Row re-axis" bullet for the full writeup, including gutter constants and the per-row height
+table): canvas grows from 12,544 × 8,146px to **12,888 × 10,708px** — width grows slightly from
+widened band gutters (INTER_BAND_GUTTER 40→48px, INTRA_GAP_X 8→16px — see below), height grows
+substantially because rows are now individually sized to their own content instead of being
+dominated by one 925-technology Standard lane that used to absorb everyone. Densest cell moves
+from Standard×T5 (253) to **voidcraft×T5 (47)** — categories are inherently smaller buckets than
+"everyone who isn't crisis content," so no single cell is anywhere near as crowded as before, a
+direct, intended consequence of the re-axis, not a side effect.
+
+**Backward-edge decomposition is UNCHANGED: still 34 = 25 `prerequisite` + 2 `alternative` + 7
+`potential-gate`, max span 5, re-measured against the new geometry, not assumed carried over.**
+This is a necessary consequence of D-13 being untouched, not a coincidence: `backward`/`bandSpan`
+are computed purely from each edge's endpoints' BAND indices (declared tier), which have no
+dependency on which row a node lives in. Total edge counts are likewise unchanged (989 = 888 + 76
++ 25) — verified directly rather than assumed, since a change here would indicate a real bug
+(P-14's edge extraction doesn't touch layout at all).
+
+**Gutters, real values, one named place** (`pipeline/layout.py`): the user flagged the previous
+8px/10px sibling-card gaps and the single 40px combined header+separator strip between lanes as
+reading like edge-to-edge touching cards. `INTRA_GAP_X` 8→16px, `INTRA_GAP_Y` 10→16px,
+`INTER_BAND_GUTTER` 40→48px, and the old single `LANE_LABEL_MARGIN` (40px, doing double duty as
+both header space and the only inter-lane separation) splits into `ROW_HEADER_HEIGHT` (40px,
+unchanged, the header label strip) plus a NEW `ROW_GUTTER` (24px, pure visual separation on top of
+the header) — 64px total between rows now, vs. 40px before.
+
+**Ordering-within-cell change**: the old `(category, computed_position, key)` sort key inside a
+(row, band) cell drops `category` — it no longer discriminates anything, since a row is now either
+a single category or a single (unsplit) faction, so every member of a cell already shares the same
+category-or-faction. The key is now `(computed_position, key)`.
+
+**JSON contract deliberately unchanged, only its content**: `lanes`/`laneId` keep their existing
+names in `schema/base-dataset.schema.json` and `schema/generated/dataset-types.ts` — this session
+does not rename them to `rows`/`rowId`, even though the concept has changed, because doing so
+would require touching `client/`'s renderer (which reads `base.lanes`/`tech.laneId` today) beyond
+the "regenerate types only" boundary this session was scoped to. `lanes` now has 18 entries instead
+of 6; `lanes[].crisisFaction` is `null` for a category row exactly as it always was for the old
+Standard lane. The rename is tracked as the next slice's (the renderer re-wire's) own work — see
+HANDOFF.md.
+
+## D-17 — Same-band sub-column is prerequisite depth, wrapped within its own depth slot
+
+**The invariant.** Within a tier band, a technology must never render left of, or vertically in
+line with (stacked in the same sub-column as), any of its own SAME-BAND prerequisites — a
+same-band prerequisite chain must always read strictly left-to-right, never top-to-bottom in one
+column. This closes a real gap: D-13 fixed bands to declared tier and explicitly demoted computed
+position to an internal, never-displayed ordering signal, but nothing enforced that a same-band
+prerequisite chain's own SUB-COLUMN ordering respected the dependency direction at all — before
+this decision, a (row, band) cell's sub-grid wrap was a plain positional wrap (D-16's
+`(computed_position, key)` sort, wrapped at a fixed N), which could and did place a prerequisite
+and its dependent in the same column, or with the dependent to the LEFT of its own prerequisite,
+whenever wrap arithmetic happened to land them there. **Bands remain declared tier per D-13,
+completely unaffected** — D-17 only changes how a node is positioned WITHIN its own band/row cell,
+never which band it's in.
+
+**Scope: same-band only, pooled across rows, not per-row.** A technology's same-band prerequisites
+are exactly the members of `prereqs_of[key]` whose own band index equals its band index — a
+prerequisite in an earlier or later band imposes no ordering constraint here at all (D-17 doesn't
+touch cross-band edges; those are P-8's backward-edge routing, unchanged). Depth is computed
+POOLED across every row sharing a band, not separately per row: `same_band_depth[key]` is the
+longest same-band-prerequisite-chain length ending at `key`, via a topological sort over the
+same-band-only edge subgraph (`pipeline.layout._same_band_depth`), the same Kahn's-algorithm
+machinery `_computed_position` already used for the full graph. This has to be pooled, not
+per-row, because a same-band prerequisite edge can and does cross row boundaries (a category
+technology can be a same-band prerequisite of a faction technology, or vice versa) and every row
+sharing a band shares the same column x-positions — column N means the same thing in every row of
+that band, so the depth (and therefore column) assignment has to be computed over the whole band,
+not reset per row. The real corpus survey found **zero same-band cycles** anywhere (checked via
+topological sort over the same-band-only subgraph directly, not assumed) — the invariant is
+satisfiable everywhere in the current corpus. A future same-band cycle is a hard build failure
+(`LayoutCycleError`, from the same `_topological_order` machinery every other DAG check in this
+pipeline already uses), never silently ignored or broken by dropping an edge.
+
+**Depth sets a MINIMUM sub-column, not the sub-column itself — a depth is a SLOT of one or more
+sub-columns, wrapped at `subgrid_width`.** The first implementation of this decision used
+`same_band_depth[key]` directly as the sub-column index, with every node sharing a depth stacked
+in ONE column via an unbounded per-(row, band, depth) counter — this is a distinct, later-caught
+bug, not part of the decision itself; see "The unbounded-stacking bug" below. The corrected
+mechanism: for each `(band, depth)` pair, `depth_slot_width` is `ceil(count / subgrid_width)`,
+where `count` is the largest number of members any single row sharing that band has at that depth
+— members WRAP at `subgrid_width` (4) rows per sub-column, spilling into additional sub-columns
+within their own depth's slot exactly like D-16's plain wrap-at-N did for an undifferentiated
+cell. `depth_slot_start[(band, depth)]` is the cumulative sum of every shallower depth's own slot
+width in that band, so a deeper depth's sub-columns never overlap a shallower depth's. **The
+invariant holds under wrapping exactly as it did without it**: a dependent's same-band depth is
+strictly greater than its prerequisite's, so its slot start is `>= prerequisite's slot start +
+prerequisite's full slot width` — strictly past every sub-column the prerequisite's depth could
+ever use, regardless of how many sub-columns that depth's own population needed.
+
+**The unbounded-stacking bug, found and fixed in a follow-up session, with the reconciliation
+recorded here rather than silently folded into "how D-17 always worked."** The first
+implementation of the depth-slot mechanism above skipped the wrap step: `compute_layout` set
+`col = same_band_depth[key]` directly, and every member sharing a `(row, band, depth)` triple was
+stacked via a plain incrementing counter with no cap. The real corpus's worst cell (Blokkats ×
+band 5 × depth 0 — 37 mutually-unrelated Blokkats technologies, all at depth 0 since none has a
+same-band prerequisite) rendered as a single column **37 sub-grid rows tall**. Canvas height moved
+from the pre-D-17 figure of 12,520px to **30,152px** (+141%) — a change nothing had predicted:
+the pre-implementation survey (see CLAUDE.md's Item-3 writeup) costed D-17 as a WIDTH change only
+(+11.6%, from widening bands to fit same-band chain length), and the width prediction landed
+almost exactly (18,750px measured vs. ~18,750px-15,806px predicted range) — but the height effect
+was a real, unaccounted-for regression, caught only because canvas dimensions are asserted
+directly in `tests/test_layout_corpus.py` and a fresh session cross-checked the reported numbers
+against a clean re-run rather than accepting them.
+
+**This is a THIRD instance of this project's "a green test suite proves self-consistency, not
+correctness" pattern** (CLAUDE.md documents two prior instances under this same framing:
+`pipeline.layout.is_repeatable`'s `levels < 0` predicate, and `_resolve_loc_tokens`'s
+sibling-token bug), but a distinct variant within that pattern worth naming precisely: the two
+prior instances were tests with narrow fixture coverage that never exercised the path where the
+bug lived. This one is different and arguably worse — `tests/test_layout.py` had a test,
+`test_unrelated_same_band_nodes_stack_in_one_column`, whose name and body **asserted the
+unbounded-stacking behaviour as the intended design**, with a comment explicitly framing it as
+D-17's own correct behaviour ("10 mutually unrelated technologies... all land in column 0, stacked
+across 10 sub-grid rows"). The suite wasn't just narrow here; it actively enshrined the defect as
+spec. Renamed to `test_unrelated_same_band_nodes_wrap_within_their_depth_slot`, asserting the
+corrected wrap behaviour (10 unrelated depth-0 nodes → 3 sub-columns of at most 4 each), with the
+history recorded in the test's own comment.
+
+**Real measured canvas, before D-17 existed, immediately after its first (buggy) implementation,
+and after the wrap-within-depth correction — all over the same 980-node/989-edge rendered corpus:**
+
+| State | Canvas | Notes |
+| --- | --- | --- |
+| Pre-D-17 (D-16 + spacing passes only) | 16,800 × 12,520px | Baseline the Item-3 survey costed its width prediction against. |
+| D-17, first implementation (unbounded stack) | 18,750 × 30,152px | Width matches the survey's prediction almost exactly (+11.6%). Height (+141%) unpredicted and unreconciled — the stacking bug. |
+| D-17, wrap-within-depth correction | 30,840 × 9,736px | Height drops far below even the pre-D-17 figure, confirming the stacking bug (not D-17 itself) drove the height. Width grows well past the survey's prediction. |
+
+**The wrap-within-depth correction's width cost is real and larger than the original survey
+anticipated, for a reason worth stating precisely.** The Item-3 survey modelled column count as
+one column per depth LEVEL (i.e., same-band prerequisite CHAIN LENGTH only) and never considered
+that a depth level's own POPULATION would also need width once vertical stacking is capped at
+`subgrid_width`. Because same-band depth is pooled across rows and every row sharing a band must
+use the same column x-positions for a given depth, one row's population-heavy depth (Blokkats' 37
+at depth 0) reserves wrap-driven width that every OTHER row sharing that band inherits too, even
+though most other rows don't need anywhere near that many sub-columns at that depth. This is the
+direct, examined cost of choosing wrap-within-depth over the alternative (accepting unbounded
+height) — not a rule chosen to hit a specific width or height number. `subgrid_width` (4) itself
+predates D-17 entirely and was never re-evaluated against this new cost; see CLAUDE.md's Item-2
+writeup for the wider trade-off survey across `subgrid_width` = 4/6/8/12, left as an open decision
+for the user to pick from.
+
+**Card arrangement's `(computed_position, key)` sort (D-16, `spec/P-02-layout.md`) is now
+`(same_band_depth, computed_position, key)`** — `same_band_depth` is the primary sort key
+(determines the sub-column-slot boundary), `computed_position` (the full-graph longest-path depth)
+only a tie-breaker for ordering WITHIN a shared depth slot, and `key` a final deterministic
+tie-breaker. `category` was already dropped from this key under D-16 (a cell's members already
+share one row by construction) and stays dropped — unaffected by D-17.
+
+Tests: `tests/test_layout.py`'s "Sub-grid arrangement within a band" section (the renamed
+wrap-within-depth test above, plus `test_same_band_ordering_invariant_widens_the_band`,
+`test_same_band_ordering_invariant_ignores_cross_band_prerequisites`, unaffected by the
+correction since neither exercises more than one member per depth);
+`tests/test_layout_corpus.py::test_densest_actual_row_band_cell_and_canvas_dimensions` (the real
+corpus canvas-dimension assertion, now pointing at the corrected 30,840 × 9,736 figure, with the
+full before/first-implementation/corrected history recorded in the test's own comment).
+
+### `subgrid_width` trade-off survey (reconciliation session, SURVEYED — value NOT changed)
+
+`subgrid_width` (4) predates D-17 entirely (it was the plain wrap-at-N constant D-16 already
+used) and was never re-evaluated once D-17's wrap-within-depth correction made canvas aspect
+ratio a direct function of it: a larger `subgrid_width` lets one sub-column hold more stacked
+cards before spilling into a new column, trading BAND WIDTH for ROW HEIGHT. Measured directly
+over the real 980-node/989-edge corpus, `compute_layout(..., subgrid_width=N)` for N in
+{4, 6, 8, 12}, holding every other constant fixed:
+
+| `subgrid_width` | Canvas (W × H) | Aspect ratio | Worst band width (px, band 5 / Tier 6 throughout) | Worst row height (px) |
+| ---: | --- | ---: | ---: | ---: |
+| 4 (current) | 30,840 × 9,736 | 3.17:1 | 8,460 | 440 (`industry`) |
+| 6 | 29,670 × 13,448 | 2.21:1 | 5,730 | 672 (`industry`) |
+| 8 | 35,910 × 17,160 | 2.09:1 | 4,950 | 904 (`industry`) |
+| 12 | 51,120 × 23,424 | 2.18:1 | 4,170 | 1,368 (`statecraft`) |
+
+**Canvas width is non-monotonic in `subgrid_width`** (30,840 → 29,670 → 35,910 → 51,120): width
+initially drops from 4→6 as fewer sub-columns are needed per depth slot, then rises again at 8
+and 12 as the growing per-column card count starts requiring MORE bands to widen for their own
+longest same-band chains (a longer same-band chain now needs proportionally more vertical room
+per depth level too, which doesn't reduce column count the way spreading out unrelated same-depth
+technologies does). Row height rises monotonically and by a wide margin (440px → 1,368px, 3.1×)
+since a taller column is exactly what a larger `subgrid_width` buys. **None of the four risks any
+WebGL texture-size or coordinate-precision limit**: nothing in `client/src/main.ts` renders to an
+offscreen `RenderTexture` sized to the canvas (checked directly — no `RenderTexture`/
+`generateTexture` call exists in the client at all), so canvas pixel dimensions never need to fit
+inside a GPU's max-texture-size limit (typically 8,192–16,384px on real hardware) in the first
+place; world coordinates are ordinary vertex-attribute floats under PixiJS's camera transform, and
+even the largest figure here (51,120px) is far below float32's ~16.7M (2²⁴) exact-integer
+threshold, so no precision loss either. **No value was changed by this survey** — the four rows
+above are for the user to pick from.
+
+### `subgrid_width` decision: 6, chosen
+
+The user picked **6** from the four-row survey above. Stated reasoning, recorded here rather than
+re-derived: 6 is the only value that REDUCES canvas width relative to 4 (29,670px vs. 30,840px)
+while ALSO fixing the aspect ratio (2.21:1 vs. 3.17:1) — every other value trades one for the
+other, never both. It cuts worst-case band width from 8,460px to 5,730px, the figure that governs
+how far a user must pan to cross a single tier band, which is the more directly felt cost of a
+wide canvas than total area. 8 buys negligible further aspect improvement (2.09:1, barely better
+than 6's 2.21:1) for roughly double the canvas area; 12 is WORSE on aspect than 6 (2.18:1) while
+quadrupling area. `pipeline.layout.DEFAULT_SUBGRID_WIDTH` and `client/src/main.ts`'s mirrored
+`SUBGRID_WIDTH` constant are both set to 6.
+
+**Real measured figures, over the same 977-node/984-edge D-18 corpus — the survey's own numbers
+were projections; these are the actual re-run values, confirmed to match exactly**:
+
+| Figure | Value |
+| --- | --- |
+| Canvas | 29,670 × 13,448px |
+| Aspect ratio | 2.21:1 |
+| Worst band width | 5,730px (band index 5, Tier 6) |
+| Worst row height | 672px (`industry` row) |
+| Densest (row, band) cell | `voidcraft`×T5 = 47 (unaffected — `subgrid_width` never changes cell membership, only geometry) |
+| Row population | unaffected — identical to the `subgrid_width=4` distribution, since row/band membership doesn't depend on this constant |
+
+Every test pinning a `subgrid_width=4`-era canvas/band/row-height figure was updated to these
+values in the same session (`tests/test_layout_corpus.py`) — see that file for the exact
+assertions. Synthetic mechanism tests (`tests/test_layout.py`) pass `subgrid_width=4` explicitly
+and are unaffected by this default change, deliberately, since they test the wrap mechanism
+generically rather than the real corpus default.
+
+## D-18 — ACOT/AoT rendering-scope closure is depth-1, not a full transitive closure (corrects an earlier draft)
+
+**Superseded rule.** `pipeline.rendering_scope.compute_rendering_scope` originally computed a full
+transitive closure: starting from every unconditionally-rendered (vanilla/Gigastructures)
+technology's own `prerequisites`, it recursed through ACOT/AoT technologies indefinitely, on the
+stated reasoning that "a rendered technology's prerequisite chain is never broken by an invisible
+gap" (CLAUDE.md's original "Scope of ACOT and AoT" wording). Real corpus measurement: 7 ACOT/AoT
+technologies in the closure, max depth 2.
+
+**The report that changed it.** The user reported a specific over-inclusion: "Precursor Databank
+Construction still shows, shouldn't — it's a direct prereq for Alpha Reactors (which are a prereq
+for alpha tier tensile buildings), but in the case of the ACOT tensile techs, if the tech doesn't
+appear in the prereq block, it doesn't need to show." Verified directly against the real corpus,
+not assumed: `tech_dark_matter_power_core_ae` ("Alpha-class Enigmatic Power") is named directly in
+a rendered Gigastructures technology's own `prerequisites` — depth 1. Its own prerequisite,
+`tech_precursor_design` ("Precursor Databank Analysis"), is NOT named by anything rendered — it's
+only reachable by first passing through `tech_dark_matter_power_core_ae`, i.e. depth 2. The user's
+complaint is exactly this: a technology should render only when something ACTUALLY RENDERED names
+it, not when it merely sits somewhere in an eventually-reachable chain.
+
+**Depth-1, adopted.** `compute_rendering_scope` now performs a single pass: an ACOT/AoT technology
+renders iff a rendered (vanilla/Gigastructures) technology names it directly in its own
+`prerequisites` block. No recursion — the technology at that single hop is never itself treated as
+a new frontier to expand from. Real corpus: closure narrows from 7 to 4 members
+(`tech_dark_matter_power_core_ae/dm/se`, `tech_civil_phanon_application` — all 4 directly
+referenced by a real Gigastructures "supertensile alternate" technology, per
+`giga_17_alternative_mega_build.txt`). The 3 dropped members
+(`tech_dark_matter_power_core_enig`, `tech_mine_dark_energy`, `tech_precursor_design`) were always
+the depth-2 members of the old closure.
+
+**Two options considered and rejected before adopting depth-1 as stated:**
+- **Keep the full transitive closure.** Rejected: this is exactly the reported defect, not a
+  matter of taste — a technology two hops removed from anything rendered has no business
+  appearing, per the user's own framing of what "needs to show."
+- **A middle option: render an out-of-closure prerequisite as a distinct stub/ghost node**, so a
+  rendered ACOT technology's chain still LOOKS complete without pulling in the full depth-2+
+  subtree. Surveyed and rejected as disproportionate: the real cost of depth-1 is exactly 3 links
+  (below), not a systemic gap — building a whole new node kind, schema field, and rendering
+  treatment to paper over 3 links is more machinery than the problem warrants. If a future corpus
+  refresh makes the off-tree-link count materially larger, this option should be reconsidered
+  against the real cost at that time, not dismissed permanently on today's number.
+
+**The accepted cost, exact and named** (`pipeline.rendering_scope.compute_off_tree_prerequisites`,
+pinned by `tests/test_rendering_scope.py::
+test_depth_one_closure_off_tree_links_match_the_accepted_set`): exactly 3 off-tree prerequisite
+links, all ACOT→ACOT —
+
+| Rendered technology (renders, depth 1) | Names as a prerequisite (does NOT render, depth 2) |
+| --- | --- |
+| `tech_dark_matter_power_core_ae` ("Alpha-class Enigmatic Power") | `tech_precursor_design` ("Precursor Databank Analysis") |
+| `tech_dark_matter_power_core_dm` ("Delta-class Enigmatic Power") | `tech_dark_matter_power_core_enig` |
+| `tech_dark_matter_power_core_dm` ("Delta-class Enigmatic Power") | `tech_mine_dark_energy` |
+
+Each of these 3 rendered technologies' own card will name a prerequisite with no corresponding
+node in the tree. This is the accepted, understood cost of depth-1 — not an oversight. A future
+corpus refresh that creates a 4th such link (or removes one of these 3) fails the pinning test
+loudly, per the user's explicit instruction, rather than silently degrading (or over-restoring)
+chain completeness.
+
+**Real measured effect on the rendered dataset, over the same corpus**:
+
+| Figure | Before (full closure) | After (depth-1) |
+| --- | ---: | ---: |
+| Rendered technology count | 980 | 977 |
+| Total edges | 989 | 984 |
+| `prerequisite` edges | 888 | 883 |
+| `alternative` edges | 76 | 76 (unaffected) |
+| `potential-gate` edges | 25 | 25 (unaffected) |
+| Canvas dimensions | 30,840 × 9,736px | 30,840 × 9,736px (unaffected) |
+| Densest (row, band) cell | `voidcraft`×T5 = 47 | `voidcraft`×T5 = 47 (unaffected) |
+| `computing` row | 83 | 82 |
+| `field_manipulation` row | 82 | 81 |
+| `particles` row | 95 | 94 |
+| Standard (non-faction) population | 903 | 900 |
+
+The 5 edges removed are the `prerequisite` edges that touched the 3 dropped technologies (both
+their own outbound prerequisites and any inbound edges from other rendered technologies —
+`alternative`/`potential-gate` are unaffected since none of the 3 participated in an OR-group or a
+`potential`-gate relationship). Canvas dimensions and the densest cell are unaffected because none
+of the 3 dropped technologies was in `voidcraft`×T5 or drove that band's/row's own extent. Exactly
+1 technology drops from each of `computing`, `field_manipulation` and `particles` — confirmed
+directly, not assumed uniform.
+
+`PLACEHOLDER_TECHNOLOGIES_REQUIRING_ACOT_AOT` (`pipeline/dataset_emit.py`, the maintained
+constant reporting which technologies disappear from a build missing ACOT/AoT) narrows from 7 to
+4 members for a related but distinct reason: the 3 dropped-under-D-18 technologies are no longer
+rendered AT ALL, with or without ACOT/AoT loaded, so there is no "placeholder absent without
+ACOT/AoT" transition left to report for them. Real corpus check: the reduced-build (no ACOT/AoT)
+rendered-node count remains 977 — the SAME digits as the new full-build count, confirmed to be
+genuine coincidence (977 - 4 remaining placeholders + 4 vanilla-overwrite reversions = 977), not
+evidence the two builds are otherwise equivalent.
+
+Tests: `tests/test_rendering_scope.py` (synthetic depth-1 mechanism test, the real-corpus 4-member
+closure and 977-node total, and the 3-link off-tree-prerequisite pin), plus every corpus test
+across `tests/test_dataset_emit.py`, `tests/test_layout_corpus.py`, `tests/test_crisis_faction_corpus.py`,
+`tests/test_availability_corpus.py`, `tests/icons/test_icon_corpus.py` and `tests/test_build_dataset.py`
+re-verified against the real 977-node/984-edge closure.
