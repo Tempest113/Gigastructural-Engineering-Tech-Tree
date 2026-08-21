@@ -229,15 +229,41 @@ export interface EmpireOverlay {
     area: null | "physics" | "society" | "engineering";
     category: null | string;
   })[];
-  /** P-12.9: complete ancestor set in topological order by tier, with cumulative cost, computed per profile at build time -- never substituted from a canonical path in the browser, since swaps change the shape of the chain. Keyed by technology id. */
+  /** P-12.9 (spec/P-12.9-research-path.md): the complete `prerequisite`-edge ancestor set, `alternative` (OR-group) branches resolved to the cheapest-total-cost viable candidate, computed per profile at build time -- never substituted or recomputed from a canonical path in the browser (a v1 failure this spec's own 'The failure being fixed' section documents: profile-blind traversal and flattened OR branches). Keyed by technology id; one entry per rendered technology. */
   researchPaths: { [key: string]: {
-    ancestors: ({
+    status: "path" | "config-gated" | "unavailable";
+    /** status == 'path' or 'config-gated' only. Ordered ancestor set (topological, by tier), D-14-substituted per this profile. */
+    steps?: ({
       technologyId: TechnologyId;
+      name: string;
+      icon: IconRef;
       tier: number;
-      cumulativeCost: number;
+      /** Null when this step's own cost is unresolvable (contributes 0 to totalCost; see totalCostIsEstimate/estimateReasons). */
+      stepCost: null | number;
+      /** Never locked/config-gated -- a step whose own state resolves to either is excluded upstream (a plain locked prerequisite makes the whole path unavailable; a config-gated technology can only ever be the path's own target, per the sink property). */
+      availabilityState: "available" | "uncertain";
+      /** Set when this step was the chosen member of an alternative (OR-group) edge (P-14's Edge.groupId); null for an ordinary prerequisite step. */
+      groupId: null | string;
+      /** Other VIABLE (not locked/config-gated) siblings at this step's own groupId, not chosen. Empty when groupId is null. */
+      alternatives: ({
+        technologyId: TechnologyId;
+        name: string;
+      })[];
     })[];
-    /** D-1's 'shortest chain' toggle: the cheapest single chain by cumulative cost, as an ordered list of technology ids. */
-    shortestChain: (TechnologyId)[];
+    /** status == 'path' or 'config-gated' only (otherwise null). Sum of every step's stepCost, null-cost steps contributing 0, PLUS the target's own declared cost when status == 'path' -- a v1-compatible 'total cost to research this technology' figure (confirmed against the spec's own worked example: tech_mega_engineering's 15-ancestor sum, 50,750 for regular/mechanical/non-nomadic, plus its own 24,000 declared cost, reproduces the spec's reported 74,750 total exactly; the ancestor sum alone does not). Excludes the target's own cost when status == 'config-gated' (section 5: 'The target's own cost is excluded from totalCost entirely' -- the ancestor chain up to, not including, the cap technology itself). */
+    totalCost?: null | number;
+    /** True whenever any step is uncertain and/or any step's cost is unresolved -- see estimateReasons. False (and estimateReasons empty) only when every step is a determinate, cost-resolved available technology. */
+    totalCostIsEstimate?: boolean;
+    /** Empty when totalCostIsEstimate is false. Can carry both reasons at once. */
+    estimateReasons?: ("uncertain-availability" | "unresolved-cost")[];
+    /** Non-null only when status == 'config-gated' -- the target itself, excluded from steps/totalCost above (P-13's fourth AvailabilityState: a settings-toggle, determinate-unavailable fact, not an uncertain one). */
+    configGatedTarget?: null | {
+      technologyId: TechnologyId;
+      name: string;
+      icon: IconRef;
+      /** Same semantics as availability.*.configGatedSubject -- null when the megastructure name itself doesn't resolve. */
+      subject: null | string;
+    };
   } };
 }
 
@@ -350,6 +376,11 @@ export interface Diagnostics {
   missingLockReasonOverrides: (string)[];
   unresolvedTriggers: (string)[];
   unresolvedModDependencies: (string)[];
+  /** P-12.9 section 6's tripwire (spec/P-12.9-research-path.md): a technology whose OWN availability state is available/uncertain for the paired profile, but whose ancestor closure still contains a dead end (a plain, non-alternative prerequisite that's itself locked, or an alternative OR-group with zero viable candidates) -- the 'looks researchable but has no route' case the real corpus never produces today. Empty is the expected, healthy state; a non-empty entry here is the signal to investigate, not a normal, ignorable occurrence. */
+  unresolvableResearchPaths: ({
+    technologyId: TechnologyId;
+    profile: EmpireProfile;
+  })[];
   /** Vendoring-automation investigation (spec/decisions.md): which of the four sources (in load order) this build actually had `vendor/` content for. Vanilla and Gigastructural Engineering are always present in a valid build (their absence is a hard build failure elsewhere, not something this array softly reports); ACOT and/or AoT absent is a real, SUPPORTED reduced-corpus build mode -- Stellaris (Vanilla) cannot be fetched in CI at all (requires a Steam account that owns the game), which is why the dataset is built locally and deployed via workflow_dispatch rather than built in CI. `placeholderTechnologiesAbsent`/`vanillaTechnologiesRevertedFromAcotOverwrite` below are the loud, specific consequences of ACOT/AoT specifically being missing from this list. */
   vendorSourcesLoaded: (SourceMod)[];
   /** Empty unless ACOT and/or AoT is missing from `vendorSourcesLoaded`. The real technologies whose `requiresMods` names the missing source in a full build -- Gigastructures' own 'supertensile alternate' content (`giga_17_alternative_mega_build.txt`), the actual reason ACOT/AoT are vendored at all: they show the TRUE prerequisites of those alternates. A build missing these is plausible and self-consistent (no dangling edges, no alternative-only gaps) precisely because nothing else looks broken -- this field exists so the gap is stated, not discovered. */

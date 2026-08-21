@@ -614,6 +614,16 @@ class BuildContext:
     # same discipline CLAUDE.md's "pipeline owns all geometry" rule already establishes for
     # layout, applied here to trigger content instead.
     expanded_potentials: dict[str, Block | None]
+    # P-12.9 (research path, a later session): every rendered technology's own BASE (unswapped)
+    # display name, resolved exactly once here via `_resolve_technology_name` -- the same
+    # resolution `build_base_dataset`'s own `resolved_names` local used to compute independently
+    # per build. Hoisted onto `ctx` so `build_empire_overlay` (called once PER PROFILE, unlike
+    # `build_base_dataset`) can look up a research-path ancestor's name without re-resolving
+    # localisation 12 times over; `build_base_dataset` now reads this field instead of
+    # recomputing it, so there is exactly one source of truth for "what name does this technology
+    # resolve to," matching CLAUDE.md's "pipeline owns all geometry" discipline applied to name
+    # resolution instead.
+    resolved_names: dict[str, str]
 
 
 def _sources_present(vendor_root: Path) -> list[str]:
@@ -702,7 +712,7 @@ def build_context(vendor_root: Path) -> BuildContext:
     for owner_key, prereq_key in compute_off_tree_prerequisites(history):
         off_tree_prerequisites.setdefault(owner_key, []).append(prereq_key)
 
-    return BuildContext(
+    ctx = BuildContext(
         vendor_root=vendor_root, rendered_keys=rendered_keys, rendered_defs=rendered_defs,
         variable_table=variable_table, crisis=crisis, layout=layout,
         overwrite_records=overwrite_records, loc_table=loc_table, profiles=profiles,
@@ -711,8 +721,11 @@ def build_context(vendor_root: Path) -> BuildContext:
         icon_refs=icon_refs, swap_icon_refs=swap_icon_refs, inherited_swap_icons=inherited_swap_icons,
         perk_icon_refs=perk_icon_refs, edge_constraints=edge_constraints,
         sources_present=sources_present, off_tree_prerequisites=off_tree_prerequisites, history=history,
-        expanded_potentials=expanded_potentials,
+        expanded_potentials=expanded_potentials, resolved_names={},
     )
+    name_overrides = load_name_overrides()
+    ctx.resolved_names = {key: _resolve_technology_name(key, ctx, name_overrides) for key in rendered_keys}
+    return ctx
 
 
 def _tile_location_map(tech_sheets: list) -> dict[str, dict]:
@@ -819,15 +832,13 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
         forward.setdefault(e.to_key, {}).setdefault(e.kind, []).append(i)
         reverse.setdefault(e.from_key, {}).setdefault(e.kind, []).append(i)
 
-    name_overrides = load_name_overrides()
-
     # Resolved once, up front, for every rendered technology -- reused both for the technology's
     # own "name" field below AND for a technology-kind gate's label (P-3: a has_technology gate's
     # target is always itself a rendered technology, 17/17 real distinct targets confirmed by the
     # gate-classification survey, so it already goes through this exact resolution path; a second,
     # independent resolution during gate-building would risk drifting from the target's own
     # displayed name).
-    resolved_names: dict[str, str] = {key: _resolve_technology_name(key, ctx, name_overrides) for key in key_order}
+    resolved_names: dict[str, str] = ctx.resolved_names
 
     def _perk_gate_label(perk_id: str) -> str:
         entry = ctx.loc_table.get(perk_id)
@@ -1186,59 +1197,231 @@ def _read_manifest(vendor_root: Path) -> dict:
     }
 
 
-def _ancestor_research_path(key: str, prereq_of: dict[str, list[str]], costs: dict[str, float], tiers: dict[str, int]) -> dict:
-    seen: set[str] = set()
-    order: list[str] = []
-
-    def visit(k: str) -> None:
-        for p in prereq_of.get(k, []):
-            if p not in seen:
-                seen.add(p)
-                visit(p)
-                order.append(p)
-
-    visit(key)
-    ancestors = []
-    cumulative = 0.0
-    for k in order:
-        cumulative += costs.get(k, 0.0)
-        ancestors.append({"technologyId": k, "tier": tiers.get(k, 0), "cumulativeCost": cumulative})
-
-    # Shortest chain by cost: cheapest single path key->...->root, picked greedily by the
-    # cheapest available prerequisite at each step (P-12.9's toggle; not a general shortest-path
-    # search over alternative branches, since alternative/potential-gate routes are excluded here
-    # by definition -- prerequisite-only, matching the research path's own contract).
-    chain: list[str] = []
-    cur = key
-    visited_chain = {key}
-    while prereq_of.get(cur):
-        candidates = [p for p in prereq_of[cur] if p not in visited_chain]
-        if not candidates:
-            break
-        nxt = min(candidates, key=lambda p: costs.get(p, 0.0))
-        chain.append(nxt)
-        visited_chain.add(nxt)
-        cur = nxt
-
-    return {"ancestors": ancestors, "shortestChain": list(reversed(chain))}
-
-
-def build_empire_overlay(ctx: BuildContext, profile: dict) -> dict:
-    profile_index = empire_profile_index(profile)
-    lock_reason_overrides = load_lock_reason_overrides()
-
-    availability_json = {}
-    swap_mappings = []
+def _prereq_and_alt_maps(ctx: "BuildContext") -> tuple[dict[str, list[str]], dict[str, list[tuple[str, list[str]]]]]:
+    """P-12.9: `prereq_of[to_key]` (true `prerequisite` edges only, matching every other
+    prereq_of user in this module) and `alt_groups_of[to_key]` (that technology's own
+    `alternative` OR-groups, as `(groupId, [candidate technologyId, ...])` pairs, P-14's
+    `Edge.groupId`) -- both derived once from `ctx.typed_edges`, profile-invariant (edge
+    membership doesn't change per profile; only each candidate's own availability state does),
+    so this is computed once and shared across every profile's own path build."""
     prereq_of: dict[str, list[str]] = {k: [] for k in ctx.rendered_keys}
-    costs: dict[str, float] = {}
-    tiers: dict[str, int] = {}
+    alt_groups: dict[str, dict[str, list[str]]] = {}
     for e in ctx.typed_edges:
         if e.kind == "prerequisite":
             prereq_of.setdefault(e.to_key, []).append(e.from_key)
+        elif e.kind == "alternative":
+            alt_groups.setdefault(e.to_key, {}).setdefault(e.group_id, []).append(e.from_key)
+    alt_groups_of = {k: sorted(v.items()) for k, v in alt_groups.items()}
+    return prereq_of, alt_groups_of
+
+
+class _UnreachablePath(Exception):
+    """Raised internally by `_build_research_paths_for_profile`'s `closure` when an ancestor
+    closure hits a dead end for the current profile: a plain (non-`alternative`) prerequisite
+    that is itself `locked`/`config-gated`, or an `alternative` group with zero viable candidates.
+    Always caught at the per-target level -- never lets one broken ancestor closure abort the
+    whole profile's path build."""
+
+
+def _build_research_paths_for_profile(
+    ctx: "BuildContext",
+    prereq_of: dict[str, list[str]],
+    alt_groups_of: dict[str, list[tuple[str, list[str]]]],
+    availability_json: dict[str, dict],
+    costs: dict[str, float | None],
+    tiers: dict[str, int],
+    swap_by_key: dict[str, dict],
+) -> tuple[dict[str, dict], list[str]]:
+    """P-12.9 (`spec/P-12.9-research-path.md`): per-technology research path for ONE profile,
+    replacing the old profile-blind, `OR`-flattening `researchPaths` shape (v1's own documented
+    failure -- see the spec's "The failure being fixed"). Every ancestor closure is memoised ONCE
+    across all `ctx.rendered_keys` targets sharing this profile (`closure` below), since real
+    ancestor sets overlap heavily between targets.
+
+    Section 2's `OR`-group resolution: at each technology with its own `alternative` group(s),
+    candidates whose state is `locked`/`config-gated` for this profile are excluded; among the
+    remaining VIABLE candidates (`available` or `uncertain` both count, section 2 -- excluding
+    `uncertain` would be D-10's "unknown treated as no" mistake), the one with the cheapest
+    TOTAL closure cost (its own cost plus its own full recursive ancestor closure's cost) is
+    chosen -- never just its own declared cost, which is what fixes v1's "branch never expanded
+    its own prerequisites" bug. The chosen candidate's own closure is unioned into the running
+    ancestor SET (section "cheapest = ... as a SET, shared ancestors counted once").
+
+    Returns `(paths, unresolvable_ids)`; `unresolvable_ids` is section 6's tripwire diagnostic --
+    a technology whose OWN state is available/uncertain but whose ancestor closure still contains
+    a dead end. Empty on the real corpus (confirmed by running this exact algorithm against it,
+    not assumed) -- surfaced as `diagnostics.unresolvableResearchPaths` by the caller, not
+    silently absorbed into a fabricated `unavailable` status."""
+
+    memo: dict[str, tuple[frozenset, dict[str, tuple[str, list[str]]], bool, bool]] = {}
+    direct_effective_deps: dict[str, list[str]] = {}
+
+    def state_of(k: str) -> str:
+        return availability_json.get(k, {}).get("state", LOCKED)
+
+    def closure(k: str) -> tuple[frozenset, dict[str, tuple[str, list[str]]], bool, bool]:
+        if k in memo:
+            return memo[k]
+        req: set[str] = set()
+        group_info: dict[str, tuple[str, list[str]]] = {}
+        has_uncertain = state_of(k) == UNCERTAIN
+        has_null_cost = costs.get(k) is None
+        deps: list[str] = []
+
+        def _absorb(child_key: str, child_state: str) -> None:
+            nonlocal has_uncertain, has_null_cost
+            if child_key in req:
+                return
+            child_req, child_gi, child_unc, child_null = closure(child_key)
+            req.add(child_key)
+            req.update(child_req)
+            for gk, gv in child_gi.items():
+                group_info.setdefault(gk, gv)
+            has_uncertain = has_uncertain or child_unc or child_state == UNCERTAIN
+            has_null_cost = has_null_cost or child_null or costs.get(child_key) is None
+
+        for p in prereq_of.get(k, []):
+            p_state = state_of(p)
+            if p_state in (LOCKED, CONFIG_GATED):
+                raise _UnreachablePath()
+            deps.append(p)
+            _absorb(p, p_state)
+
+        for group_id, members in alt_groups_of.get(k, []):
+            viable = [m for m in members if state_of(m) in (AVAILABLE, UNCERTAIN)]
+            if not viable:
+                raise _UnreachablePath()
+            chosen = min(viable, key=lambda m: (_closure_total_cost(m, closure, costs), m))
+            deps.append(chosen)
+            _absorb(chosen, state_of(chosen))
+            group_info.setdefault(chosen, (group_id, [m for m in viable if m != chosen]))
+
+        direct_effective_deps[k] = deps
+        result = (frozenset(req), group_info, has_uncertain, has_null_cost)
+        memo[k] = result
+        return result
+
+    def ordered_ancestors(key: str, req: frozenset) -> list[str]:
+        seen: set[str] = set()
+        order: list[str] = []
+
+        def visit(k: str) -> None:
+            for d in direct_effective_deps.get(k, []):
+                if d not in seen:
+                    seen.add(d)
+                    visit(d)
+                    order.append(d)
+
+        visit(key)
+        assert set(order) == set(req), (key, set(order) ^ set(req))
+        return order
+
+    def display(tid: str) -> tuple[str, dict]:
+        swap = swap_by_key.get(tid)
+        if swap is not None:
+            return swap["name"], swap["icon"]
+        return ctx.resolved_names.get(tid, tid), ctx.icon_refs.get(tid) or _default_icon_ref(ctx)
+
+    def build_step(tid: str, group_info: dict[str, tuple[str, list[str]]]) -> dict:
+        name, icon = display(tid)
+        group_id, alt_ids = group_info.get(tid, (None, []))
+        return {
+            "technologyId": tid, "name": name, "icon": icon, "tier": tiers.get(tid, 0),
+            "stepCost": costs.get(tid), "availabilityState": state_of(tid),
+            "groupId": group_id,
+            "alternatives": [{"technologyId": a, "name": display(a)[0]} for a in alt_ids],
+        }
+
+    paths: dict[str, dict] = {}
+    unresolvable: list[str] = []
+
+    for key in sorted(ctx.rendered_keys):
+        target_state = state_of(key)
+        if target_state == LOCKED:
+            paths[key] = {"status": "unavailable"}
+            continue
+        try:
+            req, group_info, has_uncertain, has_null_cost = closure(key)
+        except _UnreachablePath:
+            unresolvable.append(key)
+            paths[key] = {"status": "unavailable"}
+            continue
+
+        order = ordered_ancestors(key, req)
+        steps = [build_step(tid, group_info) for tid in order]
+        ancestors_cost = sum((costs.get(tid) or 0.0) for tid in order)
+        is_config_gated = target_state == CONFIG_GATED
+        # Section 5: a config-gated target's own cost is excluded from totalCost entirely (the
+        # ancestor chain up to, not including, the cap technology itself). Every other status
+        # ("path") includes the target's own cost -- confirmed against the spec's own worked
+        # example (tech_mega_engineering, regular/mechanical/non-nomadic: 15 ancestor steps sum to
+        # 50,750; the spec's reported total, 74,750, is exactly that plus the target's own 24,000
+        # declared cost) and against this session's corrected nomadic figure (76,250 = 52,250
+        # ancestor sum + the same 24,000) -- "sum of stepCost" alone, read literally, reproduces
+        # neither figure; this is the schema's own actual intent, not a deviation from it.
+        total_cost = ancestors_cost if is_config_gated else ancestors_cost + (costs.get(key) or 0.0)
+        target_uncertain = target_state == UNCERTAIN
+        target_null_cost = (not is_config_gated) and costs.get(key) is None
+        reasons = []
+        if has_uncertain or target_uncertain:
+            reasons.append("uncertain-availability")
+        if has_null_cost or target_null_cost:
+            reasons.append("unresolved-cost")
+
+        entry = {
+            "status": "config-gated" if is_config_gated else "path",
+            "steps": steps,
+            "totalCost": total_cost,
+            "totalCostIsEstimate": bool(reasons),
+            "estimateReasons": reasons,
+            "configGatedTarget": None,
+        }
+        if target_state == CONFIG_GATED:
+            name, icon = display(key)
+            entry["configGatedTarget"] = {
+                "technologyId": key, "name": name, "icon": icon,
+                "subject": _config_gated_subject(key, ctx),
+            }
+        paths[key] = entry
+
+    return paths, unresolvable
+
+
+def _closure_total_cost(key: str, closure_fn, costs: dict[str, float | None]) -> float:
+    """The FULL closure cost of `key` as an `alternative`-group CANDIDATE: its own declared cost
+    plus its own recursive ancestor closure's cost, null-cost members contributing 0 (section 2's
+    "the branch's own cost plus its own full prerequisite chain's cumulative cost, recursively" --
+    what fixes v1's "Arkship Mastery never expanded its own prerequisites" bug). This is a
+    per-candidate comparison figure only, deliberately NOT deduplicated against ancestors already
+    chosen elsewhere in the path being built -- the final `totalCost` (computed once, over the
+    actual chosen ancestor SET) is where sharing is naturally deduplicated instead."""
+    req, _gi, _unc, _null = closure_fn(key)
+    return (costs.get(key) or 0.0) + sum((costs.get(a) or 0.0) for a in req)
+
+
+def _compute_profile_facts(
+    ctx: "BuildContext", profile: dict,
+) -> tuple[dict[str, dict], dict[str, float | None], dict[str, int], list[dict]]:
+    """`(availability_json, costs, tiers, swap_mappings)` for ONE profile -- extracted from
+    `build_empire_overlay` (which still calls this directly) so `build_diagnostics`'s
+    `unresolvableResearchPaths` computation (P-12.9 section 6) can reuse the SAME per-profile
+    availability/cost/swap resolution rather than an independent, driftable recomputation --
+    matching CLAUDE.md's "pipeline owns all geometry" discipline applied to per-profile facts."""
+    lock_reason_overrides = load_lock_reason_overrides()
+    availability_json: dict[str, dict] = {}
+    swap_mappings: list[dict] = []
+    # P-12.9: `None` (not `0.0`) is preserved here -- the research-path algorithm needs to tell
+    # "declared zero cost" (28/973 real starting technologies) apart from "cost unresolvable"
+    # (5 more; `_resolve_cost`'s own docstring), the same distinction the base dataset's own `cost`
+    # field already preserves (`_resolve_cost`'s null-means-unresolved contract). A `None` still
+    # contributes exactly 0 to any running total, same numeric effect as before this change -- only
+    # the "was this actually zero, or unknown" bookkeeping changed.
+    costs: dict[str, float | None] = {}
+    tiers: dict[str, int] = {}
 
     for key, defn in ctx.rendered_defs.items():
         cost_assignment = _field(defn.block, "cost")
-        costs[key] = _resolve_cost(cost_assignment.value if cost_assignment else None, ctx.variable_table) or 0.0
+        costs[key] = _resolve_cost(cost_assignment.value if cost_assignment else None, ctx.variable_table)
         tiers[key] = resolve_declared_tier(key, defn.block, ctx.variable_table)
 
         result = evaluate_technology_for_profiles(ctx.expanded_potentials.get(key), [profile])[0]
@@ -1272,12 +1455,29 @@ def build_empire_overlay(ctx: BuildContext, profile: dict) -> dict:
                 "category": category,
             })
 
+    return availability_json, costs, tiers, swap_mappings
+
+
+def build_empire_overlay(ctx: BuildContext, profile: dict) -> dict:
+    profile_index = empire_profile_index(profile)
+    prereq_of, alt_groups_of = _prereq_and_alt_maps(ctx)
+    availability_json, costs, tiers, swap_mappings = _compute_profile_facts(ctx, profile)
+
     active_edge_ids = [
         i for i, e in enumerate(ctx.layout.edges)
         if edge_active_for_profile(ctx.edge_constraints.get((e.from_key, e.to_key, e.kind)), profile)
     ]
 
-    research_paths = {key: _ancestor_research_path(key, prereq_of, costs, tiers) for key in ctx.rendered_keys}
+    swap_by_key = {m["technologyId"]: m for m in swap_mappings}
+    # Section 6's `unresolvableResearchPaths` tripwire (spec/P-12.9-research-path.md) is a
+    # DIAGNOSTICS-artefact concern (S-2's own lazy, dev-only artefact), not part of the
+    # empire-overlay schema -- `build_diagnostics` recomputes it directly via the same
+    # `_build_research_paths_for_profile` call, matching this module's existing precedent
+    # (its own D-10 survey and `uncertainTechnologies` section are independent recomputations
+    # from `ctx` too, never smuggled through an unrelated function's return value).
+    research_paths, _unresolvable_paths = _build_research_paths_for_profile(
+        ctx, prereq_of, alt_groups_of, availability_json, costs, tiers, swap_by_key,
+    )
 
     return {
         "schemaVersion": SCHEMA_VERSION,
@@ -1495,6 +1695,25 @@ def build_diagnostics(ctx: BuildContext) -> dict:
 
     alt_gaps = compute_alternative_only_gaps(technology_history_all)
 
+    # P-12.9 section 6's tripwire: a technology whose OWN state is available/uncertain but whose
+    # ancestor closure still contains a dead end, for at least one profile. Recomputed directly
+    # from `ctx` per profile (via the SAME `_build_research_paths_for_profile`/`_compute_profile_
+    # facts` calls `build_empire_overlay` makes) rather than threaded through that function's
+    # return value -- this module's existing precedent for a diagnostics-only figure (see this
+    # function's own `uncertain_technologies` above). Empty on the real corpus (confirmed by
+    # actually running the algorithm, not assumed) -- see spec/P-12.9-research-path.md section 6.
+    prereq_of, alt_groups_of = _prereq_and_alt_maps(ctx)
+    unresolvable_research_paths: list[dict] = []
+    for profile in ctx.profiles:
+        availability_json, costs, tiers, swap_mappings = _compute_profile_facts(ctx, profile)
+        swap_by_key = {m["technologyId"]: m for m in swap_mappings}
+        _paths, unresolvable = _build_research_paths_for_profile(
+            ctx, prereq_of, alt_groups_of, availability_json, costs, tiers, swap_by_key,
+        )
+        unresolvable_research_paths.extend(
+            {"technologyId": key, "profile": profile} for key in unresolvable
+        )
+
     return {
         "schemaVersion": SCHEMA_VERSION,
         **d10_section,
@@ -1509,6 +1728,7 @@ def build_diagnostics(ctx: BuildContext) -> dict:
         "missingLockReasonOverrides": sorted(missing_lock_reasons),
         "unresolvedTriggers": [],
         "unresolvedModDependencies": sorted(alt_gaps),
+        "unresolvableResearchPaths": unresolvable_research_paths,
         "overwriteReport": overwrite_report,
         **_reduced_vendor_diagnostics(ctx),
     }

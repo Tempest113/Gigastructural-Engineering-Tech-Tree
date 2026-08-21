@@ -49,6 +49,15 @@
        the QSO family inheriting ap_qso from giga_tech_quasi_stellar_1) is styled distinctly from
        a directly-declared one, matching the "via <source>" note appended to its label. */
     #detail-popup .gate-inherited-note { color: #c8b98a; font-style: italic; }
+    /* P-12.9 (spec/P-12.9-research-path.md): the precomputed, per-profile research path -- an
+       uncertain step's badge, a chosen OR-step's not-chosen-sibling note, and the total-cost
+       estimate note, all styled the same "annotation, not error" way S-3's LOD table already
+       treats an uncertain badge elsewhere -- muted, not alarming, since section 4 says this will
+       be common. */
+    #detail-popup .research-path-uncertain { color: #d9a441; font-size: 11px; }
+    #detail-popup .research-path-alt-note { color: #7f8ea3; font-size: 12px; font-style: italic; }
+    #detail-popup .research-path-estimate-note { color: #7f8ea3; font-size: 12px; }
+    #detail-popup .research-path-config-gated-note { color: #c8b98a; font-style: italic; }
 
     /* Item 1 (later session): dev health monitor, ?dev-gated. Plain, unstyled -- a diagnostic
        tool, not a feature, so this reuses the detail-popup's basic panel shape rather than

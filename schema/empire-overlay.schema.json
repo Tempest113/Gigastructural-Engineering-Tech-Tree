@@ -70,31 +70,88 @@
 
     "researchPaths": {
       "type": "object",
-      "description": "P-12.9: complete ancestor set in topological order by tier, with cumulative cost, computed per profile at build time -- never substituted from a canonical path in the browser, since swaps change the shape of the chain. Keyed by technology id.",
+      "description": "P-12.9 (spec/P-12.9-research-path.md): the complete `prerequisite`-edge ancestor set, `alternative` (OR-group) branches resolved to the cheapest-total-cost viable candidate, computed per profile at build time -- never substituted or recomputed from a canonical path in the browser (a v1 failure this spec's own 'The failure being fixed' section documents: profile-blind traversal and flattened OR branches). Keyed by technology id; one entry per rendered technology.",
       "additionalProperties": {
         "type": "object",
         "properties": {
-          "ancestors": {
+          "status": { "type": "string", "enum": ["path", "config-gated", "unavailable"] },
+          "steps": {
             "type": "array",
+            "description": "status == 'path' or 'config-gated' only. Ordered ancestor set (topological, by tier), D-14-substituted per this profile.",
             "items": {
               "type": "object",
               "properties": {
                 "technologyId": { "$ref": "common.schema.json#/$defs/TechnologyId" },
+                "name": { "type": "string" },
+                "icon": { "$ref": "common.schema.json#/$defs/IconRef" },
                 "tier": { "type": "integer", "minimum": 0 },
-                "cumulativeCost": { "type": "number", "minimum": 0 }
+                "stepCost": {
+                  "oneOf": [{ "type": "null" }, { "type": "number", "minimum": 0 }],
+                  "description": "Null when this step's own cost is unresolvable (contributes 0 to totalCost; see totalCostIsEstimate/estimateReasons)."
+                },
+                "availabilityState": {
+                  "type": "string", "enum": ["available", "uncertain"],
+                  "description": "Never locked/config-gated -- a step whose own state resolves to either is excluded upstream (a plain locked prerequisite makes the whole path unavailable; a config-gated technology can only ever be the path's own target, per the sink property)."
+                },
+                "groupId": {
+                  "oneOf": [{ "type": "null" }, { "type": "string" }],
+                  "description": "Set when this step was the chosen member of an alternative (OR-group) edge (P-14's Edge.groupId); null for an ordinary prerequisite step."
+                },
+                "alternatives": {
+                  "type": "array",
+                  "description": "Other VIABLE (not locked/config-gated) siblings at this step's own groupId, not chosen. Empty when groupId is null.",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "technologyId": { "$ref": "common.schema.json#/$defs/TechnologyId" },
+                      "name": { "type": "string" }
+                    },
+                    "required": ["technologyId", "name"],
+                    "additionalProperties": false
+                  }
+                }
               },
-              "required": ["technologyId", "tier", "cumulativeCost"],
+              "required": ["technologyId", "name", "icon", "tier", "stepCost", "availabilityState", "groupId", "alternatives"],
               "additionalProperties": false
             }
           },
-          "shortestChain": {
+          "totalCost": {
+            "oneOf": [{ "type": "null" }, { "type": "number", "minimum": 0 }],
+            "description": "status == 'path' or 'config-gated' only (otherwise null). Sum of every step's stepCost, null-cost steps contributing 0, PLUS the target's own declared cost when status == 'path' -- a v1-compatible 'total cost to research this technology' figure (confirmed against the spec's own worked example: tech_mega_engineering's 15-ancestor sum, 50,750 for regular/mechanical/non-nomadic, plus its own 24,000 declared cost, reproduces the spec's reported 74,750 total exactly; the ancestor sum alone does not). Excludes the target's own cost when status == 'config-gated' (section 5: 'The target's own cost is excluded from totalCost entirely' -- the ancestor chain up to, not including, the cap technology itself)."
+          },
+          "totalCostIsEstimate": {
+            "type": "boolean",
+            "description": "True whenever any step is uncertain and/or any step's cost is unresolved -- see estimateReasons. False (and estimateReasons empty) only when every step is a determinate, cost-resolved available technology."
+          },
+          "estimateReasons": {
             "type": "array",
-            "items": { "$ref": "common.schema.json#/$defs/TechnologyId" },
-            "description": "D-1's 'shortest chain' toggle: the cheapest single chain by cumulative cost, as an ordered list of technology ids."
+            "items": { "type": "string", "enum": ["uncertain-availability", "unresolved-cost"] },
+            "description": "Empty when totalCostIsEstimate is false. Can carry both reasons at once."
+          },
+          "configGatedTarget": {
+            "description": "Non-null only when status == 'config-gated' -- the target itself, excluded from steps/totalCost above (P-13's fourth AvailabilityState: a settings-toggle, determinate-unavailable fact, not an uncertain one).",
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "properties": {
+                  "technologyId": { "$ref": "common.schema.json#/$defs/TechnologyId" },
+                  "name": { "type": "string" },
+                  "icon": { "$ref": "common.schema.json#/$defs/IconRef" },
+                  "subject": {
+                    "oneOf": [{ "type": "null" }, { "type": "string" }],
+                    "description": "Same semantics as availability.*.configGatedSubject -- null when the megastructure name itself doesn't resolve."
+                  }
+                },
+                "required": ["technologyId", "name", "icon", "subject"],
+                "additionalProperties": false
+              }
+            ]
           }
         },
-        "required": ["ancestors", "shortestChain"],
-        "additionalProperties": false
+        "required": ["status"],
+        "additionalProperties": false,
+        "description": "status == 'unavailable' carries ONLY the status field -- no steps array, no totalCost, no fabricated partial list (section 6: the target's own state is locked, or an ancestor closure has no viable route). status == 'path'/'config-gated' carry every other field."
       }
     }
   },

@@ -437,6 +437,7 @@ def test_d10_diagnostics_section_is_schema_valid(expanded_rendered_potentials):
         "missingLockReasonOverrides": [],
         "unresolvedTriggers": [],
         "unresolvedModDependencies": [],
+        "unresolvableResearchPaths": [],
         "overwriteReport": {"technologyBlockOverwrites": [], "scriptedVariableOverwrites": []},
         "vendorSourcesLoaded": ["Vanilla", "Gigastructural Engineering", "ACOT", "AoT"],
         "placeholderTechnologiesAbsent": [],

@@ -1839,6 +1839,7 @@ async function render(): Promise<void> {
       <div class="field-label">Dependents (${dependentNames.length})</div>
       <div class="field-value">${dependentNames.length > 0 ? `<ul>${dependentNames.map((n) => `<li>${escapeHtml(n)}</li>`).join("")}</ul>` : "none"}</div>
       <div id="popup-off-tree"></div>
+      <div id="popup-research-path"></div>
     `;
     popupEl.dataset.open = "true";
 
@@ -1872,22 +1873,79 @@ async function render(): Promise<void> {
     // Availability REASON: state is already shown above (from the base dataset, no fetch); the
     // structure-derived/trigger-derived REASON text lives in the selected profile's own overlay
     // (P-13) -- fetched here, lazily, same pattern as the description above. Never fetched for
-    // `available` (P-13: reason is null when available, per the schema).
+    // `available` (P-13: reason is null when available, per the schema). The SAME overlay fetch
+    // also carries P-12.9's research path, so it's now made unconditionally (a "path" needs the
+    // overlay regardless of whether this technology itself is locked/uncertain).
     const stateNow = tech.availabilityMatrix[empireProfileIndex(currentProfile)]!;
-    if (stateNow !== "available") {
-      try {
-        const overlay = await fetchEmpireOverlay(profileKey(currentProfile));
-        if (selectedIndex !== idx) return; // selection moved on while the fetch was in flight
+    try {
+      const overlay = await fetchEmpireOverlay(profileKey(currentProfile));
+      if (selectedIndex !== idx) return; // selection moved on while the fetch was in flight
+      if (stateNow !== "available") {
         const availEl = document.getElementById("popup-availability");
         const entry = overlay.availability[techId];
         if (availEl && entry) {
           availEl.textContent = `${entry.state}${entry.reason ? ` — ${entry.reason}` : ""}`;
         }
-      } catch (err) {
+      }
+      renderResearchPath(overlay.researchPaths[techId]);
+    } catch (err) {
+      if (stateNow !== "available") {
         const availEl = document.getElementById("popup-availability");
         if (availEl) availEl.textContent = `${stateNow} (reason unavailable: ${String(err)})`;
       }
+      const pathEl = document.getElementById("popup-research-path");
+      if (pathEl) pathEl.innerHTML = `<div class="field-label">Research path</div><div class="field-value">(unavailable: ${escapeHtml(String(err))})</div>`;
     }
+  }
+
+  // P-12.9 (spec/P-12.9-research-path.md): renders the precomputed, per-profile research path --
+  // ordered steps, per-step cost, running total, the estimate flag with its reason(s) where set,
+  // and OR choices presented as choices (a chosen step's `alternatives`, never flattened). Every
+  // field here is already resolved server-side (D-14 name/icon substitution, OR-group viability
+  // and cheapest-cost resolution) -- this function only formats what the overlay already carries,
+  // never recomputes traversal client-side (CLAUDE.md's "pipeline owns all geometry" discipline,
+  // applied to research-path data the same way P-13/D-14 already apply it to availability/swaps).
+  function renderResearchPath(entry: EmpireOverlay["researchPaths"][string] | undefined): void {
+    const pathEl = document.getElementById("popup-research-path");
+    if (!pathEl || !entry) return;
+
+    if (entry.status === "unavailable") {
+      pathEl.innerHTML = `
+        <div class="field-label">Research path</div>
+        <div class="field-value">No research path — see availability above.</div>
+      `;
+      return;
+    }
+
+    const steps = entry.steps ?? [];
+    const stepRows = steps
+      .map((s) => {
+        const uncertainBadge = s.availabilityState === "uncertain" ? ` <span class="research-path-uncertain">uncertain</span>` : "";
+        const costText = s.stepCost !== null ? Math.round(s.stepCost).toLocaleString("en-US") : "unresolved";
+        const altSuffix = s.alternatives.length > 0
+          ? ` <span class="research-path-alt-note">(also: ${s.alternatives.map((a) => escapeHtml(a.name)).join(", ")})</span>`
+          : "";
+        return `<li>${escapeHtml(s.name)} — ${costText}${uncertainBadge}${altSuffix}</li>`;
+      })
+      .join("");
+
+    const totalText = entry.totalCost !== null && entry.totalCost !== undefined
+      ? Math.round(entry.totalCost).toLocaleString("en-US")
+      : "unresolved";
+    const estimateNote = entry.totalCostIsEstimate
+      ? ` <span class="research-path-estimate-note">(estimate${(entry.estimateReasons ?? []).length > 0 ? `: ${(entry.estimateReasons ?? []).join(", ")}` : ""})</span>`
+      : "";
+
+    const configGatedNote = entry.status === "config-gated" && entry.configGatedTarget
+      ? `<div class="field-value research-path-config-gated-note">${escapeHtml(entry.configGatedTarget.name)}: ${escapeHtml(entry.configGatedTarget.subject ? `Requires ${entry.configGatedTarget.subject} cap: 1 + Repeatables` : "config-gated")}</div>`
+      : "";
+
+    pathEl.innerHTML = `
+      <div class="field-label">Research path (${steps.length})</div>
+      <div class="field-value">${steps.length > 0 ? `<ul>${stepRows}</ul>` : "none"}</div>
+      <div class="field-value">Total: ${totalText}${estimateNote}</div>
+      ${configGatedNote}
+    `;
   }
 
   function closePopup(): void {

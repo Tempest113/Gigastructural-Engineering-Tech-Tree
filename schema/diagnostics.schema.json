@@ -121,6 +121,20 @@
     "unresolvedTriggers": { "type": "array", "items": { "type": "string" } },
     "unresolvedModDependencies": { "type": "array", "items": { "type": "string" } },
 
+    "unresolvableResearchPaths": {
+      "type": "array",
+      "description": "P-12.9 section 6's tripwire (spec/P-12.9-research-path.md): a technology whose OWN availability state is available/uncertain for the paired profile, but whose ancestor closure still contains a dead end (a plain, non-alternative prerequisite that's itself locked, or an alternative OR-group with zero viable candidates) -- the 'looks researchable but has no route' case the real corpus never produces today. Empty is the expected, healthy state; a non-empty entry here is the signal to investigate, not a normal, ignorable occurrence.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "technologyId": { "$ref": "common.schema.json#/$defs/TechnologyId" },
+          "profile": { "$ref": "common.schema.json#/$defs/EmpireProfile" }
+        },
+        "required": ["technologyId", "profile"],
+        "additionalProperties": false
+      }
+    },
+
     "vendorSourcesLoaded": {
       "type": "array",
       "description": "Vendoring-automation investigation (spec/decisions.md): which of the four sources (in load order) this build actually had `vendor/` content for. Vanilla and Gigastructural Engineering are always present in a valid build (their absence is a hard build failure elsewhere, not something this array softly reports); ACOT and/or AoT absent is a real, SUPPORTED reduced-corpus build mode -- Stellaris (Vanilla) cannot be fetched in CI at all (requires a Steam account that owns the game), which is why the dataset is built locally and deployed via workflow_dispatch rather than built in CI. `placeholderTechnologiesAbsent`/`vanillaTechnologiesRevertedFromAcotOverwrite` below are the loud, specific consequences of ACOT/AoT specifically being missing from this list.",
@@ -218,7 +232,7 @@
     "uncertainTechnologies",
     "missingInlineScriptParameterCount", "tierPromotions", "swapsRenderingOnInheritedIcon",
     "unrecognisedGatePatterns", "missingLockReasonOverrides", "unresolvedTriggers",
-    "unresolvedModDependencies", "overwriteReport", "vendorSourcesLoaded",
+    "unresolvedModDependencies", "unresolvableResearchPaths", "overwriteReport", "vendorSourcesLoaded",
     "placeholderTechnologiesAbsent", "vanillaTechnologiesRevertedFromAcotOverwrite"
   ],
   "additionalProperties": false
