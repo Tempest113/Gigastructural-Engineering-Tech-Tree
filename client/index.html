@@ -45,6 +45,10 @@
     #detail-popup .off-tree-note { color: #c8b98a; font-style: italic; }
     #detail-popup .gate-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.3rem; }
     #detail-popup .gate-icon { display: inline-block; flex: none; image-rendering: pixelated; }
+    /* Item 3 (later session): an inherited gate (propagated from a prerequisite ancestor, e.g.
+       the QSO family inheriting ap_qso from giga_tech_quasi_stellar_1) is styled distinctly from
+       a directly-declared one, matching the "via <source>" note appended to its label. */
+    #detail-popup .gate-inherited-note { color: #c8b98a; font-style: italic; }
 
     /* Item 1 (later session): dev health monitor, ?dev-gated. Plain, unstyled -- a diagnostic
        tool, not a feature, so this reuses the detail-popup's basic panel shape rather than

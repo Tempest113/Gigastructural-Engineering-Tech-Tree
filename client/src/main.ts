@@ -1003,6 +1003,14 @@ async function render(): Promise<void> {
   // 16px-tall rows need a smaller face to keep short labels ("T5", "×5", "ACOT") legible without
   // overflowing their own badge.
   const gutterBadgeTextStyle = new TextStyle({ fill: "#0d0f13", fontSize: 10, fontFamily: "system-ui, sans-serif", fontWeight: "700" });
+  // Item 8a (later session): "∞" (unbounded repeatable, 88 real technologies share the repeatable
+  // badge but only the unbounded ones use this glyph) sits at the SAME 10px font size as every
+  // other gutter badge, but the glyph's own ink is much smaller/thinner than a digit at that size
+  // -- the autoscale below can only shrink text to fit the badge box, never enlarge it, so a
+  // naturally-small glyph stays small and reads as a hyphen at anything under near-maximum zoom,
+  // per the user's report. A dedicated, larger base font size for this one glyph fixes it without
+  // touching the shared digit/badge style everything else still uses.
+  const infinityBadgeTextStyle = new TextStyle({ fill: "#0d0f13", fontSize: 20, fontFamily: "system-ui, sans-serif", fontWeight: "700" });
   const gateLabelStyle = new TextStyle({ fill: "#c8b98a", fontSize: 11, fontFamily: "system-ui, sans-serif" });
   const chipTextStyle = new TextStyle({ fill: "#0d0f13", fontSize: 15, fontFamily: "system-ui, sans-serif", fontWeight: "700" });
   // Per-(row, band)-cell tier label (defect fix: replaces the removed sticky header -- v1 repeats
@@ -1154,7 +1162,7 @@ async function render(): Promise<void> {
       const c = new Container();
       const bg = new Graphics().roundRect(0, 0, BADGE_GUTTER_WIDTH, BADGE_HEIGHT, 3).fill({ color, alpha: 0.92 });
       c.addChild(bg);
-      const t = new Text({ text, style: gutterBadgeTextStyle });
+      const t = new Text({ text, style: text === "∞" ? infinityBadgeTextStyle : gutterBadgeTextStyle });
       t.scale.set(Math.min(1, (BADGE_GUTTER_WIDTH - 4) / t.width, (BADGE_HEIGHT - 2) / t.height));
       t.position.set(BADGE_GUTTER_WIDTH / 2 - (t.width * t.scale.x) / 2, BADGE_HEIGHT / 2 - (t.height * t.scale.y) / 2);
       c.addChild(t);
@@ -1803,13 +1811,20 @@ async function render(): Promise<void> {
         return visibleGates.length > 0 ? `
         <div class="field-label">Gates${visibleGates.length > 1 ? ` (${visibleGates.length})` : ""}</div>
         <div class="field-value">${visibleGates
-          .map(
-            (g) => `
-          <div class="gate-row">
+          .map((g) => {
+            // Item 3 (later session): an inherited gate (propagated from a `prerequisite`-edge
+            // ancestor that declares it directly, e.g. the QSO family inheriting `ap_qso` from
+            // giga_tech_quasi_stellar_1) is rendered distinctly -- naming the source technology --
+            // so a user can tell where the requirement originates, per this gate's own schema
+            // field docs (`Gate.inherited`/`Gate.sourceTechnologyId`).
+            const sourceName = g.sourceTechnologyId ? displayName(g.sourceTechnologyId) : null;
+            const viaSuffix = g.inherited && sourceName ? ` <span class="gate-inherited-note">(via ${escapeHtml(sourceName)})</span>` : "";
+            return `
+          <div class="gate-row${g.inherited ? " gate-row-inherited" : ""}">
             <span class="gate-icon" style="background-image:url('${atlasWebpUrlBySheet.get(g.icon.sheet) ?? ""}');background-position:-${g.icon.x}px -${g.icon.y}px;width:${g.icon.width}px;height:${g.icon.height}px;background-size:auto;"></span>
-            <span>${escapeHtml(g.label)}</span>
-          </div>`
-          )
+            <span>${escapeHtml(g.label)}${viaSuffix}</span>
+          </div>`;
+          })
           .join("")}</div>
       ` : "";
       })()}
@@ -1837,9 +1852,16 @@ async function render(): Promise<void> {
       if (descEl) descEl.textContent = detail.description || "(no description)";
       const offTreeEl = document.getElementById("popup-off-tree");
       if (offTreeEl && detail.offTreePrerequisiteNames.length > 0) {
+        // Item 8b (later session): rewritten for an end user -- no decision codes ("D-18"), no
+        // internal vocabulary ("rendered scope", "node"). The full internal detail is still
+        // available under `?dev`, where the target audience IS someone debugging this tool.
+        const names = detail.offTreePrerequisiteNames.map((n) => escapeHtml(n)).join(", ");
+        const note = new URLSearchParams(window.location.search).has("dev")
+          ? `${names} -- outside the rendered scope (D-18: reachable only via another ACOT/AoT technology, not shown as a node).`
+          : `${names} (not shown on this tree).`;
         offTreeEl.innerHTML = `
           <div class="field-label">Also requires</div>
-          <div class="field-value off-tree-note">${detail.offTreePrerequisiteNames.map((n) => escapeHtml(n)).join(", ")} -- outside the rendered scope (D-18: reachable only via another ACOT/AoT technology, not shown as a node).</div>
+          <div class="field-value off-tree-note">${note}</div>
         `;
       }
     } catch (err) {
