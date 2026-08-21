@@ -254,10 +254,42 @@ def test_densest_actual_row_band_cell_and_canvas_dimensions(real_layout):
     # Canvas width is unaffected (subgrid_width/membership-driven wrap in that cell doesn't cross a
     # column boundary from one fewer node); height moves 13,448 -> 13,332px from the small ripple
     # across the affected rows' own sizing.
+    # Canvas widened again, the same-sub-column follow-up session (29,670 -> 30,060, height
+    # unchanged): `_same_band_depth` now also takes `alternative`/`potential-gate` edges as an
+    # EXTRA same-band ordering constraint (previously prerequisite-only), closing the 6 real cases
+    # (2 in the Compound row) the prior session's survey found and left unimplemented -- see
+    # `test_zero_same_sub_column_pairs_across_all_edge_kinds` below for the invariant itself.
+    # +390px (+1.3%) is well under the "stop and report before committing past ~10%" threshold the
+    # user set for this change, so it was implemented directly rather than surveyed further.
+    # Height is unaffected (13,332px unchanged) -- the 6 affected cells' wrap-driven column growth
+    # never crossed a `subgrid_width`-row boundary that would add a NEW row of height.
     assert densest_cell == ("voidcraft", 5)
     assert densest_count == 46
-    assert real_layout.canvas_width == 29670.0
+    assert real_layout.canvas_width == 30060.0
     assert real_layout.canvas_height == 13332.0
+
+
+def test_zero_same_sub_column_pairs_across_all_edge_kinds(real_layout):
+    """D-17's own invariant (`spec/decisions.md`) was originally proven only for `prerequisite`
+    edges. The "same-sub-column edges" survey (a prior session) found 6 real cases -- all
+    `alternative`/`potential-gate`, zero `prerequisite` -- where an edge's `to_key` sat in the
+    EXACT same (row, band, col) as its `from_key`, 2 of them in the Compound row
+    (`tech_qnm_utilities` -> `tech_qnm_disruptors`/`tech_sm_autocannons`). This asserts the
+    extension (`pipeline.layout._same_band_depth`'s new `extra_same_band_edges` parameter) closes
+    it for ALL THREE edge kinds, not just the 6 originally-reported cases -- a same-band `to`
+    technology's column must strictly exceed its `from` technology's column whenever both are
+    rendered in the same band, regardless of edge kind."""
+    violations = []
+    for e in real_layout.edges:
+        from_node = real_layout.nodes.get(e.from_key)
+        to_node = real_layout.nodes.get(e.to_key)
+        if from_node is None or to_node is None:
+            continue
+        if from_node.band_index != to_node.band_index:
+            continue
+        if to_node.col <= from_node.col:
+            violations.append((e.kind, e.from_key, e.to_key, from_node.col, to_node.col))
+    assert violations == []
 
 
 def test_row_population_matches_survey(real_layout):

@@ -972,6 +972,38 @@ assertions. Synthetic mechanism tests (`tests/test_layout.py`) pass `subgrid_wid
 and are unaffected by this default change, deliberately, since they test the wrap mechanism
 generically rather than the real corpus default.
 
+### D-17 extended to `alternative`/`potential-gate` edges (a later session)
+
+D-17's own invariant, as written above, was scoped to `prerequisite` edges only — a prior
+session's "same-sub-column edges" survey found this was a real, narrow gap: exactly 6 real edges
+(all `alternative`/`potential-gate`, zero `prerequisite`) placed a dependent in the EXACT same
+`(row, band, col)` cell as its counterpart, 2 of them in the Compound row
+(`tech_qnm_utilities` → `tech_qnm_disruptors`/`tech_sm_autocannons`), and recommended a per-cell
+extension rather than a global `subgrid_width` renegotiation. Implemented directly (the 6-edge
+blast radius was small enough to take without a further survey pass, per the user's own framing):
+`pipeline.layout._same_band_depth` gained an `extra_same_band_edges` parameter, fed from the SAME
+`alternative`/`potential-gate` edges `compute_layout` already extracts for the emitted edge list
+(`compute_typed_edges`, moved earlier in `compute_layout` so both consumers share one call) —
+merged into the same-band topological sort as an ADDITIONAL ordering constraint alongside
+`prereqs_of`, but deliberately NOT folded into `prereqs_of`/`computed_position` themselves, which
+stay prerequisite-only exactly as D-17 originally defined them.
+
+**Real measured effect, same 973-node/977-edge D-18/Item-2c corpus**: canvas 29,670 × 13,448px →
+**30,060 × 13,332px** (width +390px, +1.3%; height unaffected — no affected cell's wrap-driven
+column growth crossed a `subgrid_width`-row boundary that would add a new row of height). Well
+under the "stop and report before committing past ~10% width growth" threshold the user set for
+this change, so no further sign-off was sought. Densest (row, band) cell and row population are
+unaffected (this extension never changes cell membership, only intra-cell column assignment).
+Zero same-band cycles introduced by combining the three edge kinds into one topological sort
+(checked directly — a hypothetical cycle here is the same hard `LayoutCycleError` failure D-17's
+original prerequisite-only sort already guarantees, never silently dropped).
+
+Test: `tests/test_layout_corpus.py::test_zero_same_sub_column_pairs_across_all_edge_kinds` asserts
+zero same-band `(from, to)` pairs across ALL THREE edge kinds where `to`'s column fails to exceed
+`from`'s — proven capable of failing first (24 violations against the pre-extension code, a
+superset of the originally-surveyed 6 since it also catches the reversed-ordering case the survey
+didn't separately count) before being trusted on the corrected code.
+
 ## D-18 — ACOT/AoT rendering-scope closure is depth-1, not a full transitive closure (corrects an earlier draft)
 
 **Superseded rule.** `pipeline.rendering_scope.compute_rendering_scope` originally computed a full

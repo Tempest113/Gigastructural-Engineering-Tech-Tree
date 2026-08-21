@@ -397,7 +397,12 @@ def _computed_position(rendered_keys: set[str], prereqs_of: dict[str, list[str]]
     return position
 
 
-def _same_band_depth(rendered_keys: set[str], prereqs_of: dict[str, list[str]], band_index_of: dict[str, int]) -> dict[str, int]:
+def _same_band_depth(
+    rendered_keys: set[str],
+    prereqs_of: dict[str, list[str]],
+    band_index_of: dict[str, int],
+    extra_same_band_edges: dict[str, list[str]] | None = None,
+) -> dict[str, int]:
     """D-17's same-band ordering invariant (`spec/decisions.md`): a technology's sub-column must
     exceed every SAME-BAND prerequisite's sub-column, so a same-band prerequisite chain renders
     strictly left-to-right instead of stacking in one column. Computed per band, across every row
@@ -408,10 +413,25 @@ def _same_band_depth(rendered_keys: set[str], prereqs_of: dict[str, list[str]], 
 
     The survey confirmed zero same-band cycles in the real corpus; a future one is a hard build
     failure (`LayoutCycleError`, from `_topological_order`), never silently ignored or broken by
-    dropping an edge."""
+    dropping an edge.
+
+    **Extended (D-17 same-sub-column follow-up)**: `extra_same_band_edges` carries the SAME
+    `from_key -> [to_key's prereqs]`-shaped mapping as `prereqs_of`, but sourced from
+    `alternative`/`potential-gate` edges -- the survey found 6 real cases (2 in the Compound row)
+    where one of THOSE edge kinds, not a formal `prerequisite`, put a dependent in the exact same
+    sub-column as its counterpart. Merged into the same topological sort as an ADDITIONAL
+    ordering constraint (not into `prereqs_of`/`computed_position`, which stay prerequisite-only,
+    per CLAUDE.md D-17's own scope) so a dependent's sub-column strictly exceeds a same-band
+    `alternative`/`potential-gate` source's too, closing the gap without touching
+    `subgrid_width` or any other geometry the D-17 negotiation already settled."""
     same_band_prereqs = {
         key: [p for p in prereqs_of[key] if band_index_of[p] == band_index_of[key]] for key in rendered_keys
     }
+    if extra_same_band_edges:
+        for key in rendered_keys:
+            extras = [p for p in extra_same_band_edges.get(key, []) if band_index_of.get(p) == band_index_of[key]]
+            if extras:
+                same_band_prereqs[key] = sorted({*same_band_prereqs[key], *extras})
     order = _topological_order(rendered_keys, same_band_prereqs)
     depth: dict[str, int] = {}
     for key in order:
@@ -547,7 +567,20 @@ def compute_layout(
     # renders strictly left-to-right, never stacked in one column. `band_index_of` builds once and
     # is reused for both the depth computation and the per-band width below.
     band_index_of = {key: band_of(key)[1] for key in rendered_keys}
-    same_band_depth = _same_band_depth(rendered_keys, prereqs_of, band_index_of)
+
+    # P-14 full three-kind edge set, computed here (rather than just before `_route_edges` below,
+    # where it used to live) so its `alternative`/`potential-gate` edges can ALSO feed the
+    # same-sub-column extension below -- one computation, reused by both. `prereqs_of` above is
+    # deliberately narrower (true prerequisites only) and stays the sole input to
+    # `computed_position`/`_same_band_depth`'s own prerequisite-only argument; only the EXTRA
+    # ordering constraint passed to `_same_band_depth` draws on the other two kinds.
+    typed_edges, edge_diagnostics = compute_typed_edges({key: tech.block for key, tech in technologies.items()})
+    extra_same_band_edges: dict[str, list[str]] = {}
+    for edge in typed_edges:
+        if edge.kind in ("alternative", "potential-gate"):
+            extra_same_band_edges.setdefault(edge.to_key, []).append(edge.from_key)
+
+    same_band_depth = _same_band_depth(rendered_keys, prereqs_of, band_index_of, extra_same_band_edges)
 
     # Group by (row, band); within a group, sort by (`same_band_depth`, `computed_position`, key)
     # so members at the same depth are ordered deterministically before being wrapped into
@@ -733,8 +766,8 @@ def compute_layout(
     # prereqs_of -- prereqs_of above is deliberately narrower (true prerequisites only) and feeds
     # ONLY the internal DAG position/backward-band computation, never the emitted edge list.
     # UNCHANGED by the row re-axis: the router only ever reads node.x/node.y and band_of, and
-    # doesn't care which axis produced them.
-    typed_edges, edge_diagnostics = compute_typed_edges({key: tech.block for key, tech in technologies.items()})
+    # doesn't care which axis produced them. `typed_edges`/`edge_diagnostics` were already computed
+    # above (same-sub-column extension) -- reused here rather than recomputed.
     edges = _route_edges(typed_edges, nodes, band_of, row_y_offset)
 
     return LayoutResult(
