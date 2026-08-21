@@ -119,6 +119,32 @@ def _relaxed_leaf(assignment: Assignment, profile: dict) -> _Eval:
     return _Eval(_State.EXCLUDED, None)
 
 
+def _legacy_combine_or(children: list[_Eval]) -> _Eval:
+    """The `pipeline.availability._combine_or` behaviour AS IT WAS before Item 2 (later session)
+    taught `has_ascension_perk`/`has_active_tradition` to sometimes return a real FALSE instead of
+    always EXCLUDED. That change needed `_combine_or` itself to stop letting a lone real-FALSE
+    sibling close off an OR that still has an EXCLUDED (gate-only, presumed-satisfiable) branch --
+    correct for `evaluate_technology_for_profiles`'s real availability computation, but WRONG for
+    this module's OWN, deliberately different `_relaxed_leaf` mechanism: `_relaxed_leaf` already
+    turns every genuinely-UNKNOWN leaf into EXCLUDED specifically so an unrelated unresolvable
+    condition can never mask a `has_technology` edge's real relevance (the Disco Moon bug this
+    module exists to fix). Under the corrected `_combine_or`, that same EXCLUDED-conversion would
+    now ALSO suppress the forced `has_technology` leaf's own real FALSE whenever a sibling is
+    EXCLUDED -- reintroducing a masking bug of the same shape, just one step removed. Kept as an
+    exact copy of the pre-Item-2 function (not a re-derivation) and swapped in for the duration of
+    `_edge_active_per_profile`'s sensitivity check only -- `pipeline.availability`'s own
+    `_combine_or` (used everywhere else, including this module's OTHER helpers) is untouched."""
+    relevant = [c for c in children if c.state != _State.EXCLUDED]
+    if not relevant:
+        return _Eval(_State.EXCLUDED, None)
+    if any(c.state == _State.TRUE for c in relevant):
+        return _Eval(_State.TRUE, None)
+    unknown_ones = [c for c in relevant if c.state == _State.UNKNOWN]
+    if unknown_ones:
+        return _Eval(_State.UNKNOWN, unknown_ones[0].leaf)
+    return _Eval(_State.FALSE, relevant[0].leaf)
+
+
 def _edge_active_per_profile(potential_value: Block | None, target_key: str, profiles: list[dict]) -> list[bool]:
     """For one `potential-gate` edge (`has_technology = target_key` inside `potential_value`),
     whether it's axis-relevant for each profile, in `profiles` order. Forces `target_key`'s
@@ -135,9 +161,11 @@ def _edge_active_per_profile(potential_value: Block | None, target_key: str, pro
             return _relaxed_leaf(assignment, profile)
         return patched
 
-    orig = _availability_module._evaluate_leaf
+    orig_leaf = _availability_module._evaluate_leaf
+    orig_combine_or = _availability_module._combine_or
     results = []
     try:
+        _availability_module._combine_or = _legacy_combine_or
         for profile in profiles:
             _availability_module._evaluate_leaf = make_patched(True)
             r_true = evaluate_trigger_block(potential_value, profile)
@@ -145,7 +173,8 @@ def _edge_active_per_profile(potential_value: Block | None, target_key: str, pro
             r_false = evaluate_trigger_block(potential_value, profile)
             results.append(r_true.state != r_false.state)
     finally:
-        _availability_module._evaluate_leaf = orig
+        _availability_module._evaluate_leaf = orig_leaf
+        _availability_module._combine_or = orig_combine_or
     return results
 
 

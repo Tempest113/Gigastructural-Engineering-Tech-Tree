@@ -63,6 +63,7 @@ from .availability import (
     evaluate_technology_for_profiles,
     evaluate_trigger_block,
     resolve_lock_reason,
+    set_perk_potentials,
     survey_uncertainty,
 )
 from .clausewitz import parse_file
@@ -77,7 +78,7 @@ from .dataset_schema.empire_profile import (
 )
 from .edge_constraints import compute_potential_gate_constraints, edge_active_for_profile
 from .edges import compute_typed_edges
-from .gate_patterns import classify_gates, order_gates
+from .gate_patterns import GATE_KIND_PRIORITY, classify_gates, order_gates
 from .geometry import pack_edge_polylines, pack_node_positions
 from .icons.build import build_atlases, decode_resolved_icons
 from .icons.overrides import load_overrides as load_icon_overrides
@@ -161,7 +162,7 @@ def _resolve_technology_name(key: str, ctx: "BuildContext", name_overrides: dict
     """Extracted to module level (was a `build_base_dataset`-local closure) so `build_diagnostics`
     (Item 1's dev health monitor, later session) can resolve the same real localised name a
     technology's card shows, rather than a second, independent resolution that could drift."""
-    name_entry = ctx.loc_table.get(key)
+    name_entry = _vanilla_loc_entry(key, ctx) if key in VANILLA_LOC_AND_ICON_PRECEDENCE_KEYS else ctx.loc_table.get(key)
     raw_name = strip_markup(name_entry.value.raw) if name_entry else key
     name = _require_resolved(raw_name, key, "name", ctx)
     if name == key:
@@ -231,6 +232,68 @@ VANILLA_TECHNOLOGIES_ACOT_OVERWRITES: dict[str, bool] = {
     "tech_titan_hull_1": True,
     "tech_titan_hull_2": True,
 }
+
+# Item 6 (later session): the DIFFERENT, previously-undiscovered case -- a technology whose
+# BLOCK is won by Vanilla (P-15 never overwrites it; not the same set as
+# `VANILLA_TECHNOLOGIES_ACOT_OVERWRITES` above, which is about a technology-BLOCK overwrite) but
+# whose NAME/DESCRIPTION localisation key, and icon filename, is REDEFINED by a later-loaded
+# source (ACOT in every real corpus case) purely because localisation/icon resolution is its own
+# separate last-source-wins table, keyed by string identity, with no awareness of which source
+# actually won the technology's own block. User-reported symptom: `tech_dark_matter_propulsion`
+# rendered as ACOT's "Dark Matter Dimensional Thruster" instead of vanilla's own "Dark Matter
+# Propulsion". Surveyed against the full corpus (not assumed): of 673 rendered technologies whose
+# technology BLOCK winner is Vanilla, exactly these 3 also have a name/description loc key AND an
+# icon file both redefined, with DIFFERENT content, by a later source -- every other Vanilla-won
+# technology's name/description/icon (even where a later source happens to also define the same
+# loc key) either has no such redefinition at all, or redefines it to IDENTICAL text (a harmless
+# re-declaration, not a real divergence). `_resolve_technology_name`/`build_detail_payload`'s
+# description resolution and `build_atlases`'s technology-icon call (both in this module) look up
+# these 3 keys against Vanilla's OWN loc entries/icon file specifically, never the cross-source
+# merged table, per CLAUDE.md's "Localisation precedence" rule. This is INDEPENDENT of and does
+# NOT affect `VANILLA_TECHNOLOGIES_ACOT_OVERWRITES`/`PLACEHOLDER_TECHNOLOGIES_REQUIRING_ACOT_AOT`
+# above -- those describe what happens when ACOT is ABSENT from the build; this fix instead
+# changes what a technology's card shows in the FULL (ACOT-present) build, which is the tree this
+# project actually deploys.
+# Item 4a (later session): `on_enabled -> add_research_option` grants -- a technology this
+# evaluator's ordinary `potential`/gate machinery has NO reference to at all, made available
+# ONLY by an ascension perk's effect block firing once. Surveyed against the real corpus (not
+# hardcoded blind): `ap_galactic_wonders`'s (Gigastructures-overwritten) `on_enabled` grants
+# `tech_ring_world`, `tech_dyson_sphere`, `tech_mega_engineering`, `tech_matter_decompressor` --
+# but only the first three are structurally UNREACHABLE any other way (unconditional
+# `weight_modifier = { factor = 0 }`, confirmed by the earlier "Ascension-perk grants" survey
+# recorded in CLAUDE.md's Open Items). `tech_mega_engineering` remains genuinely reachable by the
+# ordinary weighted-draw route too (it has no such zero-weight block), so treating it as
+# perk-gated here would overstate a real requirement -- deliberately excluded, matching the prior
+# survey's own recommendation. `ap_gigastructural_constructs`'s on_enabled grants a LARGER set
+# (giga_tech_hrae_mc, giga_tech_ringworld_behemoth, giga_tech_matrioshka_brain_1,
+# giga_tech_quasi_stellar_1, giga_tech_birch_world_1, giga_tech_lunar_assembly,
+# giga_tech_war_system_1, giga_tech_supermassive_ehof) -- checked and found to need NO new
+# machinery: every one of those already carries `has_ascension_perk = ap_gigastructural_constructs`
+# directly in its own `potential` block (confirmed by Item 2's perk-lockout survey, which already
+# reports them as perk-gated), so `add_research_option` there is the game's real mechanism
+# matching what this pipeline's ordinary gate detection already sees, not a hidden second path.
+ADD_RESEARCH_OPTION_PERK_GRANTS: dict[str, str] = {
+    "tech_ring_world": "ap_galactic_wonders",
+    "tech_dyson_sphere": "ap_galactic_wonders",
+    "tech_matter_decompressor": "ap_galactic_wonders",
+}
+
+VANILLA_LOC_AND_ICON_PRECEDENCE_KEYS = frozenset({
+    "tech_dark_matter_power_core",
+    "tech_dark_matter_propulsion",
+    "tech_dark_matter_deflector",
+})
+
+
+def _vanilla_loc_entry(key: str, ctx: "BuildContext"):
+    """The Vanilla-sourced `LocEntry` for `key`, if Vanilla ever defines it -- ignoring whatever
+    a later-loaded source redefined the same key to. Used only for
+    `VANILLA_LOC_AND_ICON_PRECEDENCE_KEYS` (Item 6); every other lookup keeps using
+    `ctx.loc_table.get`, the ordinary cross-source merged view."""
+    for entry in ctx.loc_table.history.get(key, []):
+        if entry.source == "stellaris":
+            return entry
+    return None
 
 
 def _source_roots(vendor_root: Path) -> list[tuple[str, Path]]:
@@ -579,6 +642,24 @@ def build_context(vendor_root: Path) -> BuildContext:
         for key, defn in rendered_defs.items()
     }
 
+    # Item 2 (later session): registers every ascension perk's own winning `potential` block so
+    # `has_ascension_perk` leaves can resolve a real LOCKED result when the referenced perk is
+    # axis-restricted (e.g. Galactic Wonders is nomadic-empire-impossible) -- see
+    # pipeline.availability's module docstring for the corrected rule. `collect_technology_
+    # definitions` is generic over any block-shaped top-level key, not technology-specific despite
+    # the name, so it applies unchanged to `common/ascension_perks`; whole-key last-source-wins
+    # matches the same overwrite semantics used for technologies.
+    perk_docs = _load_expanded(vendor_root, "ascension_perks", scripts)
+    perk_history = collect_technology_definitions(perk_docs)
+    perk_potentials = {
+        key: expand_scripted_triggers(
+            _field(occurrences[-1].block, "potential") and _field(occurrences[-1].block, "potential").value,
+            trigger_catalog,
+        )
+        for key, occurrences in perk_history.items()
+    }
+    set_perk_potentials(perk_potentials)
+
     crisis = classify_crisis_factions(rendered_defs, load_crisis_overrides(), load_crisis_flag_overrides())
 
     technologies = {
@@ -600,7 +681,8 @@ def build_context(vendor_root: Path) -> BuildContext:
 
     icon_overrides = load_icon_overrides()
     tech_sheets, tech_icon_result = build_atlases(
-        "technology", vendor_root, overrides_path=None, rendered_keys=rendered_keys
+        "technology", vendor_root, overrides_path=None, rendered_keys=rendered_keys,
+        source_priority_overrides={key: "stellaris" for key in VANILLA_LOC_AND_ICON_PRECEDENCE_KEYS},
     )
     perk_sheets, perk_icon_result = build_atlases("ascension_perk", vendor_root)
 
@@ -773,6 +855,33 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
             )
         return name
 
+    def _downgrade_dangling_alternative(gates: list[dict]) -> list[dict]:
+        """Item 7a (later session): the user reported Birch World showing a single gate reading
+        "or: Vast Expanses" -- an alternative with no sibling to be alternative to. The OR-context
+        gate fix (Item 4, earlier) marks a leaf `alternative` whenever it sits inside a real
+        source `OR`, but that OR's OTHER real branches are frequently non-gate-shaped conditions
+        (Birch World's own sibling is `any_owned_planet = { ... district check ... }`, never a
+        gate this registry tracks) -- when the emitted gates LIST ends up with exactly one entry
+        and it's the alternative one, "or:" reads as a dangling reference rather than communicating
+        anything real. Downgraded to a plain "Needs X" requirement in that one case.
+
+        Deliberately NOT applied when `appliesToEmpireTypes` is non-null -- that's the Riddle
+        Escort/Missiles/Torpedoes shape (Item 4's own real bug fix,
+        `tests/test_dataset_emit.py::test_riddle_escort_gate_is_an_alternative_constrained_to_
+        biological_shipset`), where the SAME "sole gate in the list" shape is correct AS "or:":
+        the gate is deliberately shown ONLY for the axis where it's relevant, and "or:" there
+        communicates a real fact (a non-biological-shipset empire already qualifies some other
+        way) that downgrading to "Needs X" would silently lose. The two-gate case (`giga_tech_
+        the_vat`'s "Needs Galactic Wonders" / "or: Mechromancy") is untouched either way, since
+        this only fires when the list has exactly one entry."""
+        if len(gates) == 1 and gates[0]["alternative"] and gates[0]["appliesToEmpireTypes"] is None:
+            sole = gates[0]
+            label = sole["label"]
+            if label.startswith("or: "):
+                label = "Needs " + label[len("or: "):]
+            return [{**sole, "alternative": False, "label": label}]
+        return gates
+
     def _build_gates(owner_key: str, defn: "TechnologyDefinition") -> list[dict]:
         # Item 5 (later session): CLAUDE.md's documented "4 real pairs are both a formal
         # prerequisite AND a potential-gate" (`giga_tech_amb_supertensiles_acot_alpha/sigma/
@@ -813,6 +922,8 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
                     "label": f"{label_prefix} {_perk_gate_label(match.ref_id)}",
                     "alternative": match.alternative,
                     "appliesToEmpireTypes": None,
+                    "inherited": False,
+                    "sourceTechnologyId": None,
                 })
             elif match.kind in ("origin", "ethics_or_civic"):
                 # Item 3 ("path to zero uncertain" follow-up): no `common/civics`/`common/origins`/
@@ -829,6 +940,8 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
                     "label": f"{label_prefix} {_trait_gate_label(match.ref_id)}",
                     "alternative": match.alternative,
                     "appliesToEmpireTypes": None,
+                    "inherited": False,
+                    "sourceTechnologyId": None,
                 })
             else:  # "technology"
                 # Every real has_technology gate target is itself rendered in the FULL corpus
@@ -860,8 +973,88 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
                     "alternative": match.alternative,
                     "appliesToEmpireTypes": applies_to,
                     "label": f"{label_prefix} {target_name}",
+                    "inherited": False,
+                    "sourceTechnologyId": None,
                 })
+
+        granting_perk = ADD_RESEARCH_OPTION_PERK_GRANTS.get(owner_key)
+        if granting_perk is not None and not any(g["kind"] == "ascension_perk" and g["refId"] == granting_perk for g in gates):
+            icon = ctx.perk_icon_refs.get(granting_perk, _default_icon_ref(ctx))
+            gates.append({
+                "kind": "ascension_perk",
+                "refId": granting_perk,
+                "icon": icon,
+                "label": f"Needs {_perk_gate_label(granting_perk)}",
+                "alternative": False,
+                "appliesToEmpireTypes": None,
+                "inherited": False,
+                "sourceTechnologyId": None,
+            })
         return gates
+
+    # Item 3 (later session): gates DECLARED on a technology never propagated down its own
+    # prerequisite chain -- a technology whose only real path to a perk/origin/ethics-or-civic
+    # requirement is "research my prerequisite first, and THAT tech needs the perk" showed no
+    # gate at all, even though researching it genuinely requires the same perk transitively (user
+    # report: the QSO family and the `giga_tech_repeatable_*_cap` "Management Protocols" family
+    # both failed to inherit a perk gate from their own prerequisite). Scoped to `prerequisite`
+    # edges only (the formal, declared "must research first" chain) -- NOT `potential-gate`
+    # edges, which encode a DIFFERENT kind of dependency (an eligibility check, not a declared
+    # prerequisite) and are deliberately left unpropagated pending real corpus study of what that
+    # would even mean; see this bullet's own note in CLAUDE.md before extending propagation there.
+    direct_gates: dict[str, list[dict]] = {key: _build_gates(key, ctx.rendered_defs[key]) for key in key_order}
+
+    direct_prereq_parents: dict[str, list[str]] = {key: [] for key in key_order}
+    in_degree: dict[str, int] = {key: 0 for key in key_order}
+    for e in ctx.typed_edges:
+        if e.kind == "prerequisite" and e.to_key in direct_prereq_parents and e.from_key in direct_prereq_parents:
+            direct_prereq_parents[e.to_key].append(e.from_key)
+            in_degree[e.to_key] += 1
+
+    # Kahn's algorithm restricted to `prerequisite` edges: technologies are a DAG by construction
+    # (a cycle would mean the mod itself requires researching X before X), so a topological order
+    # always exists -- computed here rather than assumed from declared tier, since tier is
+    # DECLARED (CLAUDE.md's D-13) and not guaranteed to be a valid dependency order (backward
+    # edges are real and expected).
+    topo_order: list[str] = []
+    ready = [key for key in key_order if in_degree[key] == 0]
+    remaining_in_degree = dict(in_degree)
+    children_via_prereq: dict[str, list[str]] = {key: [] for key in key_order}
+    for child, parents in direct_prereq_parents.items():
+        for parent in parents:
+            children_via_prereq[parent].append(child)
+    while ready:
+        node = ready.pop()
+        topo_order.append(node)
+        for child in children_via_prereq[node]:
+            remaining_in_degree[child] -= 1
+            if remaining_in_degree[child] == 0:
+                ready.append(child)
+    if len(topo_order) != len(key_order):
+        raise ValueError(
+            "gate propagation: prerequisite edges do not form a DAG over the rendered key set "
+            f"({len(key_order) - len(topo_order)} technologies never reached in-degree zero) -- "
+            "the build fails rather than silently propagating gates over an inconsistent order"
+        )
+
+    full_gates: dict[str, list[dict]] = {}
+    for key in topo_order:
+        gates_for_key = list(direct_gates[key])
+        seen = {(g["kind"], g["refId"]) for g in gates_for_key}
+        for parent in direct_prereq_parents[key]:
+            for g in full_gates[parent]:
+                ident = (g["kind"], g["refId"])
+                if ident in seen:
+                    continue
+                seen.add(ident)
+                gates_for_key.append({
+                    **g,
+                    "inherited": True,
+                    "sourceTechnologyId": g["sourceTechnologyId"] or parent,
+                })
+        full_gates[key] = _downgrade_dangling_alternative(
+            sorted(gates_for_key, key=lambda g: GATE_KIND_PRIORITY[g["kind"]])
+        )
 
     technologies_json = []
     categories: set[str] = set()
@@ -911,7 +1104,7 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
             "dangerous": _bool_flag(defn.block, "is_dangerous"),
             "repeatable": ({"levels": levels, "costPerLevel": cost_per_level} if repeatable else None),
             "requiresMods": requires_mods,
-            "gates": _build_gates(key, defn),
+            "gates": full_gates[key],
             "availabilityMatrix": matrix,
             "labelPriority": _label_priority(key, reverse_prereq_count, defn),
         })
@@ -1098,7 +1291,11 @@ def build_empire_overlay(ctx: BuildContext, profile: dict) -> dict:
 
 def build_detail_payload(ctx: BuildContext, key: str) -> dict:
     defn = ctx.rendered_defs[key]
-    desc_entry = ctx.loc_table.get(f"{key}_desc")
+    desc_entry = (
+        _vanilla_loc_entry(f"{key}_desc", ctx)
+        if key in VANILLA_LOC_AND_ICON_PRECEDENCE_KEYS
+        else ctx.loc_table.get(f"{key}_desc")
+    )
     raw_description = strip_markup(desc_entry.value.raw) if desc_entry else ""
     # Upgraded (later session) from strip-only to full token resolution, same as `name` -- see
     # PART 2's survey: 223/980 raw descriptions carried a literal, unresolved `$...$` token before

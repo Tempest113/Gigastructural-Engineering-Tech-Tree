@@ -30,13 +30,29 @@ CLAUDE.md, not silently baked in here):
 
 `has_technology` leaves are explicitly OUT OF SCOPE for this evaluator — they are
 prerequisite-graph reachability (P-14), handled by a separate structural check over the DAG, not
-a trigger truth value. `has_ascension_perk` leaves are also excluded, for a parallel reason:
-D-6/P-1 settle that ascension perks are gates, not profile facts — a perk-gated technology
-always displays its gate rather than the tool silently assuming the perk is or isn't taken, so a
-perk check is not this evaluator's to resolve either way. Folding either into this evaluator's
-`uncertain` output would be a category error (they are never actually undecidable, they are
-un-*checked-here*), so both are excluded from boolean combination entirely rather than resolved
-either way — see `EXCLUDED_KEYS` and `_State.EXCLUDED`.
+a trigger truth value.
+
+**`has_ascension_perk` is a narrower exclusion than it used to be (a later session, correcting
+CLAUDE.md's own locked decision).** D-6/P-1's original wording ("ascension perks are gates, not
+profile facts") was refuted by real corpus content and by the user's domain knowledge: Galactic
+Wonders (and several other perks) carry a genuine axis restriction in their own `potential`
+(nomadic empires can never take it), so a technology gated behind it is not merely "needs a perk
+choice" for those profiles — it is structurally LOCKED, the same as any other axis-impossible
+technology. The corrected rule, automated rather than hand-curated: WHICH perk a player picks
+remains a free choice, never resolved either way (still `EXCLUDED` when the referenced perk's own
+`potential` is satisfiable-or-uncertain for the current profile); WHETHER a perk is obtainable AT
+ALL for an empire type is a real fact, resolved by evaluating the target perk's own `potential`
+block (registered via `set_perk_potentials`) against the same profile, through this exact
+evaluator. Only a definite `LOCKED` result for the perk turns the `has_ascension_perk` leaf into a
+real `FALSE` (propagating like any other failed AND-branch); a perk that is merely `UNCERTAIN` for
+some profile is left `EXCLUDED`, same as before — the survey found no perk that would need that
+guess, and this evaluator does not make it. See CLAUDE.md's "Ascension perks are gates ..."
+section for the real corpus counts (21 perks cleanly axis-restricted, 20 with residual undecidable
+conditions left as gate-only).
+
+Folding an ordinarily-EXCLUDED leaf into `uncertain` would still be a category error — this
+correction only ever turns EXCLUDED into a real FALSE, never into UNCERTAIN, so `has_ascension_perk`
+remains outside `uncertain`'s accounting exactly as before. See `EXCLUDED_KEYS` and `_State.EXCLUDED`.
 
 The trigger-condition -> human-readable-text renderer HANDOFF.md flagged as missing
 ("no trigger-condition -> human-readable-text renderer exists yet") is now `pipeline.trigger_text`
@@ -103,10 +119,14 @@ BOOLEAN_WRAPPERS = {"AND", "OR", "NOT", "NOR"}
 # uncertain, just gated.
 EXCLUDED_KEYS = {
     "has_technology",
-    "has_ascension_perk",
     "has_gigastructural_constructs",
     "has_galactic_wonders",
 }
+# `has_ascension_perk` is deliberately NOT in this set any more -- it gets its own leaf-evaluation
+# branch below (`_evaluate_leaf`) so it can turn into a real FALSE when the referenced perk is
+# axis-locked. It still behaves exactly like an EXCLUDED_KEYS entry (identity element, never
+# UNCERTAIN) for every perk that ISN'T axis-locked for the current profile -- see the module
+# docstring's "has_ascension_perk is a narrower exclusion" section.
 
 # "Path to zero uncertain" follow-up session, Item 3: ethics/civic/origin conditions the
 # three-axis empire model deliberately cannot represent, treated the same way ascension perks
@@ -189,6 +209,30 @@ AXIS_FACTS: dict[str, Callable[[dict], bool]] = {
     "is_gestalt": lambda p: p["authority"] in ("hive_mind", "machine_intelligence"),
     "country_uses_bio_ships": lambda p: p["shipset"] == "biological",
 }
+
+# Item 5 (later session): `has_active_tradition` resolves TRUE by default -- a completed
+# tradition tree is otherwise real per-playthrough state this evaluator can't know -- EXCEPT for a
+# tradition category the user confirmed is unavailable to a whole empire type, checked one
+# category at a time (same posture as `PROGRESSION_FLAGS_TRUE`: never a blanket pattern guess).
+# Real corpus: exactly ONE `potential`-scoped occurrence of this leaf in all four sources,
+# `giga_tech_the_vat`'s `has_active_tradition = tr_genetics_finish_extra_traits` -- the corpus's
+# only other occurrence (`tr_unyielding_federations_finish`, Maginot) lives inside a
+# `weight_modifier`, not `potential`, so it's out of scope for availability regardless (CLAUDE.md:
+# weight is a separate concern from availability, conflating them is a category error). The user
+# confirmed genetics-tradition-tree completion is unavailable to machine-intelligence empires
+# (mechanical species can't pursue the Biological Ascension path), matched by category PREFIX
+# (`tr_genetics`) rather than the single exact tradition name, since any other genetics-category
+# tradition-finish check would carry the identical restriction if one is ever added.
+TRADITION_CATEGORY_AXIS_RESTRICTIONS: dict[str, Callable[[dict], bool]] = {
+    "tr_genetics": lambda p: p["authority"] != "machine_intelligence",
+}
+
+
+def _tradition_available(name: str, profile: dict) -> bool:
+    for prefix, predicate in TRADITION_CATEGORY_AXIS_RESTRICTIONS.items():
+        if name.startswith(prefix):
+            return predicate(profile)
+    return True
 
 # Ground facts (documented assumptions 2 and 3): resolve to the same constant for every profile.
 # Named per-DLC scripted triggers (has_shroud_dlc, has_paragon_dlc, ...) are NOT a separate
@@ -389,6 +433,26 @@ def _is_mod_config_toggle_flag(name: str) -> bool:
     return name.endswith(MOD_CONFIG_TOGGLE_SUFFIXES)
 
 
+# Registered once per build (`set_perk_potentials`) so `has_ascension_perk` leaves can consult
+# each perk's own resolved (winner, post-overwrite) `potential` block -- see the module docstring's
+# "has_ascension_perk is a narrower exclusion" section. Tests that never call
+# `set_perk_potentials` get today's original all-perks-are-gates-only behaviour: an unregistered
+# perk id is treated exactly like one with no restriction (EXCLUDED), never guessed at.
+_perk_potentials: dict[str, Block | None] = {}
+_perk_eval_in_progress: set[str] = set()
+
+
+def set_perk_potentials(mapping: dict[str, Block | None]) -> None:
+    """Registers every ascension perk's own winning `potential` block, keyed by perk id. Call once
+    per build (`pipeline.dataset_emit.build_context`) before evaluating any technology's
+    availability. A perk's own `potential` referencing ANOTHER registered perk resolves correctly,
+    recursively -- including a real mutual-exclusion cycle in the corpus
+    (`ap_defender_of_the_galaxy` <-> `ap_defender_of_the_galaxy_nomads`), broken by
+    `_perk_eval_in_progress` rather than looping forever."""
+    _perk_potentials.clear()
+    _perk_potentials.update(mapping)
+
+
 def _flag_value_name(value) -> str | None:
     if isinstance(value, Identifier):
         return value.name
@@ -407,6 +471,25 @@ def _evaluate_leaf(assignment: Assignment, profile: dict) -> _Eval:
     negate = assignment.operator == "!="
 
     if key in EXCLUDED_KEYS:
+        return _Eval(_State.EXCLUDED, None)
+
+    if key == "has_ascension_perk":
+        perk_id = _flag_value_name(assignment.value)
+        # Real corpus has at least one mutual pair (`ap_defender_of_the_galaxy` <->
+        # `ap_defender_of_the_galaxy_nomads`, each excluding the other via a `NOR =
+        # { has_ascension_perk = <the other> }` superseded-perk guard) -- a real cycle, not a
+        # hypothetical one, found by this exact recursion overflowing before the guard existed.
+        # `_perk_eval_in_progress` breaks the cycle by treating a perk already being evaluated
+        # higher up the same call stack as EXCLUDED (unresolved either way) rather than recursing
+        # forever.
+        if perk_id is not None and perk_id in _perk_potentials and perk_id not in _perk_eval_in_progress:
+            _perk_eval_in_progress.add(perk_id)
+            try:
+                perk_result = evaluate_trigger_block(_perk_potentials[perk_id], profile)
+            finally:
+                _perk_eval_in_progress.discard(perk_id)
+            if perk_result.state == LOCKED:
+                return _bool_eval(False, negate, assignment)
         return _Eval(_State.EXCLUDED, None)
 
     if key == "has_global_flag":
@@ -434,6 +517,26 @@ def _evaluate_leaf(assignment: Assignment, profile: dict) -> _Eval:
         ):
             return _bool_eval(True, negate, assignment)
         return _Eval(_State.UNKNOWN, assignment)  # everything else: real per-playthrough state, deliberately unresolved
+
+    if key == "always":
+        # `always = yes`/`always = no` is a literal boolean constant, not a fact lookup -- the
+        # leaf's own value IS the truth value. `always = no` at the top of a `potential` block is
+        # already handled upstream (pipeline.rendering_scope._is_permanently_disabled excludes
+        # those 4 technologies from rendering entirely, before this evaluator ever runs), but that
+        # module only checks a direct top-level child; a NESTED `always = no`, or `always = yes`
+        # anywhere, was never handled here and fell through to UNKNOWN -- confirmed real corpus
+        # impact: `tech_ring_world`'s whole `potential` is `{ always = yes }`, reported uncertain
+        # for every profile despite being the most trivially resolvable leaf in Clausewitz.
+        resolved = _yesno(assignment.value)
+        if resolved is None:
+            return _Eval(_State.UNKNOWN, assignment)
+        return _bool_eval(resolved, negate, assignment)
+
+    if key == "has_active_tradition":
+        name = _flag_value_name(assignment.value)
+        if name is None:
+            return _Eval(_State.UNKNOWN, assignment)
+        return _bool_eval(_tradition_available(name, profile), negate, assignment)
 
     if key in DLC_NAME_CHECK_KEYS:
         return _bool_eval(True, negate, assignment)
@@ -482,6 +585,20 @@ def _combine_or(children: list[_Eval]) -> _Eval:
     unknown_ones = [c for c in relevant if c.state == _State.UNKNOWN]
     if unknown_ones:
         return _Eval(_State.UNKNOWN, unknown_ones[0].leaf)
+    # Every RELEVANT (non-EXCLUDED) child is FALSE at this point. Item 2 (later session): if an
+    # EXCLUDED sibling was filtered out above, it is a gate-only branch this evaluator
+    # deliberately never rules out (an ordinary has_technology/has_ascension_perk choice) -- a
+    # hard FALSE elsewhere in the same OR must not close off a branch that's still a live,
+    # unresolved possibility. Real corpus case this fixes: `giga_tech_ringworld_titanic_1`'s
+    # `OR = { has_ascension_perk = ap_galactic_wonders, has_ascension_perk =
+    # ap_galactic_wonders_utopia }` -- for a non-nomadic profile the first branch is an ordinary
+    # achievable gate (EXCLUDED) while the second is a real axis-locked FALSE (a permanently
+    # disabled legacy perk); the whole OR must read as "still gated," not "locked," since the
+    # first branch remains open. Before `has_ascension_perk` could ever become a real FALSE (Item
+    # 2), no leaf that was sometimes EXCLUDED and sometimes FALSE existed, so this case never
+    # arose and `relevant[0]` alone (this function's PRE-Item-2 behaviour) was safe.
+    if len(relevant) < len(children):
+        return _Eval(_State.EXCLUDED, None)
     return _Eval(_State.FALSE, relevant[0].leaf)
 
 

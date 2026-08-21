@@ -174,14 +174,31 @@ def collect_candidates(documents: list[tuple[str, Document]], kind: str) -> list
     return candidates
 
 
-def resolve_icon_files(configs: list[IconSourceConfig], kind: str) -> dict[str, tuple[str, Path]]:
+def resolve_icon_files(
+    configs: list[IconSourceConfig], kind: str, source_priority_overrides: dict[str, str] | None = None,
+) -> dict[str, tuple[str, Path]]:
     """`resolved_name -> (winning_source, path)`, cross-source last-wins on the relative
     filename under `<kind>/` — same load-order rule as everywhere else in this pipeline.
-    `configs` must already be in load order (see `sources.default_source_configs`)."""
+    `configs` must already be in load order (see `sources.default_source_configs`).
+
+    `source_priority_overrides` (Item 6, later session): `resolved_name -> preferred source name`
+    (e.g. `"stellaris"`). CLAUDE.md's "Localisation precedence" correction applies to icons too --
+    a vanilla-WON technology (P-15) must show its own vanilla icon even when a later-loaded
+    source happens to ship a same-named file (real corpus: `tech_dark_matter_power_core`/
+    `_propulsion`/`_deflector`, all three ACOT-overwritten by filename collision despite ACOT
+    never redefining the technology BLOCK itself). Once the preferred source's file has been
+    recorded for a stem, a later source is not allowed to overwrite it -- this is the only
+    behaviour change; every other stem resolves exactly as before (empty dict / no matching key is
+    a full no-op)."""
+    overrides = source_priority_overrides or {}
     result: dict[str, tuple[str, Path]] = {}
     for config in configs:
         for path in config.resolve(kind):
-            result[path.stem] = (config.name, path)
+            stem = path.stem
+            pinned_source = overrides.get(stem)
+            if pinned_source is not None and stem in result and result[stem][0] == pinned_source:
+                continue
+            result[stem] = (config.name, path)
     return result
 
 

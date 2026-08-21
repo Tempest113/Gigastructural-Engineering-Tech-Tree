@@ -82,7 +82,10 @@ def _expanded_documents(def_files: list[tuple[str, Path]], scripts) -> list[tupl
     return [(source_name, expand_document(parse_file(path), scripts)[0]) for source_name, path in def_files]
 
 
-def resolve_kind(kind: str, vendor_root: Path, overrides: dict[str, IconOverride]) -> IconResolutionResult:
+def resolve_kind(
+    kind: str, vendor_root: Path, overrides: dict[str, IconOverride],
+    source_priority_overrides: dict[str, str] | None = None,
+) -> IconResolutionResult:
     configs = default_source_configs(vendor_root)
     if kind == "technology":
         def_files = technology_definition_files(configs, vendor_root)
@@ -98,7 +101,7 @@ def resolve_kind(kind: str, vendor_root: Path, overrides: dict[str, IconOverride
 
     candidates = collect_candidates(documents, kind)
     icon_dir_kind = "technologies" if kind == "technology" else "ascension_perks"
-    icon_files = resolve_icon_files(configs, icon_dir_kind)
+    icon_files = resolve_icon_files(configs, icon_dir_kind, source_priority_overrides)
     return resolve_all(candidates, icon_files, overrides)
 
 
@@ -148,6 +151,7 @@ def decode_resolved_icons(result: IconResolutionResult) -> dict[str, DecodedIcon
 
 def build_atlases(
     kind: str, vendor_root: Path, overrides_path: Path | None = None, rendered_keys: set[str] | None = None,
+    source_priority_overrides: dict[str, str] | None = None,
 ) -> tuple[list[AtlasSheet], IconResolutionResult]:
     """Returns every sheet needed for this usage kind — always a list, even when only one sheet
     results, so callers never special-case "the" sheet (see pack.py's `pack_sheets` docstring on
@@ -156,9 +160,12 @@ def build_atlases(
     `rendered_keys` (P-16's rendered technology-key set) filters technology-kind candidates to
     those whose owning technology is actually rendered — see `filter_result_to_rendered_scope`.
     Passed but ignored for `kind == "ascension_perk"` (that function's docstring explains why
-    filtering perks by the technology closure would be wrong, not merely unfiltered by omission)."""
+    filtering perks by the technology closure would be wrong, not merely unfiltered by omission).
+
+    `source_priority_overrides` (Item 6, later session): forwarded to `resolve_icon_files` -- see
+    that function's docstring."""
     overrides = load_overrides(overrides_path) if overrides_path else load_overrides()
-    result = resolve_kind(kind, vendor_root, overrides)
+    result = resolve_kind(kind, vendor_root, overrides, source_priority_overrides)
     if rendered_keys is not None and kind == "technology":
         result = filter_result_to_rendered_scope(result, rendered_keys)
     icons = decode_resolved_icons(result)

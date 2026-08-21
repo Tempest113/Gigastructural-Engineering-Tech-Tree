@@ -102,6 +102,10 @@ export interface Gate {
   alternative: boolean;
   /** Item 4: for a "technology"-kind alternative gate backed by a real potential-gate edge with a genuine per-axis constraint (pipeline.edge_constraints), the same constraint reused here -- e.g. tech_torpedoes_1's Riddle Escort gate only ever matters for shipset=[biological] profiles; for every other profile the gate should not present as a requirement at all. Null when the gate is unconstrained (applies to every profile) or not backed by an edge-constraint entry. */
   appliesToEmpireTypes: unknown;
+  /** Item 3 (later session): true iff this gate was NOT declared on this technology's own potential/perk-grant, but propagated from a `prerequisite`-edge ancestor that declares it directly (e.g. the QSO family inherits `ap_qso` from `giga_tech_quasi_stellar_1`; a Management Protocols repeatable inherits `ap_galactic_wonders` from its megastructure prerequisite). The client must render an inherited gate distinctly from a directly-declared one (e.g. naming the source technology) so a user can tell where the requirement originates. */
+  inherited: boolean;
+  /** Null for a directly-declared gate (`inherited: false`). For an inherited gate, the technology key whose OWN potential/perk-grant declares this gate directly -- the original source, not an intermediate hop in a longer prerequisite chain. */
+  sourceTechnologyId: null | string;
 }
 
 /** 00-overview.md: geometry lives in typed-array side-files, JSON references them, never inlines coordinate arrays. */
