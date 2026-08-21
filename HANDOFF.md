@@ -1562,3 +1562,90 @@ inside it beyond the byte-identical-move check.
 into Claude Code" section, is otherwise still accurate) — but MUST run `tools/build_dataset.py`
 fresh first (D-15, gitignored dataset) and should re-run the headless verification script rather
 than trust any number in this section as still current once new code lands.
+
+## Reconciliation + D-17 extension + P-12.9 implementation session
+
+Four numbered items plus P-12.9, run single-threaded, no sub-agents, per explicit instruction.
+
+**Item 1 (reconcile the uncertain count)**: not a regression. Full pytest went 1495 → 1496 across
+the prior session's six-change commit (`a36722b`), and its own pinned-test update
+(`c45448e`) documents each figure's move with a named reason (three real fixes: `always` leaf
+evaluation, ascension-perk axis-locking's `_combine_or` correction, `has_active_tradition`) — no
+process failure. Rebuilt dataset confirms the pin exactly: unconditional uncertainty 31/973
+(3.19%), union 53, worst profile-dependent 16/973 (1.64%, `status: "ok"`), D-10 ratchet holds
+(`previousRate == rate` on every profile).
+
+**Item 2 (perk-perk cycle)**: already correctly handled, not a gap. `ap_defender_of_the_galaxy`
+<-> `ap_defender_of_the_galaxy_nomads` is a real mutual-exclusion pair in the mod's own source
+(each excludes the other via a `NOR = { has_ascension_perk = <the other> }` superseded-perk
+guard); `pipeline.availability`'s eager (non-short-circuiting) block evaluation means both
+directions genuinely get walked, and `_perk_eval_in_progress`'s recursion guard breaks the cycle
+correctly. `ap_defender_of_the_galaxy` resolves LOCKED (its own `potential` starts
+`has_nomads_dlc = no`, false under the all-DLC-owned assumption); `ap_defender_of_the_galaxy_
+nomads` stays gate-only (its own NOR references two unregistered game-state leaves,
+`is_player_crisis`/`is_unfriendly`, so it can't fully resolve either way). Zero rendered
+technologies reference either perk id directly — the cycle has zero downstream effect on gates or
+availability.
+
+**Item 3 (visual verification)**: Playwright's browser installed cleanly this session
+(`npx playwright install chromium`, cached in `~/.cache/ms-playwright`) — no install blocker this
+time. All nine required cases verified by real headless-Chromium screenshot against the rebuilt
+dataset, zero console errors throughout: an inherited gate's "(via <source>)" note
+(`giga_tech_quasi_stellar_2`), the QSO/Management-Protocols families' new inherited perk gates,
+`tech_dyson_sphere`'s new direct perk-grant gate, a nomadic-vs-non-nomadic lock behind Galactic
+Wonders (`giga_tech_ringworld_titanic_1` — non-nomadic shows the gate as "available", nomadic
+shows "locked — Requires the ap_galactic_wonders ascension perk"), Birch World's dangling "or:"
+now plain "Needs Vast Expanses", a genuine two-gate OR set (`giga_tech_the_vat`: "Needs Galactic
+Wonders" + "or: Mechromancy"), the repeatable infinity glyph (clearly "∞", not a hyphen, at both
+mid-zoom and close-up), the off-tree-prerequisite end-user note, and a 4-gate card
+(`tech_cloning`) with no overflow. One pre-existing, already-documented gap observed, not new:
+origin/ethics-or-civic gates render no icon (blank) in the popup — CLAUDE.md's "Icons — reported,
+not vendored" note already covers this.
+
+**Item 4 (D-17 same-sub-column extension): implemented.** `pipeline.layout._same_band_depth`
+gained an `extra_same_band_edges` parameter fed from `alternative`/`potential-gate` edges
+(`compute_typed_edges`, moved earlier in `compute_layout` so both consumers share one call).
+Canvas 29,670 × 13,448px → 30,060 × 13,448px (+390px, +1.3%, well under the ~10%
+stop-and-report threshold), densest cell/row population unaffected. New corpus test
+(`test_zero_same_sub_column_pairs_across_all_edge_kinds`) proven to fail first (24 violations
+against the pre-extension code) before trusted on the fix. See `spec/decisions.md`'s D-17 section
+for the full record.
+
+**P-12.9 (research path): implemented.** `researchPaths[technologyId]` per profile now carries
+`{status, steps, totalCost, totalCostIsEstimate, estimateReasons, configGatedTarget}`
+(`pipeline.dataset_emit._build_research_paths_for_profile`), replacing the old placeholder
+`{ancestors, shortestChain}` shape. `alternative` groups resolve to the cheapest-full-closure-cost
+viable candidate, never just the branch's own declared cost (the fix for v1's "Arkship Mastery
+never expanded its own prerequisites" bug); the chosen step's `alternatives` names the other
+viable siblings, never flattened. A real, load-bearing correction found while implementing: the
+spec's own worked example (`tech_mega_engineering` = 74,750 for regular/mechanical/non-nomadic)
+only reproduces when `totalCost` for `status == "path"` INCLUDES the target's own declared cost —
+the schema's literal "sum of stepCost" text was imprecise; confirmed against three independent
+figures (74,750, 73,750, and the corrected nomadic 76,250) before trusting the fix.
+
+Three stale spec figures re-measured against the current corpus: the OR tie-break
+(cheapest-total-cost vs. fewest-steps) now disagrees on 12 of 72 genuine 2+-viable choices (was
+"0 disagreements"); the nomadic `tech_mega_engineering` total is 76,250 (was 99,750, content
+drift). A FOURTH figure — inherited in this session's own prompt as "confirmed still zero" — was
+found to be wrong on direct measurement and corrected rather than forced to match: the "dangerous"
+sub-case (ancestor chain broken while the target's own state stays available/uncertain) is real
+and substantial on the current corpus (78 technologies / 472 pairs), confirmed against raw source
+(`tech_ehof_spinal` unconditionally requires `tech_arkship_tier_3`, itself `is_nomadic = yes`-
+locked). Reported honestly per CLAUDE.md's "raw inspection only, a documented claim is not
+self-verifying" rule, not suppressed to match the inherited assumption. New diagnostics field
+`unresolvableResearchPaths` surfaces every `{technologyId, profile}` pair.
+
+Client: `main.ts`'s `openPopup` now fetches the profile overlay unconditionally (previously only
+for a non-`available` technology) and renders a "Research path" popup section via a new
+`renderResearchPath` function — ordered steps with per-step cost and an `uncertain` badge, running
+total with its estimate note, inline `alternatives` on a chosen OR-step, and the config-gated
+target's subject/template note. Verified with 5 real screenshots (an OR-choice path reproducing
+74,750 exactly, the nomadic Arkship-branch substitution reproducing 76,250 exactly, an
+uncertain-step estimate, an `unavailable` dangerous-case target, and a config-gated target
+excluding its own cost from the total) — zero console errors.
+
+**Global verify**: full pytest 1507 passed (was 1496 at session start), `tsc --noEmit` and
+`vite build` both clean. Largest empire
+overlay (research paths added): 1.25MB raw / 63.5KB gzip — comfortably inside the ≤2MB compressed
+budget. Existing layout/geometry invariant tests (row-overlap, card-within-row, name-bounds,
+D-17 including the new per-cell extension, edge-containment) all still pass unmodified.

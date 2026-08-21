@@ -991,9 +991,61 @@ cannot produce a number that is right often enough to present authoritatively.
 
 ### Research path
 
-Complete ancestor set in tier order with cumulative cost, plus a "shortest chain" toggle.
-Computed per empire profile at build time. Never substitute swaps in the browser: swaps change
-the shape of the chain, not just its labels.
+**Implemented (P-12.9, a later session — `spec/P-12.9-research-path.md`).** The old placeholder
+`{ancestors, shortestChain}` shape (a plain profile-blind `prerequisite`-edge BFS, `alternative`
+edges never resolved — v1's own two documented failures: profile-blind traversal and flattened
+`OR`-branch choices) is replaced by `researchPaths[technologyId]` = `{status, steps, totalCost,
+totalCostIsEstimate, estimateReasons, configGatedTarget}`, precomputed per (technology, profile)
+at build time in the empire overlay (`pipeline.dataset_emit._build_research_paths_for_profile`,
+memoised once per profile across all 973 targets sharing it). `status` is `"path"` (ordinary),
+`"config-gated"` (the target is one of the 50 `giga_tech_repeatable_*_cap` technologies — its own
+cost is excluded from `totalCost` entirely, per D-13's sink property: a config-gated technology
+can only ever be a path's own target, never an interior step), or `"unavailable"` (no `steps`
+array at all — either the target itself is `locked`, or a plain, non-`alternative` prerequisite
+somewhere in its ancestor chain is). An `alternative` (`OR`-group) is resolved to whichever VIABLE
+(`available`/`uncertain`, never `locked`/`config-gated`) candidate has the cheapest FULL recursive
+closure cost — never just its own declared cost, which is what fixes v1's "chose a branch without
+expanding its own prerequisites" bug — and the chosen step's own `alternatives` list names the
+other viable siblings, never flattened away. `totalCost` for `status == "path"` includes the
+TARGET's own declared cost (confirmed the only reading that reproduces the spec's own worked
+example: `tech_mega_engineering` regular/mechanical/non-nomadic = 74,750 exactly, the 15-ancestor
+sum plus the target's own 24,000 — the ancestor-sum-only reading does not); for `"config-gated"`
+it excludes the target's cost, per section 5. An `uncertain` step or a `null`-cost step both stay
+in the path (never excluded, matching D-10's "unknown ≠ excluded" discipline) and set
+`totalCostIsEstimate`/`estimateReasons` (`"uncertain-availability"`/`"unresolved-cost"`,
+composable). Every step's `name`/`icon` is D-14-substituted for the selected profile.
+
+**Real corpus, current (re-measured this session — the original spec's 3 headline figures had
+gone stale, per its own worked examples): OR tie-break (cheapest-total-cost vs. fewest-steps)
+disagrees on 12 of 72 genuine 2+-viable-candidate group×profile choices** (of 420 total
+group×profile evaluations over the corpus's 35 real `alternative` groups, 408 have ≥1 viable
+candidate) — cheapest-total-cost is genuinely load-bearing now, not a defensible-either-way
+footnote the original survey's "0 disagreements" figure implied.
+
+**A real, previously-unmeasured finding, corrected against this session's own inherited
+assumption, not suppressed to match it: the "dangerous" sub-case (an ancestor chain broken while
+the target's own state stays available/uncertain) is NOT zero on the current corpus.** Confirmed
+directly against raw source, not assumed: `tech_ehof_spinal`'s `prerequisites` block
+unconditionally (never inside an `OR`) requires `tech_arkship_tier_3`
+(`giga_09_ehof_other.txt:260`), whose own `potential` is `is_nomadic = yes`
+(`00_nomads_dlc_tech.txt`) — locked for every non-nomadic profile; `tech_ehof_spinal`'s own state
+resolves `uncertain` (an unrelated `has_arcane_generator` flag), never `locked`. Real corpus: 78
+distinct technologies / 472 (key, profile) pairs hit this — `pipeline.dataset_emit.build_
+diagnostics`'s new `unresolvableResearchPaths` field (`spec/P-12.9-research-path.md` section 6's
+tripwire) surfaces every one, `{technologyId, profile}[]`. This is corpus content drift (or a
+gap in the prior survey), not a bug in the algorithm — the mechanism is proven capable of finding
+real cases, which is exactly what a tripwire diagnostic exists for; do not "fix" this by silently
+re-asserting the old zero.
+
+CLIENT: selection-triggered (matches v1's own trigger — no persistent "goal technology" pin, an
+explicitly deferred feature). `client/src/main.ts`'s `openPopup` fetches the current profile's
+overlay unconditionally (previously only for a non-`available` technology) and renders a
+`renderResearchPath` section: ordered steps with per-step cost and an `uncertain` badge, the
+running total with its estimate note where set, `alternatives` shown inline per OR-chosen step,
+and the `config-gated` target's own subject/template note. Verified with real screenshots (an
+`OR`-choice path, the nomadic Arkship-branch substitution, an `uncertain`-step estimate, an
+`unavailable` dangerous-case target, and a `config-gated` target) — zero console errors, all
+figures matching the pinned corpus tests.
 
 ### Localisation
 
@@ -1143,39 +1195,27 @@ live in this file's own body above and in `spec/decisions.md`, not here.
   of dependency (an eligibility check, not a declared prerequisite), and whether/how it should
   ALSO propagate gates was left open pending real corpus study of what that would even mean —
   don't extend propagation there without first surveying real cases.
-- **Same-sub-column (same-band) `alternative`/`potential-gate` edges — surveyed, not
-  implemented, per explicit instruction this session.** D-17's "a dependent is never left of or
-  in line with its prerequisite within a band" guarantee only covers `prerequisite` edges. Real
-  corpus: exactly 6 edges (all `alternative`/`potential-gate`, ZERO `prerequisite`) sit in the
-  exact same x-column as their counterpart, same band, same row — 2 of these are in the Compound
-  row (`tech_qnm_utilities` → `tech_qnm_disruptors`/`tech_sm_autocannons`), matching the user's
-  reported visual location. This is a genuine, narrow gap in D-17's guarantee (never checked for
-  these two edge kinds), not a different mechanism. Recommend extending D-17's existing
-  depth-slot displacement logic to cover `alternative`/`potential-gate` edges too — a PER-CELL,
-  LOCAL fix (only the 6 affected sub-grid columns need an extra slot), not a global
-  `subgrid_width` renegotiation (already done twice — canvas width is the user's call, not
-  re-litigated here). Not implemented — the user needs to confirm the recommended fix before
-  canvas geometry changes again.
-- **P-12.9 (research path): specced, SURVEYED AND APPROVED (a later session), still not
-  implemented — this is the next open work.** The feature v1 failed at: profile-blind traversal
-  (didn't vary by empire type) and flattened `OR`-group (`alternative`-edge) branches instead of
-  choosing the cheapest one. `spec/P-12.9-research-path.md` is the normative spec and its design
-  (per-profile, cheapest-total-cost `OR`-branch, `uncertain`-stays-in-estimate, config-gated-
-  target-only, unavailable-as-one-state) does NOT need rework — but its own recorded validation
-  figures are now stale against the corpus's later movement and MUST be corrected in the same
-  implementation pass, not carried forward: the "2 of 980 impossible" count is now **203
-  technologies / 1,270 (key, profile) pairs** (still real content, not a bug — see the survey for
-  why; critically, the "dangerous" sub-case the spec's whole simplification rests on — an ancestor
-  chain broken while the target itself stays reachable — is STILL exactly zero, re-confirmed
-  directly, so the simplification itself survives even though the headline count doesn't), the
-  nomadic `tech_mega_engineering` total is now **76,250** (was 99,750 — the regular/mechanical and
-  regular/biological totals, 74,750/73,750, still reproduce exactly), and the `OR` tie-break's "0
-  disagreements between cheapest-cost and fewest-steps" is now **12 disagreements** (cheapest-cost
-  is genuinely load-bearing now, not a distinction without a difference). See `docs/BUILD-LOG.md`
-  for the full survey writeup. Note: the hover/selection slice's ancestry/dependent highlight is
-  explicitly NOT this algorithm (it's a structural, profile-invariant closure over all edge kinds;
-  P-12.9 is a per-profile cheapest-`OR`-branch resolution) — see `client/src/main.ts`'s
-  `computeAncestryAndDependents` for the distinction stated in code.
+- **Same-sub-column (same-band) `alternative`/`potential-gate` edges — now closed (a later
+  session).** D-17's own invariant (`spec/decisions.md`) is extended: `pipeline.layout.
+  _same_band_depth` now also takes `alternative`/`potential-gate` edges as an additional same-band
+  ordering constraint (not folded into `prereqs_of`/`computed_position`, which stay
+  prerequisite-only). Real corpus: canvas 29,670 × 13,448px → 30,060 × 13,448px (+390px, +1.3% —
+  well under the ~10% stop-and-report threshold), densest cell/row population unaffected.
+  `tests/test_layout_corpus.py::test_zero_same_sub_column_pairs_across_all_edge_kinds` asserts
+  zero same-band `(from, to)` pairs across all three edge kinds, proven to fail first (24
+  violations pre-extension) before being trusted on the fix. Left here only so a future session's
+  memory of "this was still open" gets corrected on sight.
+- **P-12.9 (research path): now implemented (a later session).** See this file's own "Research
+  path" section above for the full account — the placeholder `{ancestors, shortestChain}` shape is
+  replaced by the spec's `{status, steps, totalCost, totalCostIsEstimate, estimateReasons,
+  configGatedTarget}` shape, wired into the client popup. All three previously-stale spec figures
+  were re-measured against the current corpus in the same pass (OR tie-break 12/72 disagreements,
+  nomadic `tech_mega_engineering` total 76,250), and a fourth, more significant correction was
+  found and recorded honestly rather than forced to match the inherited assumption: the
+  "dangerous" ancestor-chain-broken sub-case is NOT zero on the current corpus (78 technologies /
+  472 pairs, `diagnostics.unresolvableResearchPaths`) — see the "Research path" section for the
+  confirmed example. Left here only so a future session's memory of "this was still open" gets
+  corrected on sight.
 - **`appliesToEmpireTypes`/`activeEdgeIds` is now closed** (a later session) — `pipeline.
   edge_constraints` computes real per-edge empire-type constraints for `potential-gate` edges
   (`prerequisite`/`alternative` are structurally unconstrained by construction — their own

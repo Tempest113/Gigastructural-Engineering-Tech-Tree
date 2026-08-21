@@ -3324,3 +3324,43 @@ D-10/gate-count regression test with its own reasoning — never silenced), `tsc
 this environment; the client changes (inherited-gate popup rendering, the enlarged infinity
 glyph, the rewritten off-tree note) were verified by direct inspection of the rebuilt dataset JSON
 and the TypeScript build only, not visually. Flagged honestly rather than claimed.
+
+## Reconciliation + D-17 extension + P-12.9 implementation session
+
+Five numbered items from the user, run single-threaded. Full detail in HANDOFF.md's own section of
+the same name; terse record here.
+
+1. **Uncertain count reconciled**: not a regression — the prior session's pin update
+   (`c45448e`) carried a full, named reason for each figure's move. Rebuilt dataset confirms the
+   pin exactly (31/973 unconditional, 53 union, 16/973 worst profile-dependent, D-10 ratchet
+   holds).
+2. **Perk-perk cycle**: already correctly handled by the existing recursion guard
+   (`_perk_eval_in_progress`), confirmed by tracing both perks' raw `potential` blocks directly.
+   Zero rendered technologies reference either perk id, so the cycle has zero gate/availability
+   effect either way.
+3. **Visual verification**: Playwright installed cleanly this session (unlike the prior session's
+   timeout). All nine required cases confirmed by real screenshot, zero console errors; one
+   pre-existing documented gap observed (origin/ethics-or-civic gates render no icon), not new.
+4. **D-17 same-sub-column extension implemented**: `_same_band_depth` now also takes
+   `alternative`/`potential-gate` edges as an additional ordering constraint. Canvas 29,670 ×
+   13,448px → 30,060 × 13,448px (+1.3%). New corpus test proven to fail first (24 violations)
+   before trusted on the fix.
+5. **P-12.9 implemented**: `researchPaths` replaces its placeholder shape with the spec's
+   `{status, steps, totalCost, totalCostIsEstimate, estimateReasons, configGatedTarget}`. A real
+   correction found while implementing: `totalCost` for `status == "path"` must include the
+   target's own declared cost to reproduce the spec's own worked examples (74,750/73,750/76,250) —
+   the schema's literal "sum of stepCost" text was imprecise. Two spec figures re-measured (OR
+   tie-break 12/72 disagreements, nomadic total 76,250); a THIRD, more significant one corrected
+   against this session's own inherited assumption rather than forced to match it: the "dangerous"
+   ancestor-chain-broken sub-case is real and substantial on the current corpus (78 technologies /
+   472 pairs), confirmed against raw source (`tech_ehof_spinal` → `tech_arkship_tier_3`, itself
+   `is_nomadic = yes`-locked) — reported honestly per this project's "raw inspection only" rule,
+   not suppressed. New `diagnostics.unresolvableResearchPaths` surfaces every case. Client popup
+   wired up (`renderResearchPath`), verified with 5 real screenshots reproducing the exact
+   corrected cost figures.
+
+**Verification**: full `pytest tests/` (1507 passed, up from 1496), `tsc --noEmit` and
+`vite build` both clean. Largest empire overlay (research paths added): 1.25MB raw / 63.5KB gzip,
+comfortably inside the ≤2MB compressed budget. Real dataset rebuilt and headless-Chromium-verified
+throughout — zero console errors across every screenshot in both the Item 3 and P-12.9 verification
+passes.
