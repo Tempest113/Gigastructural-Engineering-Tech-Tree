@@ -96,19 +96,52 @@ def test_base_dataset_gates_match_the_gate_classification_survey(base_dataset):
     documented "4 real pairs are both a formal prerequisite and a potential-gate"; displaying the
     latter duplicated the former, already shown via the edge/popup) = 22 technology-kind gates.
 
-    45 + 45 + 24 + 22 = 136 total, over 109 technologies, 24 of which carry more than one gate
-    instance."""
+    45 + 45 + 24 + 22 = 136 DIRECT total, over 109 technologies, 24 of which carry more than one
+    directly-declared gate instance.
+
+    **Two later sessions moved the DIRECT figures again, and added an INHERITED layer on top --
+    both counted separately below, never conflated.**
+
+    Item 4a ("Ring Segment / ascension-perk locking / gate-propagation" session): `on_enabled ->
+    add_research_option` grants are now themselves a gate source. `ap_galactic_wonders`'s
+    (Gigastructures-overwritten) `on_enabled` unconditionally grants `tech_ring_world`,
+    `tech_dyson_sphere` and `tech_matter_decompressor` -- all three structurally UNREACHABLE any
+    other way (unconditional zero weight) and previously invisible to gate detection entirely, so
+    all three are NEW direct ascension_perk gates. `tech_mega_engineering` is ALSO granted this way
+    but stays genuinely reachable by the ordinary weighted-draw route too, so it deliberately does
+    NOT get one (see `pipeline.dataset_emit.ADD_RESEARCH_OPTION_PERK_GRANTS`'s own comment). Real
+    corpus: DIRECT ascension_perk 45 -> 48, DIRECT total 136 -> 139, directly-gated technologies
+    109 -> 112.
+
+    Item 3 (the SAME session): gates now PROPAGATE down `prerequisite` edges -- a technology whose
+    only real path to a requirement is "research my prerequisite first, and THAT tech needs the
+    perk" now inherits it, tagged `inherited: true`/`sourceTechnologyId: <declaring tech>` (user
+    report: the QSO family, `giga_tech_repeatable_*_cap` "Management Protocols"). This is INSTEAD
+    OF the direct-only figures above for the FULL emitted `gates` field -- real corpus: 267 total
+    gate instances (104 ascension_perk + 53 origin + 61 ethics_or_civic + 49 technology) over 196
+    gated technologies, 48 of which carry more than one gate instance (direct + inherited
+    combined). The DIRECT-only figures (139/112, still separately meaningful -- e.g. for
+    reconstructing "which technology's own `potential`/perk-grant is the true source") remain
+    exactly as the paragraph above states and are asserted separately below."""
     from collections import Counter
 
     doc, _node_bytes, _edge_bytes = base_dataset
     gated = [t for t in doc["technologies"] if t["gates"]]
     all_gates = [g for t in doc["technologies"] for g in t["gates"]]
-    assert len(all_gates) == 136
+    assert len(all_gates) == 267
     assert dict(Counter(g["kind"] for g in all_gates)) == {
-        "ascension_perk": 45, "origin": 45, "ethics_or_civic": 24, "technology": 22,
+        "ascension_perk": 104, "origin": 53, "ethics_or_civic": 61, "technology": 49,
     }
-    assert len(gated) == 109
-    assert sum(1 for t in gated if len(t["gates"]) > 1) == 24
+    assert len(gated) == 196
+    assert sum(1 for t in gated if len(t["gates"]) > 1) == 48
+
+    direct_gates = [g for t in doc["technologies"] for g in t["gates"] if not g["inherited"]]
+    directly_gated = [t for t in doc["technologies"] if any(not g["inherited"] for g in t["gates"])]
+    assert len(direct_gates) == 139
+    assert dict(Counter(g["kind"] for g in direct_gates)) == {
+        "ascension_perk": 48, "origin": 45, "ethics_or_civic": 24, "technology": 22,
+    }
+    assert len(directly_gated) == 112
 
     for key in [
         "giga_tech_amb_supertensiles_acot_alpha", "giga_tech_amb_supertensiles_acot_sigma",
@@ -118,16 +151,21 @@ def test_base_dataset_gates_match_the_gate_classification_survey(base_dataset):
         tech = next(t for t in doc["technologies"] if t["id"] == key)
         assert tech["gates"] == []
 
-    # Every "has_technology"-sourced gate instance is one of the 25 potential-gate edges (still
-    # 25 -- Item 5 only filters the CARD-DISPLAY gate list, never the edge extraction itself),
-    # but no longer a 1:1 match: the 4 excluded gate instances are a strict subset of the edges,
-    # PLUS one extra pair from `can_research_technology` (a distinct engine trigger P-14's edge
-    # extraction was never scoped to cover), so the two sets are no longer strictly nested either
-    # direction -- asserted precisely below rather than as a subset relationship.
+    # Every "has_technology"-sourced DIRECT gate instance is one of the 25 potential-gate edges
+    # (still 25 -- Item 5 only filters the CARD-DISPLAY gate list, never the edge extraction
+    # itself), but no longer a 1:1 match: the 4 excluded gate instances are a strict subset of the
+    # edges, PLUS one extra pair from `can_research_technology` (a distinct engine trigger P-14's
+    # edge extraction was never scoped to cover), so the two sets are no longer strictly nested
+    # either direction -- asserted precisely below rather than as a subset relationship. Restricted
+    # to DIRECT gates -- an INHERITED technology-kind gate is a different (ancestor, descendant)
+    # pair than any potential-gate edge, by construction, so including inherited entries here
+    # would just be noise against this specific direct-edge correspondence check.
     potential_gate_pairs = {(e["from"], e["to"]) for e in doc["edges"] if e["kind"] == "potential-gate"}
     assert len(potential_gate_pairs) == 25
     gate_tech_pairs = {
-        (g["refId"], t["id"]) for t in doc["technologies"] for g in t["gates"] if g["kind"] == "technology"
+        (g["refId"], t["id"])
+        for t in doc["technologies"] for g in t["gates"]
+        if g["kind"] == "technology" and not g["inherited"]
     }
     assert len(gate_tech_pairs) == 22
     assert gate_tech_pairs - potential_gate_pairs == {("tech_genome_mapping", "tech_alien_cloning")}
@@ -246,8 +284,15 @@ def test_gate_classification_leaves_d10_uncertainty_unchanged(ctx, base_dataset)
         1 for t in doc["technologies"] if all(state == "uncertain" for state in t["availabilityMatrix"])
     )
     worst_profile_dependent = max(per_profile_uncertain_counts) - unconditional
-    assert worst_profile_dependent == 15
-    assert round(worst_profile_dependent / len(doc["technologies"]), 4) == 0.0154  # 15/973
+    # 15 -> 16, a later session (Items 1, 2, 5: `always`, ascension-perk axis-locking, and
+    # `has_active_tradition` leaf handling). Each fix resolves technologies that used to be
+    # UNCONDITIONALLY uncertain into either AVAILABLE-for-everyone or genuinely profile-dependent
+    # (LOCKED for some, AVAILABLE for others) -- net effect across all three: unconditional
+    # uncertainty falls 34 -> 31 (see test_real_rates_against_projections's own writeup) while the
+    # worst profile-dependent count rises by exactly one, still comfortably under the 3% warn
+    # threshold (~1.64%, not the 3% ceiling).
+    assert worst_profile_dependent == 16
+    assert round(worst_profile_dependent / len(doc["technologies"]), 4) == 0.0164  # 16/973
 
 
 def test_edge_constraints_leave_d10_uncertainty_unchanged(ctx, base_dataset):
@@ -264,7 +309,7 @@ def test_edge_constraints_leave_d10_uncertainty_unchanged(ctx, base_dataset):
         1 for t in doc["technologies"] if all(state == "uncertain" for state in t["availabilityMatrix"])
     )
     worst_profile_dependent = max(per_profile_uncertain_counts) - unconditional
-    assert worst_profile_dependent == 15
+    assert worst_profile_dependent == 16  # 15 -> 16, see test_gate_classification_leaves_d10_uncertainty_unchanged
 
 
 def test_active_edge_ids_are_not_identical_across_all_twelve_profiles(ctx):
@@ -654,10 +699,14 @@ def test_diagnostics_validates_and_reports_the_unconditional_uncertain_finding(c
     # profile-dependent, so none had anywhere to "move to" on that axis. See
     # tests/test_availability_corpus.py's own writeup for the full accounting, including the two
     # vanilla L-Gate flags deliberately excluded from this resolution.
-    assert diagnostics["unconditionalUncertainty"]["count"] == 34
+    # 34 -> 31, a later session (Items 1, 2, 5): see
+    # tests/test_availability_corpus.py::test_real_rates_against_projections's own writeup for the
+    # three individual fixes (`always`, ascension-perk axis-locking's `_combine_or` correction,
+    # `has_active_tradition`).
+    assert diagnostics["unconditionalUncertainty"]["count"] == 31
     assert len(diagnostics["profileDependentUncertainty"]) == 12
     worst = max(d["rate"] for d in diagnostics["profileDependentUncertainty"])
-    assert worst == pytest.approx(0.015416, abs=1e-5)
+    assert worst == pytest.approx(0.016444, abs=1e-5)  # 0.015416 -> 0.016444 (16/973), Items 1/2/5
 
     cap_keys = {k for k in ctx.rendered_keys if k.startswith("giga_tech_repeatable_") and k.endswith("_cap")}
     assert len(cap_keys) == 50

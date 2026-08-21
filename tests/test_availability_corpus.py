@@ -48,6 +48,7 @@ from pipeline.availability import (
     build_missing_lock_reason_overrides,
     classify_d10_status,
     evaluate_trigger_block,
+    set_perk_potentials,
     survey_uncertainty,
 )
 from pipeline.clausewitz import Assignment, Block, parse_file
@@ -136,6 +137,40 @@ def rendered_potentials():
         result[key] = _potential_block(winner.block)
     assert set(result) <= set(records)  # sanity: every winner we kept has a resolved record
     return result
+
+
+def _load_ascension_perk_documents(scripts):
+    return [
+        (name, [expand_document(parse_file(f), scripts)[0] for f in sorted((root / "common" / "ascension_perks").glob("*.txt"))])
+        for name, root in _SOURCES_IN_LOAD_ORDER
+        if (root / "common" / "ascension_perks").is_dir()
+    ]
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _registered_perk_potentials():
+    """Item 2 (later session): `_evaluate_leaf`'s `has_ascension_perk` handling consults a
+    module-level registry (`pipeline.availability.set_perk_potentials`) that only
+    `pipeline.dataset_emit.build_context` populates in real production use -- this fixture mirrors
+    that registration here too, autouse, so THIS file's own survey (`expanded_rendered_potentials`,
+    built independently of `build_context`) reflects the SAME real behaviour rather than silently
+    under-counting perk-driven resolutions. Without this, `has_ascension_perk` leaves here would
+    always be EXCLUDED regardless of real axis restrictions -- exactly the "hidden global state
+    depends on which fixture happened to run first" risk this project's own methodology warns
+    against; making the registration explicit and unconditional here closes it, rather than
+    leaving this test file's result order-dependent on some OTHER test module's `ctx` fixture
+    having already called `set_perk_potentials` first."""
+    scripts = collect_scripts(_script_entries())
+    catalog = load_scripted_trigger_catalog(VENDOR_ROOT, scripts, _SOURCES_IN_LOAD_ORDER)
+    perk_docs = _load_ascension_perk_documents(scripts)
+    perk_history = collect_technology_definitions(perk_docs)
+    perk_potentials = {
+        key: expand_scripted_triggers(_potential_block(occurrences[-1].block), catalog)
+        for key, occurrences in perk_history.items()
+    }
+    set_perk_potentials(perk_potentials)
+    yield
+    set_perk_potentials({})
 
 
 @pytest.fixture(scope="module")
@@ -249,15 +284,38 @@ def test_real_rates_against_projections(expanded_rendered_potentials):
     # `has_encountered_psionic_auras`. Two more of the same non-matching shape turned up during
     # this pass and are reported the same way, not resolved: `finish_shroud_forged_liberation_flag`,
     # `machine_subspecies`.
-    assert len(survey.unconditional_uncertain) == 34
-    assert unconditional_rate == pytest.approx(34 / 973)  # D-18: 980 -> 977; Item 2c: 977 -> 973
+    # **34 -> 31, a later session (the "Ring Segment / ascension-perk locking / gate-propagation"
+    # follow-up, Items 1, 2 and 5).** Three independent, real fixes each removed exactly one
+    # technology from the unconditional bucket:
+    # - Item 1: `always` was never handled as a leaf at all (only `always = no` at a technology's
+    #   own top level, via `pipeline.rendering_scope`'s permanently-disabled exclusion, which is a
+    #   DIFFERENT mechanism). `tech_ring_world`'s whole `potential` is `{ always = yes }` -- the
+    #   most trivially resolvable leaf in Clausewitz, reported uncertain for every profile. Fixed
+    #   by adding `always = yes`/`always = no` handling to `_evaluate_leaf`.
+    # - Item 5: `has_active_tradition` was never handled either (falls through to UNKNOWN
+    #   unconditionally). `giga_tech_the_vat`'s `potential` contains `OR = {
+    #   has_genetically_ascended = yes, has_active_tradition = tr_genetics_finish_extra_traits,
+    #   has_ascension_perk = ap_mechromancy }` -- with the tradition leaf UNKNOWN, Kleene semantics
+    #   left the whole OR (and thus the whole technology) UNKNOWN for every profile. Resolved:
+    #   `has_active_tradition` now resolves TRUE by default, FALSE only for the one user-confirmed
+    #   restricted category (`tr_genetics*`, unavailable to machine-intelligence empires) --
+    #   `giga_tech_the_vat` now resolves AVAILABLE for all 12 profiles (non-machine via the
+    #   tradition branch, machine via the still-open `ap_mechromancy` gate).
+    # - Item 2's `_combine_or` correction (needed so an axis-locked ascension perk inside an OR
+    #   doesn't wrongly close off a sibling that's still an open, achievable gate) resolved one
+    #   further technology whose OR combination previously stayed UNKNOWN because a real FALSE
+    #   sibling and a genuinely-open EXCLUDED sibling combined to UNKNOWN under the pre-fix rule.
+    # See CLAUDE.md's "Ascension perks are gates ..." section and pipeline.availability's own
+    # module docstring for the full writeup of all three fixes.
+    assert len(survey.unconditional_uncertain) == 31
+    assert unconditional_rate == pytest.approx(31 / 973)  # D-18: 980 -> 977; Item 2c: 977 -> 973
     assert dict(distribution) == {
-        ReasonCategory.UNCLASSIFIED: 20,
-        ReasonCategory.OPAQUE_COUNTRY_STATE: 13,
+        ReasonCategory.UNCLASSIFIED: 18,
+        ReasonCategory.OPAQUE_COUNTRY_STATE: 12,
         ReasonCategory.CRISIS_OR_STORY_PROGRESS: 1,
     }  # crisis_or_story_progress falls from 72 to 1 -- the sole survivor is a technology whose
     # ONLY unconditional blocker is one of the two excluded vanilla L-Gate flags above; the other
-    # excluded flag's technologies became profile-dependent instead (still 1.54% worst rate).
+    # excluded flag's technologies became profile-dependent instead (still ~1.6% worst rate).
     # ORIGIN_REQUIREMENT and ETHICS_OR_CIVIC_REQUIREMENT are still empty (0) -- Item 3's earlier
     # result, unaffected by this item. MOD_CONTENT_REQUIREMENT is still empty (0) -- unchanged from
     # before, for the same reason as before (Item 2d resolved has_acot/has_aot_mod already).
@@ -302,25 +360,32 @@ def test_uncertain_count_and_per_profile_breakdown_pinned(expanded_rendered_pote
     # removed were previously UNCONDITIONALLY uncertain (true for all 12 profiles) and are now
     # AVAILABLE for all 12 -- none moved to profile-dependent, which is why the per-profile
     # breakdown below is UNCHANGED by this item.
-    assert len(union) == 54  # any technology UNCERTAIN for at least one of the 12 profiles
+    # 54 -> 53, a later session (Items 1, 2 and 5: `always`, ascension-perk axis-locking via the
+    # `_combine_or` correction, and `has_active_tradition`) -- see
+    # test_real_rates_against_projections's own writeup for the three fixes. This fixture now ALSO
+    # registers real ascension-perk potentials (`set_perk_potentials`, the `_registered_perk_
+    # potentials` autouse fixture above) so Item 2's effect is visible here at all -- without it,
+    # this union count would read 52, not 53 (proven by running with that fixture disabled during
+    # this session's own verification pass).
+    assert len(union) == 53  # any technology UNCERTAIN for at least one of the 12 profiles
 
     per_profile_counts = {
         i: len(survey.profile_dependent_uncertain_by_profile_index.get(i, []))
         for i in range(len(profiles))
     }
     assert per_profile_counts == {
-        0: 12,  # regular / mechanical / non-nomadic
-        1: 5,  # regular / mechanical / nomadic
-        2: 14,  # regular / biological / non-nomadic
-        3: 7,  # regular / biological / nomadic
-        4: 13,  # hive_mind / mechanical / non-nomadic
-        5: 6,  # hive_mind / mechanical / nomadic
-        6: 15,  # hive_mind / biological / non-nomadic (worst profile, 1.54%)
-        7: 8,  # hive_mind / biological / nomadic
-        8: 7,  # machine_intelligence / mechanical / non-nomadic
-        9: 0,  # machine_intelligence / mechanical / nomadic
-        10: 9,  # machine_intelligence / biological / non-nomadic
-        11: 2,  # machine_intelligence / biological / nomadic
+        0: 13,  # regular / mechanical / non-nomadic
+        1: 6,  # regular / mechanical / nomadic
+        2: 15,  # regular / biological / non-nomadic
+        3: 8,  # regular / biological / nomadic
+        4: 14,  # hive_mind / mechanical / non-nomadic
+        5: 7,  # hive_mind / mechanical / nomadic
+        6: 16,  # hive_mind / biological / non-nomadic (worst profile, ~1.64%)
+        7: 9,  # hive_mind / biological / nomadic
+        8: 8,  # machine_intelligence / mechanical / non-nomadic
+        9: 1,  # machine_intelligence / mechanical / nomadic
+        10: 10,  # machine_intelligence / biological / non-nomadic
+        11: 3,  # machine_intelligence / biological / nomadic
     }
 
 
@@ -343,7 +408,9 @@ def test_warn_threshold_actually_fires_on_a_synthetic_worst_profile(expanded_ren
     profiles = all_profiles_in_canonical_order()
     survey = survey_uncertainty(expanded_rendered_potentials, profiles)
     worst_rate = survey.worst_profile_dependent_rate()
-    assert worst_rate == pytest.approx(0.015416, abs=1e-5)  # was 0.034944 before this session's Item 3
+    # 0.015416 -> 0.016444 (16/973), a later session (Items 1, 2, 5) -- see
+    # test_gate_classification_leaves_d10_uncertainty_unchanged's own writeup.
+    assert worst_rate == pytest.approx(0.016444, abs=1e-5)  # was 0.034944 before the earlier session's Item 3
     assert classify_d10_status(worst_rate) == "ok"
 
     diagnostics = build_d10_diagnostics_section(survey, profiles)

@@ -247,7 +247,14 @@ def test_order_gates_is_stable_within_a_kind():
 
 
 def test_gate_leaf_keys_plus_not_classified_matches_availabilitys_excluded_keys_exactly():
-    assert GATE_LEAF_KEYS | NOT_GATE_CLASSIFIED_EXCLUDED_KEYS == EXCLUDED_KEYS
+    # Item 2 (later session): `has_ascension_perk` moved OUT of plain `EXCLUDED_KEYS` -- it now
+    # gets its own leaf-evaluation branch in `pipeline.availability._evaluate_leaf` so it can
+    # resolve a real LOCKED result when the referenced perk is axis-restricted, instead of always
+    # being an identity-element exclusion. It is STILL gate-classified (GATE_LEAF_KEYS unchanged)
+    # and still behaves like an EXCLUDED_KEYS entry for every perk that isn't axis-locked for the
+    # current profile -- see pipeline.availability's module docstring. This invariant is corrected
+    # to account for that one key moving to its own bucket, not silenced.
+    assert GATE_LEAF_KEYS | NOT_GATE_CLASSIFIED_EXCLUDED_KEYS == EXCLUDED_KEYS | {"has_ascension_perk"}
     assert GATE_LEAF_KEYS.isdisjoint(NOT_GATE_CLASSIFIED_EXCLUDED_KEYS)
 
 
