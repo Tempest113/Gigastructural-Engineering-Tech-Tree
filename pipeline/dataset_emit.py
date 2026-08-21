@@ -890,7 +890,7 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
             label = sole["label"]
             if label.startswith("or: "):
                 label = "Needs " + label[len("or: "):]
-            return [{**sole, "alternative": False, "label": label}]
+            return [{**sole, "alternative": False, "groupId": None, "label": label}]
         return gates
 
     def _build_gates(owner_key: str, defn: "TechnologyDefinition") -> list[dict]:
@@ -909,7 +909,7 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
         # stands; only the CARD/POPUP gate-badge display is filtered here).
         true_prerequisites = set(ordered_prerequisites(defn.block))
         matches = [
-            m for m in order_gates(classify_gates(defn.block))
+            m for m in order_gates(classify_gates(owner_key, defn.block))
             if not (m.kind == "technology" and m.ref_id in true_prerequisites)
         ]
         gates: list[dict] = []
@@ -932,6 +932,7 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
                     "icon": icon,
                     "label": f"{label_prefix} {_perk_gate_label(match.ref_id)}",
                     "alternative": match.alternative,
+                    "groupId": match.group_id,
                     "appliesToEmpireTypes": None,
                     "inherited": False,
                     "sourceTechnologyId": None,
@@ -940,16 +941,20 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
                 # Item 3 ("path to zero uncertain" follow-up): no `common/civics`/`common/origins`/
                 # `common/ethics` source, and no icon directory, is vendored for ANY source today
                 # (survey finding, reported not acted on this session -- vendoring a new source
-                # directory is its own review-gated corpus-pinning change). Falls back to the same
-                # graceful-degradation stub `_default_icon_ref` already establishes elsewhere --
-                # the LABEL (a real, loc-resolved name) is the actual informative content; the
-                # generic icon is a placeholder until real origin/civic/ethic icons are vendored.
+                # directory is its own review-gated corpus-pinning change). A LATER session
+                # (user-reported) corrected the fallback: `_default_icon_ref`'s degenerate 1x1
+                # stretched pixel read as a rendering error (a solid "teal square"), not an honest
+                # placeholder -- this is not a rare edge case, it fires 100% of the time for these
+                # two gate kinds. `icon: None` instead, so the client renders the LABEL alone (the
+                # real, loc-resolved informative content) with no icon element at all, until real
+                # origin/civic/ethic icons are vendored.
                 gates.append({
                     "kind": match.kind,
                     "refId": match.ref_id,
-                    "icon": _default_icon_ref(ctx),
+                    "icon": None,
                     "label": f"{label_prefix} {_trait_gate_label(match.ref_id)}",
                     "alternative": match.alternative,
+                    "groupId": match.group_id,
                     "appliesToEmpireTypes": None,
                     "inherited": False,
                     "sourceTechnologyId": None,
@@ -982,6 +987,7 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
                     "refId": match.ref_id,
                     "icon": icon,
                     "alternative": match.alternative,
+                    "groupId": match.group_id,
                     "appliesToEmpireTypes": applies_to,
                     "label": f"{label_prefix} {target_name}",
                     "inherited": False,
@@ -997,6 +1003,7 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
                 "icon": icon,
                 "label": f"Needs {_perk_gate_label(granting_perk)}",
                 "alternative": False,
+                "groupId": None,
                 "appliesToEmpireTypes": None,
                 "inherited": False,
                 "sourceTechnologyId": None,

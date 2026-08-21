@@ -117,31 +117,52 @@ def test_base_dataset_gates_match_the_gate_classification_survey(base_dataset):
     only real path to a requirement is "research my prerequisite first, and THAT tech needs the
     perk" now inherits it, tagged `inherited: true`/`sourceTechnologyId: <declaring tech>` (user
     report: the QSO family, `giga_tech_repeatable_*_cap` "Management Protocols"). This is INSTEAD
-    OF the direct-only figures above for the FULL emitted `gates` field -- real corpus: 267 total
-    gate instances (104 ascension_perk + 53 origin + 61 ethics_or_civic + 49 technology) over 196
-    gated technologies, 48 of which carry more than one gate instance (direct + inherited
-    combined). The DIRECT-only figures (139/112, still separately meaningful -- e.g. for
-    reconstructing "which technology's own `potential`/perk-grant is the true source") remain
-    exactly as the paragraph above states and are asserted separately below."""
+    OF the direct-only figures above for the FULL emitted `gates` field -- real corpus (at the
+    time): 267 total gate instances (104 ascension_perk + 53 origin + 61 ethics_or_civic + 49
+    technology) over 196 gated technologies, 48 of which carry more than one gate instance.
+
+    **A THIRD later session (user-reported gate-polarity bug) moved both figures again --
+    origin/technology only, ascension_perk/ethics_or_civic untouched.** Two real, independent
+    fixes:
+    1. `is_wilderness_empire = no` ("needs a NON-wilderness empire") was rendered as a POSITIVE
+       "Needs Wilderness" gate -- the gate mechanism tracked only `NOT`/`NOR`-wrapper negation,
+       never a leaf's own literal boolean-false VALUE (Clausewitz's other way to write a negative
+       condition). Fixed by `pipeline.gate_patterns._leaf_negated`, which XORs three independent
+       negation channels (wrapper, `!=` operator, literal `= no`). Real corpus: 31 technologies
+       (`tech_habitat_1`/`_2`, `tech_gene_banks`, ...) lose their wrong "Needs Wilderness" gate;
+       origin-kind DIRECT drops 45 -> 14.
+    2. `can_research_technology` is REMOVED from gate classification entirely -- it means "this
+       OTHER technology is not currently locked out for your empire" (an eligibility fact), a
+       different engine semantic from `has_technology`'s "you have ALREADY completed this"; the
+       single real occurrence (`tech_alien_cloning`) had propagated its mis-badge onto 15
+       descendants via gate inheritance (16 technologies total, matching the user's "many
+       technologies" report). technology-kind DIRECT drops 22 -> 21 (one real occurrence removed);
+       TOTAL technology-kind drops 33 (16 fewer instances, direct + inherited, than it would
+       otherwise be).
+
+    Real corpus, current: DIRECT 107 gate instances (48 ascension_perk + 14 origin + 24
+    ethics_or_civic + 21 technology) over 83 directly-gated technologies. TOTAL (direct +
+    inherited) 214 gate instances (104 ascension_perk + 16 origin + 61 ethics_or_civic + 33
+    technology) over 147 gated technologies, 47 of which carry more than one gate instance."""
     from collections import Counter
 
     doc, _node_bytes, _edge_bytes = base_dataset
     gated = [t for t in doc["technologies"] if t["gates"]]
     all_gates = [g for t in doc["technologies"] for g in t["gates"]]
-    assert len(all_gates) == 267
+    assert len(all_gates) == 214
     assert dict(Counter(g["kind"] for g in all_gates)) == {
-        "ascension_perk": 104, "origin": 53, "ethics_or_civic": 61, "technology": 49,
+        "ascension_perk": 104, "origin": 16, "ethics_or_civic": 61, "technology": 33,
     }
-    assert len(gated) == 196
-    assert sum(1 for t in gated if len(t["gates"]) > 1) == 48
+    assert len(gated) == 147
+    assert sum(1 for t in gated if len(t["gates"]) > 1) == 47
 
     direct_gates = [g for t in doc["technologies"] for g in t["gates"] if not g["inherited"]]
     directly_gated = [t for t in doc["technologies"] if any(not g["inherited"] for g in t["gates"])]
-    assert len(direct_gates) == 139
+    assert len(direct_gates) == 107
     assert dict(Counter(g["kind"] for g in direct_gates)) == {
-        "ascension_perk": 48, "origin": 45, "ethics_or_civic": 24, "technology": 22,
+        "ascension_perk": 48, "origin": 14, "ethics_or_civic": 24, "technology": 21,
     }
-    assert len(directly_gated) == 112
+    assert len(directly_gated) == 83
 
     for key in [
         "giga_tech_amb_supertensiles_acot_alpha", "giga_tech_amb_supertensiles_acot_sigma",
@@ -153,10 +174,11 @@ def test_base_dataset_gates_match_the_gate_classification_survey(base_dataset):
 
     # Every "has_technology"-sourced DIRECT gate instance is one of the 25 potential-gate edges
     # (still 25 -- Item 5 only filters the CARD-DISPLAY gate list, never the edge extraction
-    # itself), but no longer a 1:1 match: the 4 excluded gate instances are a strict subset of the
-    # edges, PLUS one extra pair from `can_research_technology` (a distinct engine trigger P-14's
-    # edge extraction was never scoped to cover), so the two sets are no longer strictly nested
-    # either direction -- asserted precisely below rather than as a subset relationship. Restricted
+    # itself). A LATER session removed `can_research_technology` from gate classification
+    # entirely (see this test's own module docstring above) -- the ONE extra pair that
+    # relationship used to need (`tech_genome_mapping`/`tech_alien_cloning`, from that removed
+    # key) is gone, so `gate_tech_pairs` is now a clean STRICT SUBSET of `potential_gate_pairs`
+    # (25 - 4 Item-5 exclusions = 21), asserted directly rather than as a set-difference. Restricted
     # to DIRECT gates -- an INHERITED technology-kind gate is a different (ancestor, descendant)
     # pair than any potential-gate edge, by construction, so including inherited entries here
     # would just be noise against this specific direct-edge correspondence check.
@@ -167,8 +189,8 @@ def test_base_dataset_gates_match_the_gate_classification_survey(base_dataset):
         for t in doc["technologies"] for g in t["gates"]
         if g["kind"] == "technology" and not g["inherited"]
     }
-    assert len(gate_tech_pairs) == 22
-    assert gate_tech_pairs - potential_gate_pairs == {("tech_genome_mapping", "tech_alien_cloning")}
+    assert len(gate_tech_pairs) == 21
+    assert gate_tech_pairs <= potential_gate_pairs
     # 4 real exclusions, not the 4 amb_supertensiles technologies as originally assumed --
     # `giga_tech_amb_supertensiles_acot_delta`'s own `potential` has no `has_technology` leaf at
     # all (only `has_acot`/`has_global_flag`), so it was never a potential-gate owner to begin

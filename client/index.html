@@ -45,6 +45,12 @@
     #detail-popup .off-tree-note { color: #c8b98a; font-style: italic; }
     #detail-popup .gate-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.3rem; }
     #detail-popup .gate-icon { display: inline-block; flex: none; image-rendering: pixelated; }
+    /* Nested AND-of-OR fix (a later session): a gate group (Gate.groupId) nests its members
+       under a "Need one of:" label, indented, so an unconditional AND-required gate above it is
+       never read as a peer of the choice beneath it (Gargantuan Cloning Facilities: "Needs
+       Galactic Wonders" is unconditional; the OR is a separate branch, not a sibling). */
+    #detail-popup .gate-group { margin-top: 0.4rem; padding-left: 0.6rem; border-left: 2px solid #333a45; }
+    #detail-popup .gate-group-label { color: #7f8ea3; font-size: 11px; font-style: italic; }
     /* Item 3 (later session): an inherited gate (propagated from a prerequisite ancestor, e.g.
        the QSO family inheriting ap_qso from giga_tech_quasi_stellar_1) is styled distinctly from
        a directly-declared one, matching the "via <source>" note appended to its label. */

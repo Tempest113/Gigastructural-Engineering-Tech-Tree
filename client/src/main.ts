@@ -1205,9 +1205,15 @@ async function render(): Promise<void> {
     const primaryGate = tech.gates[0];
     nodePrimaryGateConstraint.push(primaryGate?.appliesToEmpireTypes ?? null);
     if (primaryGate) {
-      const gateSheetTexture = atlasTextures.get(primaryGate.icon.sheet);
+      // Item 3a (a later session, user-reported): an origin/ethics-or-civic gate's `icon` is
+      // `null` (no source vendors those icons at all -- CLAUDE.md's "Icons -- reported, not
+      // vendored"), never the old degenerate 1x1-pixel stretched fallback that read as a
+      // rendering error (a "teal square"). No sprite is created at all in that case -- the label
+      // alone identifies the gate, exactly the same "drop the icon, keep the label" contract this
+      // block already uses when card space runs out (see the label-fit comment below).
+      const gateSheetTexture = primaryGate.icon ? atlasTextures.get(primaryGate.icon.sheet) : undefined;
       let gateIconSprite: Sprite | null = null;
-      if (gateSheetTexture) {
+      if (gateSheetTexture && primaryGate.icon) {
         const gateFrame = new Rectangle(primaryGate.icon.x, primaryGate.icon.y, primaryGate.icon.width, primaryGate.icon.height);
         gateIconSprite = new Sprite(new Texture({ source: gateSheetTexture.source, frame: gateFrame }));
         gateIconSprite.width = GATE_ICON_SIZE;
@@ -1215,7 +1221,7 @@ async function render(): Promise<void> {
         const slotY = nextGutterSlot();
         gateIconSprite.position.set(x + BADGE_GUTTER_X + (BADGE_GUTTER_WIDTH - GATE_ICON_SIZE) / 2, slotY);
         world.addChild(gateIconSprite);
-      } else {
+      } else if (primaryGate.icon) {
         nextGutterSlot(); // keep stack accounting consistent even if the icon itself failed to resolve
       }
       nodeGateIcons.push(gateIconSprite);
@@ -1808,25 +1814,57 @@ async function render(): Promise<void> {
         // shipset profile) shouldn't appear as a requirement here either, even though the card
         // only ever shows the primary gate and the popup lists every gate.
         const visibleGates = tech.gates.filter((g) => gateAppliesToProfile(g.appliesToEmpireTypes ?? null, currentProfile));
-        return visibleGates.length > 0 ? `
-        <div class="field-label">Gates${visibleGates.length > 1 ? ` (${visibleGates.length})` : ""}</div>
-        <div class="field-value">${visibleGates
-          .map((g) => {
-            // Item 3 (later session): an inherited gate (propagated from a `prerequisite`-edge
-            // ancestor that declares it directly, e.g. the QSO family inheriting `ap_qso` from
-            // giga_tech_quasi_stellar_1) is rendered distinctly -- naming the source technology --
-            // so a user can tell where the requirement originates, per this gate's own schema
-            // field docs (`Gate.inherited`/`Gate.sourceTechnologyId`).
-            const sourceName = g.sourceTechnologyId ? displayName(g.sourceTechnologyId) : null;
-            const viaSuffix = g.inherited && sourceName ? ` <span class="gate-inherited-note">(via ${escapeHtml(sourceName)})</span>` : "";
-            return `
+        if (visibleGates.length === 0) return "";
+
+        function gateRow(g: (typeof visibleGates)[number]): string {
+          // Item 3 (later session): an inherited gate (propagated from a `prerequisite`-edge
+          // ancestor that declares it directly, e.g. the QSO family inheriting `ap_qso` from
+          // giga_tech_quasi_stellar_1) is rendered distinctly -- naming the source technology --
+          // so a user can tell where the requirement originates, per this gate's own schema
+          // field docs (`Gate.inherited`/`Gate.sourceTechnologyId`).
+          const sourceName = g.sourceTechnologyId ? displayName(g.sourceTechnologyId) : null;
+          const viaSuffix = g.inherited && sourceName ? ` <span class="gate-inherited-note">(via ${escapeHtml(sourceName)})</span>` : "";
+          // Item 3a: null icon (origin/ethics-or-civic, no source vendors these) renders no icon
+          // element at all -- never the old degenerate 1x1-pixel "teal square" fallback.
+          const iconSpan = g.icon
+            ? `<span class="gate-icon" style="background-image:url('${atlasWebpUrlBySheet.get(g.icon.sheet) ?? ""}');background-position:-${g.icon.x}px -${g.icon.y}px;width:${g.icon.width}px;height:${g.icon.height}px;background-size:auto;"></span>`
+            : "";
+          return `
           <div class="gate-row${g.inherited ? " gate-row-inherited" : ""}">
-            <span class="gate-icon" style="background-image:url('${atlasWebpUrlBySheet.get(g.icon.sheet) ?? ""}');background-position:-${g.icon.x}px -${g.icon.y}px;width:${g.icon.width}px;height:${g.icon.height}px;background-size:auto;"></span>
+            ${iconSpan}
             <span>${escapeHtml(g.label)}${viaSuffix}</span>
           </div>`;
-          })
-          .join("")}</div>
-      ` : "";
+        }
+
+        // Nested AND-of-OR fix (a later session, user-reported: Gargantuan Cloning Facilities
+        // showed "Needs Galactic Wonders" + "or: Mechromancy" as flat peers, when the real
+        // structure is AND(Galactic Wonders, OR(Genetic Ascension, Mechromancy)) -- Galactic
+        // Wonders is unconditionally required, and the OR is a SEPARATE branch beneath it, not
+        // beside it). `Gate.groupId` (P-3) names the specific OR block a gate belongs to; every
+        // gate sharing the same non-null groupId is nested under one "or, need one of" cluster,
+        // rendered AFTER the unconditional (groupId === null) gates -- so the AND requirement
+        // reads first, then each independent OR choice beneath it. Declaration order among groups
+        // and among ungrouped gates is preserved (Map insertion order); a technology whose gates
+        // are ALL one group (the common case, e.g. Riddle Escort) or all ungrouped renders exactly
+        // as before -- this only changes the MIXED case.
+        const ungrouped = visibleGates.filter((g) => g.groupId === null);
+        const grouped = new Map<string, typeof visibleGates>();
+        for (const g of visibleGates) {
+          if (g.groupId === null) continue;
+          (grouped.get(g.groupId) ?? grouped.set(g.groupId, []).get(g.groupId)!).push(g);
+        }
+
+        return `
+        <div class="field-label">Gates${visibleGates.length > 1 ? ` (${visibleGates.length})` : ""}</div>
+        <div class="field-value">
+          ${ungrouped.map(gateRow).join("")}
+          ${[...grouped.values()].map((members) => `
+          <div class="gate-group">
+            <div class="gate-group-label">Need one of:</div>
+            ${members.map(gateRow).join("")}
+          </div>`).join("")}
+        </div>
+      `;
       })()}
       <div class="field-label">Description</div>
       <div class="field-value" id="popup-description">loading&hellip;</div>
