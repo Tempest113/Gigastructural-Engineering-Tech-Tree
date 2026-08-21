@@ -3364,3 +3364,47 @@ the same name; terse record here.
 comfortably inside the ≤2MB compressed budget. Real dataset rebuilt and headless-Chromium-verified
 throughout — zero console errors across every screenshot in both the Item 3 and P-12.9 verification
 passes.
+
+## Gate-polarity/nested-OR/wilderness-icon fix session
+
+Six items from a domain-authority user's bug report. Full detail in CLAUDE.md's "Gates"/"Open
+items" sections and HANDOFF.md's own session record; terse historical record here.
+
+1. **Gate-polarity bug (real class bug).** `pipeline.gate_patterns` tracked negation only via a
+   `NOT`/`NOR` wrapper ancestor, never a leaf's own literal `= no` value (Clausewitz's other way
+   to write negation). `_leaf_negated` XORs three channels (wrapper, `!=` operator, literal
+   `= no`); a real bug in the FIRST implementation (Python's `a != b != c` chained comparison,
+   not a 3-way XOR) was caught by direct testing before shipping. Real corpus: 31 technologies
+   lose a wrong "Needs Wilderness" badge. `can_research_technology` (an eligibility fact, not
+   `has_technology`'s "already completed") removed from gate classification entirely — 1 real
+   occurrence, but gate propagation had inherited the mis-badge onto 15 descendants. Gate counts:
+   DIRECT 139 → 107, TOTAL 267 → 214.
+2. **Nano-Assembler/Polyatomic Crucible: surveyed, not a bug** — raw source confirms neither has
+   an ascension-perk requirement in `potential`; the prior session's weight-based conclusion
+   stands.
+2b. **Nested AND-of-OR gates (real structural bug).** `GateMatch.group_id` (mirrors
+   `Edge.groupId`) names the `OR`/`NOR` block a gate belongs to. Real corpus: 1 technology
+   (`giga_tech_the_vat`) mixes unconditional and grouped matches; client now nests them correctly.
+3. **Wilderness/origin/ethics icon fallback (real bug).** The degenerate 1x1-pixel stretched
+   fallback read as a rendering error for these two gate kinds (fires 100% of the time, no icon
+   source vendored). `Gate.icon` is now nullable; client renders label-only when null.
+3b. **Wilderness as a fourth axis: surveyed, not implemented.** 41/973 technologies (4.2%) / 148
+   (tech, profile) pairs show a real availability difference between wilderness and non-wilderness
+   hive empires — not small. Reported with cost (24 profiles) for the user to decide.
+4. **Two "Confluence of Thought" technologies: confirmed already-known.** Two deliberately
+   parallel vanilla technology lines (hive/wilderness variants), already one of the 5 documented
+   genuine same-name pairs.
+5. **Looping edges: surveyed, none found.** Three geometric checks (X-reversal, Y-hook,
+   self-intersection) found zero matching edges in the rebuilt dataset.
+6. **Dangerous ancestor-broken case (P-12.9 section 6): surveyed, stopped per instruction.**
+   Re-measured after Item 1: still 78/472, unchanged — not an artefact of the polarity bug.
+   Categorised by cause (44 nomadic-locked, 25 perk-locked, 4 hive/shipset-locked, 2 zero-viable
+   OR, 3 unresolved); every traced case is a real dead end. Recommended a distinct status value
+   (naming the blocking ancestor) instead of `status: "unavailable"` for both causes — not
+   implemented, spec-decision-changing, left for user review.
+
+**Verification**: full pytest 1514 passed (up from 1507), `tsc --noEmit`/`vite build` clean.
+Headless-Chromium: zero console errors across all screenshots, all invariant checks 0 violations.
+D-10 figures unchanged (31/973 unconditional, 53 union, worst 16/973 = 1.64%) and canvas
+dimensions unaffected, both confirmed directly since gate-display fixes never touch
+`pipeline.availability` or layout.

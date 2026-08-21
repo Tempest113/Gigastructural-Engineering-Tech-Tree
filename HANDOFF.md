@@ -1649,3 +1649,72 @@ excluding its own cost from the total) — zero console errors.
 overlay (research paths added): 1.25MB raw / 63.5KB gzip — comfortably inside the ≤2MB compressed
 budget. Existing layout/geometry invariant tests (row-overlap, card-within-row, name-bounds,
 D-17 including the new per-cell extension, edge-containment) all still pass unmodified.
+
+## Gate-polarity/nested-OR/wilderness-icon fix session
+
+Six numbered items from a domain-authority user report, run single-threaded. Full detail in
+CLAUDE.md's own "Gates"/"Open items" sections; terse record here.
+
+**Item 1 (gate-polarity bug, real class bug, fixed).** `pipeline.gate_patterns` tracked negation
+only via a `NOT`/`NOR` wrapper ancestor, never a leaf's own literal boolean-false VALUE
+(`is_wilderness_empire = no`) — Clausewitz's OTHER way to write a negative condition, no wrapper
+at all. `_leaf_negated` now XORs three channels (wrapper, `!=` operator, literal `= no`); safe to
+apply unscoped (checked: `= no` occurs ONLY on `is_wilderness_empire` in the real corpus, 31
+technologies). A real bug was found and fixed WHILE fixing this: the first implementation used
+Python's `a != b != c` CHAINED comparison, not a real 3-way XOR — caught by direct testing before
+it shipped. `can_research_technology` (meaning "eligibility", not `has_technology`'s "already
+completed") is removed from gate classification entirely — one real occurrence, but gate
+propagation had inherited the mis-badge onto 15 descendants (16 technologies), matching the
+user's "many technologies" report. The "bioship technologies not locked" half of the report was
+surveyed and found NOT the same bug (87/88 real `country_uses_bio_ships` references already
+resolve correctly). Gate counts: DIRECT 139 → 107 (48 ascension_perk + 14 origin + 24
+ethics_or_civic + 21 technology) over 83 technologies; TOTAL 267 → 214 over 147 technologies.
+
+**Item 2a (Nano-Assembler/Polyatomic Crucible): surveyed, NOT a bug.** Raw source confirms
+neither has an ascension-perk requirement in `potential` — the prior session's "weight-based, not
+gate-based" conclusion for the Cosmogenesis family stands. Reported to the user, not fabricated.
+
+**Item 2b (nested AND-of-OR gates, real structural bug, fixed).** `GateMatch` gained `group_id`
+(mirrors `Edge.groupId`'s per-owner, per-block-index identity), naming the specific `OR`/`NOR`
+block a gate is a direct child of. Real corpus: exactly 1 technology (`giga_tech_the_vat`) mixes
+unconditional and grouped matches; the client now nests same-`groupId` gates under their own
+"Need one of:" cluster instead of showing them as flat peers.
+
+**Item 3a (wilderness/origin/ethics icon fallback, real bug, fixed).** The degenerate 1x1-pixel
+stretched fallback (`_default_icon_ref`) read as a rendering error (a "teal square") for
+origin/ethics-or-civic gates — not a rare edge case, it fired 100% of the time (no icon source
+vendored for any of these). `Gate.icon` is now nullable; the client renders label-only when null.
+
+**Item 3b (wilderness as a fourth axis): surveyed, NOT implemented, real decision needed.**
+Simulated wilderness=true/false against the real evaluator for all 4 hive-authority profiles: 41
+of 973 technologies (4.2%) / 148 (technology, profile) pairs show a REAL availability difference
+between a wilderness and non-wilderness hive empire — not small. Reported to the user with the
+cost (24 profiles, every per-profile array doubles) for a decision.
+
+**Item 4 (two "Confluence of Thought" technologies): confirmed already-known, not new.**
+`tech_hive_confluence`/`tech_wilderness_confluence` are two deliberately-parallel vanilla
+technology lines (confirmed via raw source's own "# Wilderness" section header) — already one of
+the reconciliation session's 5 documented genuine same-name pairs.
+
+**Item 5 (looping edges): surveyed, NONE FOUND.** Three independent geometric checks (X-reversal,
+Y-hook shape, polyline self-intersection) against the rebuilt dataset found zero matching edges
+across all 977. Recommended asking the user for a screenshot or specific technology name.
+
+**Item 6 (dangerous ancestor-broken case): surveyed, STOPPED per instruction, not implemented.**
+Re-measured after Item 1 landed: still exactly 78/472 — UNCHANGED, confirming it's not an
+artefact of the polarity bug. Categorised by cause (44 nomadic-locked ancestor, 25 axis-locked
+perk ancestor, 4 hive/shipset-locked, 2 zero-viable OR-group, 3 unresolved) — every traced case is
+a real, non-alternative dead end, none found to be a modelling artefact. Recommended a distinct
+status value (naming the blocking ancestor) rather than `status: "unavailable"` for both causes —
+not implemented, since this changes a spec decision (P-12.9 section 6) the user should review
+first.
+
+**Verification**: full pytest (1514 passed, up from 1507), `tsc --noEmit` and `vite build` both
+clean. Real dataset rebuilt and headless-Chromium-verified: zero console errors across all
+screenshots (habitat technology with corrected polarity, Gargantuan Cloning Facilities' nested
+AND-of-OR, Nano-Assembler with no fabricated gate, Gene Banks with no icon-fallback square),
+`checkNameBounds`/`checkIndicatorBounds`/`checkEdgeEndpointsInCards`/`checkTierBadgeMatchesBand`/
+`checkGateLabelFontAndCollision` all 0 violations. D-10 figures unchanged (31/973 unconditional,
+53 union, worst 16/973 = 1.64%) — confirmed directly, not assumed, since the gate-display fixes
+never touch `pipeline.availability`. Canvas dimensions unaffected (gates are display metadata,
+computed after layout).

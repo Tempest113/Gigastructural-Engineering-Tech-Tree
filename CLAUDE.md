@@ -839,6 +839,73 @@ technologies affected (`giga_tech_birch_world_1`, the two Gigastructural-Constru
 Missiles/Torpedoes and `giga_tech_the_vat`'s genuine 2-gate case are both unaffected, confirmed
 directly.
 
+**Gate-polarity bug fixed (a later session, user-reported: habitat technologies showed as
+REQUIRING a wilderness empire, backwards).** `pipeline.gate_patterns` tracked negation ONLY via a
+`NOT`/`NOR` wrapper ancestor — never a leaf's own literal boolean-false VALUE
+(`is_wilderness_empire = no`, Clausewitz's OTHER way to write a negative condition, no wrapper at
+all). `_leaf_negated` now XORs three independent negation channels: wrapper ancestry, the `!=`
+operator (zero real occurrences on a gate leaf key today, kept for symmetry with
+`pipeline.availability`'s own identical check), and a literal `= no` value (the real bug — checked
+safe to apply unscoped across every `GATE_LEAF_KEYS` member: `= no` occurs ONLY on
+`is_wilderness_empire` in the real corpus, 31 technologies, all boolean-shaped leaves — no
+VALUE-shaped key like `has_origin`/`has_technology` ever legitimately takes the literal string
+"no"). Real corpus: origin-kind DIRECT gates 45 → 14 (31 technologies, `tech_habitat_1`/`_2`,
+`tech_gene_banks`, ... lose their wrong "Needs Wilderness" badge).
+
+**`can_research_technology` removed from gate classification entirely (the SAME session, user-
+reported).** It was treated as an alias for `has_technology` ("Needs X" badge), but the two are
+genuinely different engine semantics: `has_technology` means "you have ALREADY COMPLETED this" (a
+real, satisfiable prerequisite — exactly what "Needs X" says); `can_research_technology` means
+"this OTHER technology is not currently LOCKED OUT for your empire" (a structural eligibility
+fact, nothing to "go get"). Real corpus: exactly ONE literal occurrence
+(`tech_alien_cloning`'s `OR = { is_beastmasters_empire = yes, can_research_technology =
+tech_genome_mapping }`), but gate propagation (above) had inherited the mis-badge onto 15
+descendants (16 technologies total) — matching the user's "many technologies" report exactly.
+Stays excluded from `pipeline.availability`'s boolean combination (an identity element there,
+unaffected — moved from an implicit `TECHNOLOGY_ALIAS_KEYS` entry to an explicit
+`NOT_GATE_CLASSIFIED_EXCLUDED_KEYS` one, same real-world treatment, clearer bucket). The "bioship
+technologies not showing locked" half of the same user report was surveyed and found NOT the same
+bug: of 88 real corpus technologies referencing `country_uses_bio_ships` directly, 87 already
+resolve correctly differently for mechanical vs. biological profiles (the 1 exception is an
+unrelated OR-branch case, not a polarity issue).
+
+**Nested AND-of-OR gates fixed (the SAME session, user-reported: Gargantuan Cloning Facilities
+showed "Needs Galactic Wonders" + "or: Mechromancy" as flat peers, when the real structure is
+`AND(has_galactic_wonders, OR(has_genetically_ascended, has_active_tradition, ap_mechromancy))` —
+Galactic Wonders is unconditionally required, the OR a SEPARATE branch beneath it).** `GateMatch`
+gained a `group_id` field (mirroring `Edge.groupId`'s per-owner, per-block-index identity,
+`f"{technologyId}#gate-alt{index}"`) naming the specific `OR`/`NOR` block a gate is a DIRECT child
+of — computed by `_scoped_gate_leaves`'s new `group_index`/`counter` threading, a fresh index
+allocated every time a NEW `OR`/`NOR` is entered (even nested inside another one), `AND`/`NOT`
+never allocating one. Real corpus: exactly 1 technology (`giga_tech_the_vat`) mixes unconditional
+and grouped gate matches today — the client (`main.ts`'s Gates section) now renders every
+`groupId === null` gate flat, then each distinct `groupId` nested under its own "Need one of:"
+cluster, so an AND requirement never reads as a peer of a choice beneath it. Every other
+multi-gate technology (all-one-group, or all-ungrouped) renders exactly as before.
+
+**Origin/ethics-or-civic gate icon fallback fixed (the SAME session, user-reported: these gates
+rendered a meaningless solid-colour "teal square").** `_default_icon_ref`'s degenerate 1x1-pixel
+stretched fallback is not a rare edge case for these two kinds — it fired 100% of the time, since
+no civic/origin/ethic icon source is vendored at all (CLAUDE.md's own prior "Icons — reported, not
+vendored" note). `Gate.icon` is now nullable; origin/ethics_or_civic gates emit `icon: null` and
+the client renders the label alone, no icon element. `ascension_perk`/`technology` gates keep
+their existing (real, vendored, rarely-missing) icon behaviour unchanged.
+
+**Real corpus, current (all four fixes together): DIRECT gates 107 (48 ascension_perk + 14 origin
++ 24 ethics_or_civic + 21 technology) over 83 directly-gated technologies. TOTAL (direct +
+inherited) gates: 214 (104 ascension_perk + 16 origin + 61 ethics_or_civic + 33 technology) over
+147 gated technologies, 47 of which carry more than one gate instance.**
+
+**Item 2b survey (SAME session): Nano-Assembler/Polyatomic Crucible have NO ascension-perk
+requirement in their own `potential` block, confirmed by raw source inspection — the prior
+session's "weight-based, not gate-based" conclusion for the Cosmogenesis family stands, it was NOT
+too broad for these two.** Their only real conditions are the `@giga_amb_flag` mod-config toggle
+(already the documented, deliberately-unresolved uncertain reason) and, inside `weight_modifier`
+only, a `NOT = { has_crisis_level = crisis_cosmogenesis_level_5 }` zero-weight gate plus an
+`ap_technological_ascendancy` weight BONUS (a real vanilla perk, not the Gigastructures-flavoured
+"Cosmogenesis" the user meant) — neither is a `potential`-level requirement, so neither can
+correctly badge as a gate. Reported to the user rather than fabricated.
+
 ### Tiers
 
 Tier range is **not** bounded. ACOT pushes tiers to T9 and beyond. Enumerate tier bands from
@@ -1188,6 +1255,57 @@ live in this file's own body above and in `spec/decisions.md`, not here.
 - **Gate classification (P-3) is now closed** — `pipeline/gate_patterns.py` classifies real gate
   data into `gates`; see this file's own "Gates" section above for the full account. Left here
   only so a future session's memory of "this was still open" gets corrected on sight.
+- **Wilderness as a fourth profile axis: surveyed (a later session), NOT implemented, real
+  decision needed.** A prior survey rejected a fourth axis because wilderness (`has_origin =
+  origin_wilderness`, hive-authority-only) is a strict subset of hive authority, not orthogonal to
+  it. Re-measured directly this session (simulate wilderness=true/false against the real evaluator
+  for all 4 hive-authority profiles): **41 of 973 rendered technologies (4.2%) / 148 (technology,
+  profile) pairs show a REAL availability difference between a wilderness and a non-wilderness
+  hive empire** — not small, comparable in scale to other thresholds this project treats
+  seriously. The display-gate-only treatment (Item "Gate-polarity bug fixed" above) is now
+  correct on its own terms, but doesn't surface these 41 technologies' real per-profile
+  availability difference at all. Cost of adding the axis, if chosen: 12 → 24 profiles, every
+  per-profile emitted array doubles (`empireProfileAxes`, `availabilityMatrix`, every overlay) —
+  re-check the ≤2MB compressed overlay budget before committing (current largest overlay: 63.5KB
+  gzip, so headroom is large, but re-measure once implemented, don't assume). User needs to
+  decide between: (a) leave as a display-gate, tell users the ~4% figure and accept it as a known
+  gap; (b) add the fourth axis.
+- **Two technologies named "Confluence of Thought" — already a known, genuine same-name pair, not
+  a new gap.** `tech_hive_confluence` (the ordinary hive-authority statecraft line,
+  `tech_hive_cluster → tech_hive_confluence`) and `tech_wilderness_confluence` (a parallel,
+  wilderness-exclusive vanilla content track, `tech_wilderness_node → tech_wilderness_cluster →
+  tech_wilderness_confluence`, confirmed real via raw source's own "# Wilderness" section header)
+  are two DIFFERENT, deliberately-parallel vanilla technology lines that happen to share a display
+  name — already recorded among the reconciliation session's "5 genuine same-name-in-the-mod
+  pairs" (`docs/BUILD-LOG.md`). Not an overwrite-resolution error or a localisation collision.
+  Left here only so a future session's memory of "is this new?" gets corrected on sight.
+- **Looping edges: surveyed this session, NONE FOUND geometrically — real corpus report is
+  either stale (predates the same-sub-column D-17 extension) or needs a specific example.** Three
+  independent geometric checks against the rebuilt, current dataset (X-direction reversal on any
+  edge's polyline, a Y-axis "hook" shape — large deviation then returning near the start Y before
+  a very different end Y, and literal polyline self-intersection) all found ZERO matching edges
+  across all 977. The D-17 same-sub-column extension (this session, see "Item 4" in HANDOFF.md's
+  own session record) already covers the one class of edge previously confirmed to double back.
+  Recommend asking the user for a screenshot or a specific technology name before investigating
+  further — this session could not reproduce the report.
+- **The "dangerous" ancestor-broken research-path case (P-12.9 section 6): surveyed, real, NOT an
+  artefact of the gate-polarity fix.** Re-measured after the gate-polarity fix landed: still
+  exactly 78 technologies / 472 (key, profile) pairs — UNCHANGED, confirming the gate-display fix
+  (which never touches `pipeline.availability`) has zero bearing on this count. Categorised by
+  cause: 44 pairs trace to a broken ancestor's `is_nomadic`-locked state (the `tech_starbase_*`
+  chain and similar), 25 to an axis-locked ascension perk (`ap_gigastructural_constructs` 10,
+  `ap_galactic_wonders` 8, `ap_celestial_printing` 7), 4 to hive-mind/shipset-locked ancestors, 2
+  to a zero-viable `OR`-group, 3 unresolved by this session's quick trace (deeper nesting, not yet
+  characterised). Every traced case is a REAL, non-alternative (`prerequisite`, not
+  `alternative`-edge) dead end — none found to be a modelling artefact (an ancestor that's
+  "really" reachable another way the evaluator missed). **Recommendation: `status: "unavailable"`
+  does NOT adequately distinguish "the target itself is closed to you" from "the target is fine,
+  but a specific ancestor blocks the only path" — these are different facts a player would act on
+  differently (a real hard no, vs. "you could get here if this one blocking ancestor were
+  reachable").** A distinct status value naming the actual blocking ancestor + its own lock reason
+  (already computable from this session's survey) is recommended; not implemented, per explicit
+  instruction to stop and report — this changes a spec decision (P-12.9 section 6) and the user
+  should see the shape before it moves.
 - **Gate propagation down `potential-gate` edges is a real, deliberately deferred scope
   boundary** (the "Ring Segment / ascension-perk locking / gate-propagation" session) — this
   session propagated gates down `prerequisite` edges only (the formal, declared "must research
