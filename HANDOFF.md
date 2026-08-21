@@ -1202,24 +1202,85 @@ at implementation time before trusting these three numbers verbatim — they wer
 this session, and the corpus does keep moving.
 
 **Also still open, not part of the P-12.9 work but real and scoped:**
-- Item 3's `add_research_option` finding (CLAUDE.md's Open Items has the full corpus table) —
-  3 technologies (`tech_ring_world`, `tech_dyson_sphere`, `tech_matter_decompressor`) are
-  structurally unreachable via the normal weighted tech draw and are ENTIRELY invisible to this
-  pipeline's gate/availability machinery; recommended fix is extending P-3's gate registry to read
-  ascension-perk `on_enabled` blocks, not yet built.
+- ~~Item 3's `add_research_option` finding...~~ **DONE, a later session ("Ring Segment /
+  ascension-perk locking / gate-propagation" session, Item 4a)**: `tech_ring_world`/
+  `tech_dyson_sphere`/`tech_matter_decompressor` now carry a real `ap_galactic_wonders` gate via
+  `pipeline.dataset_emit.ADD_RESEARCH_OPTION_PERK_GRANTS`. Left here only so a future session's
+  memory of "this was still open" gets corrected on sight — see CLAUDE.md's "Gates" section.
 - Middle-click isolation (P-7, fully specced, confirmed entirely unbuilt across every session
   asked about it).
 - No `pytest` CI workflow exists yet (only `tsc --noEmit` runs in CI).
 - Hover/selection discoverability (Item 7) — the right behaviour already exists, nothing surfaces
   it to the user; a cheap, optional follow-up, not asked for yet.
+- **New this session**: gate propagation down `potential-gate` edges (as opposed to
+  `prerequisite` edges, which now DO propagate) is a deliberately deferred scope boundary — see
+  CLAUDE.md's Open Items.
+- **New this session**: same-sub-column `alternative`/`potential-gate` edges (6 real cases, 2 in
+  the Compound row) are a real, narrow gap in D-17's guarantee — surveyed, not implemented, per
+  explicit instruction; see CLAUDE.md's Open Items for the recommended fix and why it's cheap
+  (per-cell, not a global `subgrid_width` renegotiation).
 
 **Prerequisite, same as every session**: `client/public/dataset/` is gitignored (D-15) and won't
 exist in a fresh checkout — run `tools/build_dataset.py` locally (needs `vendor/` populated)
 before `npm run dev`/`build` in `client/`. Re-run it fresh rather than assume any on-disk build is
 current; the real node/edge counts are **973/977** (D-18 then Item 2c). **Gate instance count is
-now stale here — see CLAUDE.md's "Gates" section for the current, real figure (136 instances over
-109 technologies, four `GateKind` values, as of the "path to zero uncertain" follow-up session's
-Items 3–4) rather than the 66/56 recorded in this paragraph historically.**
+now stale here — see CLAUDE.md's "Gates" section for the current, real figure (TOTAL 267 instances
+over 196 technologies, direct-only 139 over 112 technologies, as of the "Ring Segment /
+ascension-perk locking / gate-propagation" session) rather than the 136/109 recorded in this
+paragraph historically.**
+
+---
+
+## "Ring Segment / ascension-perk locking / gate-propagation" session (this session)
+
+Nine items from a single prompt: (1) `always = yes` never handled as a leaf — fixed, 1 technology
+(`tech_ring_world`) moved from unconditionally uncertain to available. (2) Ascension perks
+CAN be a real profile fact when the perk's own `potential` carries a genuine axis constraint —
+CLAUDE.md's locked decision corrected (not reversed) to this distinction; automated via
+`pipeline.availability.set_perk_potentials` + a real `_combine_or` correction (see CLAUDE.md's
+"Ascension perks are gates" section for the full survey: 21 perks cleanly axis-restricted, 20
+left gate-only with residual undecidable conditions, one real cross-perk cycle broken by a
+recursion guard). (3) Gates now propagate down `prerequisite` chains, tagged
+`inherited`/`sourceTechnologyId` (schema + client updated) — fixes the user-reported QSO family
+and "Management Protocols" repeatable gap; scoped to `prerequisite` edges only, `potential-gate`
+propagation deliberately deferred. (4a) `on_enabled -> add_research_option` perk grants
+(`tech_ring_world`/`tech_dyson_sphere`/`tech_matter_decompressor`) are now a gate source — closes
+a previously-surveyed-but-unimplemented item. (4b) Cosmogenesis-locked technologies: surveyed,
+found real (2 technologies, `giga_tech_fe_megaworkshop_1` and vanilla's own `tech_cosmogenesis_
+thesis`) but `weight_modifier`-based, not gate/availability-based — each carries `modifier =
+{ factor = 0 NOT = { has_crisis_level = crisis_cosmogenesis_level_4/5 } }`, a research-WEIGHT
+mechanism (CLAUDE.md's own "weight is a separate concern from availability" rule), not a
+`potential` condition. The "tensile buildings" (`giga_tech_amb_supertensiles*`) the user also
+named do NOT share this shape — their only real gate is the already-known `@giga_amb_flag`
+mod-config toggle (CLAUDE.md's Item 4, "deliberately unresolved" section). Deliberately NOT
+treated as a gate — implementing it as one would conflate weight and availability, a category
+error this project's own rules already warn against. Not implemented (correctly, per the survey's
+own conclusion) — reported, not guessed at. (5) `has_active_tradition` resolves
+TRUE by default except the user-confirmed `tr_genetics*` (unavailable to machine-intelligence) —
+1 real corpus occurrence, `giga_tech_the_vat`. (6) Localisation/icon precedence: vanilla-won
+technologies now use vanilla's own name/description/icon even when ACOT redefines the same loc
+key/filename — exactly 3 real cases (`tech_dark_matter_power_core`/`_propulsion`/`_deflector`),
+surveyed before implementing, confirmed independent of the ACOT-absent reduced-build diagnostic.
+(7a) Dangling "or:" gates (sole alternative gate in a technology's list) downgraded to a plain
+requirement — 20 real cases, Riddle Escort/Missiles/Torpedoes and the_vat's genuine 2-gate case
+both confirmed unaffected. (7b) OR-set popup grouping: not implemented — the existing `groupId`
+mechanism only covers `Edge`, not `Gate`; a genuine "need one of" grouped presentation for gates
+would need new plumbing, reported here as a real gap rather than attempted under this session's
+time budget. (8) Small fixes: enlarged the repeatable-infinity badge glyph (a dedicated 20px font
+size for "∞" only); rewrote the off-tree-prerequisite popup note for an end user, full detail kept
+under `?dev`; confirmed the 5 null-cost technologies still render no cost line. (9) Surveyed
+same-sub-column edges (6 real cases, all `alternative`/`potential-gate`, none `prerequisite`; 2 in
+the Compound row matching the user's report) and reported a recommended fix — a real, narrow gap
+in D-17's guarantee, not implemented per explicit instruction.
+
+Full pytest suite (1496 tests), `tsc --noEmit`, and `vite build` all clean after every change,
+including a real, deliberately-updated set of pinned D-10/gate-count regression tests (each
+updated with the reasoning for why the number moved, never silenced). Playwright/browser
+screenshot verification was attempted (`npx playwright install chromium --with-deps`) but timed
+out before completing in this environment — visual verification of the client changes (inherited
+gate rendering, the enlarged infinity glyph, the rewritten off-tree note) was NOT done this
+session; say so explicitly rather than claiming it, and do it early in the next session if visual
+confirmation matters before shipping.
 
 ---
 

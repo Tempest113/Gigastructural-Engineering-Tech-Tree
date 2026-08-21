@@ -151,8 +151,66 @@ Three independent axes, composed at build time. Never a flat enumeration.
 Twelve profiles. Origins are not an axis for v1, but the fact registry is extensible — if
 origin-gated techs turn up during extraction, add a fact, do not restructure.
 
-**Ascension perks are gates, not profile facts.** A perk-gated tech always displays its gate.
-The tree shows what you would need; it never assumes you have it.
+**Ascension perks are gates, not profile facts — CORRECTED (a later session, "Ring Segment /
+ascension-perk locking" session).** The original wording above was refuted by real corpus content
+(Galactic Wonders is genuinely unobtainable for nomadic empires) and by the user's domain
+knowledge, and is kept struck through only as the historical record of what was superseded:
+~~A perk-gated tech always displays its gate. The tree shows what you would need; it never assumes
+you have it.~~
+
+**The corrected rule is a distinction, not a reversal:**
+- **WHICH perk a player chooses remains a free choice, never a profile fact.** A perk-gated
+  technology still always displays its gate rather than assuming the player has or hasn't picked
+  it — this half of the original rule stands unchanged.
+- **WHETHER a perk is obtainable AT ALL for an empire type is a real fact, when the perk's own
+  `potential` carries a genuine axis constraint.** A technology gated behind a perk that is
+  structurally impossible for a profile is genuinely LOCKED for that profile, not merely gated —
+  the same as any other axis-impossible technology.
+
+Implemented automatically (a full corpus survey, not a hand-curated table):
+`pipeline.availability.set_perk_potentials` registers every ascension perk's own winning
+`potential` block; `_evaluate_leaf`'s `has_ascension_perk` branch evaluates the referenced perk's
+potential against the current profile through the SAME evaluator, and only turns the leaf into a
+real `FALSE` when that sub-evaluation is a definite `LOCKED` (never for `UNCERTAIN` — a perk with
+residual undecidable conditions stays gate-only, exactly as before). **Real corpus: 21 perks are
+cleanly axis-restricted** (`ap_wanderlust`/`ap_hydrocentric`/`ap_eternal_vigilance(_nomads)` on
+`is_nomadic`; `ap_synthetic_age`/`ap_machine_worlds`/`ap_mechromancy`/`ap_one_vision` on
+`is_machine_empire`; `ap_organo_machine_interfacing`/`ap_hive_worlds` on `is_hive_empire`;
+`ap_lord_of_war`/`ap_xeno_compatibility`/`ap_arcology_project` on `is_regular_empire`;
+`ap_gigastructural_constructs`/`ap_qso`/`ap_vast_expanses`/`ap_celestial_printing`/
+`ap_supermassive_ehof`/`ap_master_builders`/`ap_galactic_wonders` on `is_nomadic`; plus 3 perks —
+`ap_defender_of_the_galaxy` and the `ap_galactic_wonders_utopia`/`_megacorp`/
+`_utopia_and_megacorp` DLC-variant duplicates — found universally unobtainable, either a legacy
+pre-Nomads-DLC fallback (`has_nomads_dlc = no`, impossible under this project's all-DLC-owned
+assumption) or a superseded perk carrying a literal `potential = { always = no }`, resolved
+correctly by the SAME session's `always` leaf fix below). **20 more perks carry a residual
+undecidable condition** (compound triggers, mid-game player state) and are deliberately left
+gate-only, never guessed at — see `pipeline.availability`'s module docstring for the full list.
+A genuine cross-perk cycle exists in the real corpus (`ap_defender_of_the_galaxy` <->
+`ap_defender_of_the_galaxy_nomads`, each excluding the other via a `NOR = { has_ascension_perk =
+<the other> }` superseded-perk guard) — broken by a recursion guard
+(`_perk_eval_in_progress`), not assumed absent.
+
+**A real, necessary correction to `_combine_or` fell out of this fix.** Before a perk-gated leaf
+could ever be a real `FALSE`, an `OR` mixing an EXCLUDED (gate-only, presumed-achievable) sibling
+with a real FALSE sibling never arose; `_combine_or`'s original rule (ignore EXCLUDED siblings,
+decide purely from the rest) then wrongly closed off the whole OR whenever the achievable sibling
+was filtered away, leaving only the FALSE one. Real corpus case this fixes:
+`giga_tech_ringworld_titanic_1`'s `OR = { has_ascension_perk = ap_galactic_wonders,
+has_ascension_perk = ap_galactic_wonders_utopia }` — for a non-nomadic profile the first branch is
+open (achievable) while the second is a real FALSE (permanently disabled); the whole OR must read
+as still-gated (AVAILABLE), not LOCKED, since the open branch remains live. Fixed: an `OR` whose
+non-EXCLUDED children are all FALSE, but at least one child WAS EXCLUDED, now resolves EXCLUDED
+(open) rather than FALSE. `pipeline.edge_constraints`'s own, deliberately different sensitivity
+mechanism (Disco Moon's masking-avoidance fix) needed the PRE-correction behaviour preserved
+exactly, so it now swaps in its own `_legacy_combine_or` copy for the duration of its check —
+these are two different questions ("is this technology available" vs. "does this specific
+has_technology leaf's value change the outcome") that happen to share underlying code, not one
+mechanism that regressed.
+
+See CLAUDE.md's "Gates" section below for the propagation and `add_research_option`-grant
+extensions this same finding led to, and the "Trigger evaluation" section for the moved D-10
+figures.
 
 Corpus confirmation, not a to-do: vanilla's `tech_mega_engineering` (also overwritten by
 Gigastructures — see `### Prerequisites`) carries `is_nomadic = yes`-gated weight modifiers
@@ -312,6 +370,50 @@ names TRUE as a class, the same treatment already user-approved for `colossus_pr
 names, 73 technologies move UNCONDITIONALLY uncertain → AVAILABLE for all 12 profiles; none became
 merely profile-dependent, which is why the worst profile-dependent rate is unchanged. Union
 uncertain-for-≥1-profile count: 127 → 54.
+
+**Both figures moved again, a later session ("Ring Segment / ascension-perk locking /
+gate-propagation" session, Items 1, 2 and 5): unconditional 34 → 31, worst profile-dependent
+15/973 (1.54%) → 16/973 (1.64%), union 54 → 53.** Three real, independent leaf-handling gaps, each
+never handled at all before this session (falling through to UNKNOWN unconditionally):
+- **`always`** — the most trivially resolvable leaf in Clausewitz was never given a leaf-evaluation
+  branch at all (only `always = no` at a technology's own top level was handled, via
+  `pipeline.rendering_scope`'s DIFFERENT permanently-disabled-exclusion mechanism). Real corpus: 1
+  technology, `tech_ring_world` (whole `potential` is `{ always = yes }`), moves from uncertain for
+  all 12 profiles to AVAILABLE for all 12.
+- **Ascension-perk axis-locking** (this file's own "Ascension perks are gates" section above) — one
+  further technology's OR combination resolves cleanly once an axis-locked perk can contribute a
+  real FALSE.
+- **`has_active_tradition`** — also never handled, resolves TRUE by default except for the one
+  user-confirmed restricted category (`tr_genetics*`, unavailable to machine-intelligence empires).
+  Real corpus: exactly ONE `potential`-scoped occurrence in the whole corpus, `giga_tech_the_vat`'s
+  `has_active_tradition = tr_genetics_finish_extra_traits` (its only OTHER real occurrence,
+  Maginot's `tr_unyielding_federations_finish`, lives in a `weight_modifier`, not `potential`, so is
+  out of scope for availability regardless — weight and availability are deliberately separate
+  concerns, conflating them would be a category error). `giga_tech_the_vat` moves to AVAILABLE for
+  all 12 profiles.
+
+Two more real fixes in the SAME session touch DISPLAY, not availability, and moved no D-10 figure:
+gate propagation down `prerequisite` chains and `add_research_option` perk-grants (both under
+"Gates" below), and the dangling-alternative-gate downgrade (P-3, also under "Gates").
+
+Two real cases where mods overwrite VANILLA content: **localisation/icon precedence** (a
+DIFFERENT, previously undiscovered concern from any technology-BLOCK overwrite) — surveyed the
+full 673-technology Vanilla-won set and found exactly 3 real cases where ACOT's own loc/icon
+files, though never overwriting the technology BLOCK itself, redefine the SAME name/description
+loc key and icon filename with DIFFERENT content: `tech_dark_matter_power_core`,
+`tech_dark_matter_propulsion`, `tech_dark_matter_deflector` (user-reported: the last one rendered
+as ACOT's "Dark Matter Dimensional Thruster" instead of vanilla's own "Dark Matter Propulsion").
+Fixed: `pipeline.dataset_emit.VANILLA_LOC_AND_ICON_PRECEDENCE_KEYS` looks these 3 keys up against
+Vanilla's OWN loc entries (`_vanilla_loc_entry`) and forces the technology ICON atlas to keep
+Vanilla's own file (`pipeline.icons.resolve.resolve_icon_files`'s new `source_priority_overrides`
+parameter — a general, reusable mechanism, not special-cased to these 3 keys) rather than the
+cross-source last-source-wins pick. Independent of, and does not conflict with, the ACOT-absent
+reduced-build diagnostic (`VANILLA_TECHNOLOGIES_ACOT_OVERWRITES`/
+`PLACEHOLDER_TECHNOLOGIES_REQUIRING_ACOT_AOT`) — that diagnostic is about a technology BLOCK
+reverting when ACOT is absent; this fix is about which SOURCE's loc/icon a Vanilla-BLOCK-won
+technology shows in the FULL (ACOT-present) build, and is a full no-op when ACOT is absent (no
+ACOT file exists to compete with vanilla's in that build mode anyway).
+
 Two real pattern matches are DELIBERATELY EXCLUDED (`pipeline.availability.
 PROGRESSION_PATTERN_EXCLUDED_FLAGS`) despite matching the naming pattern: `l_cluster_opened` and
 `encountered_first_lgate` are VANILLA Stellaris L-Gate storyline flags whose setting sites live in
@@ -674,6 +776,69 @@ another via `has_technology` in `potential`) is unaffected, a real still-valid e
 `tech_lathe_*` → `tech_cosmogenesis_world` pair (unaffected by Item 5, since `tech_cosmogenesis_
 world` is not also a true prerequisite of the lathe technologies).
 
+**Gates now PROPAGATE down `prerequisite` chains (a later session, "Ring Segment /
+ascension-perk locking / gate-propagation" session) — closed a real user-reported gap.** Gates
+were previously classified only on the technology that DECLARES them, never inherited — a
+technology whose only real requirement is "research my prerequisite first, and THAT tech needs
+the perk" showed no gate at all (user reports: the QSO family, and `giga_tech_repeatable_*_cap`
+"Management Protocols" repeatables). `pipeline.dataset_emit.build_base_dataset` now computes, for
+every rendered technology, the union of its own DIRECT gates plus every gate any `prerequisite`
+ancestor (transitively, via Kahn's-algorithm topological order) declares directly, deduplicated by
+`(kind, refId)` — direct declarations always win the dedup, an inherited entry is only added when
+no direct one already covers the same `(kind, refId)`. Scoped to `prerequisite` edges only,
+deliberately NOT `potential-gate` edges (a different kind of dependency — an eligibility check, not
+a declared "must research first" chain; propagating through it is left open, pending real corpus
+study, see Open Items). Two new `Gate` schema fields carry this: `inherited: boolean` and
+`sourceTechnologyId: string | null` (the ORIGINAL declaring technology, not an intermediate hop in
+a longer chain) — the client's popup renders an inherited gate with a "(via <source technology>)"
+note (`.gate-inherited-note`), the card's single primary-gate slot is unaffected (still index 0,
+no new overflow — see the DIRECT/TOTAL count split below for why this doesn't blow out card
+space in practice).
+
+**`on_enabled → add_research_option` ascension-perk grants are now a gate source too (the SAME
+session, Item 4a) — closed a previously-surveyed-but-unimplemented gap** (HANDOFF.md's "Ordered
+next steps" used to flag this as open). `ap_galactic_wonders`'s (Gigastructures-overwritten)
+`on_enabled` unconditionally grants `tech_ring_world`, `tech_dyson_sphere` and
+`tech_matter_decompressor` — all three structurally UNREACHABLE any other way (unconditional
+`weight_modifier = { factor = 0 }`), previously invisible to this pipeline's gate/availability
+machinery entirely. `pipeline.dataset_emit.ADD_RESEARCH_OPTION_PERK_GRANTS` adds a direct
+`ascension_perk` gate (`ap_galactic_wonders`) to exactly these 3 — deliberately NOT
+`tech_mega_engineering` (also granted this way, but remains genuinely reachable by the ordinary
+weighted-draw route too, so a gate would overstate a real requirement). `ap_gigastructural_
+constructs`'s on_enabled grants a larger set (`giga_tech_hrae_mc`, `giga_tech_ringworld_behemoth`,
+`giga_tech_matrioshka_brain_1`, `giga_tech_quasi_stellar_1`, `giga_tech_birch_world_1`,
+`giga_tech_lunar_assembly`, `giga_tech_war_system_1`, `giga_tech_supermassive_ehof`) but needs no
+new machinery — every one already carries `has_ascension_perk = ap_gigastructural_constructs`
+directly in its own `potential`, confirmed already gate-classified before this fix. This is a
+DISPLAY-only extension (matching how every other gate works) — it does NOT make `tech_ring_world`/
+`tech_dyson_sphere`/`tech_matter_decompressor` LOCKED for axis-excluded profiles, since their own
+`potential` never references the perk (only the DISPLAY gate does); left this way deliberately,
+same posture as every other gate.
+
+**Real corpus, current (both extensions together): DIRECT gates 139 (48 ascension_perk + 45
+origin + 24 ethics_or_civic + 22 technology) over 112 directly-gated technologies — up from
+136/109 purely from the 3 new `add_research_option` grants. TOTAL (direct + inherited) gates: 267
+(104 ascension_perk + 53 origin + 61 ethics_or_civic + 49 technology) over 196 gated technologies,
+48 of which carry more than one gate instance** (up from 24/973 before propagation). Card space:
+unaffected in practice — the card still renders only the primary (index 0) gate, unchanged by
+propagation; the popup renders the full list already, now including inherited entries with their
+source noted.
+
+**Dangling "or:" fixed (the SAME session, Item 7a) — a real user-reported display bug, P-3.** The
+OR-context gate fix (an earlier item) marks a leaf `alternative` whenever it sits inside a real
+source `OR`, but the OR's OTHER real branches are frequently non-gate-shaped conditions never
+tracked as gates at all (Birch World's own sibling is `any_owned_planet = { ... district check
+... }`) — when a technology's emitted `gates` list ends up with exactly ONE entry and it's the
+alternative one, "or:" reads as a dangling reference with nothing to be alternative to. Downgraded
+to a plain "Needs X" requirement in exactly that case (`pipeline.dataset_emit.
+_downgrade_dangling_alternative`) — deliberately NOT when `appliesToEmpireTypes` is non-null (the
+Riddle Escort/Missiles/Torpedoes shape, an existing, deliberate, tested fix where the SAME "sole
+gate in the list" shape is correct AS "or:" for the axis where it's shown). Real corpus: 20
+technologies affected (`giga_tech_birch_world_1`, the two Gigastructural-Constructs-gated
+`Terrestrial Sculpting`/`Gene Tailoring`/`Driven Assimilator` families, ...); Riddle Escort/
+Missiles/Torpedoes and `giga_tech_the_vat`'s genuine 2-gate case are both unaffected, confirmed
+directly.
+
 ### Tiers
 
 Tier range is **not** bounded. ACOT pushes tiers to T9 and beyond. Enumerate tier bands from
@@ -971,6 +1136,26 @@ live in this file's own body above and in `spec/decisions.md`, not here.
 - **Gate classification (P-3) is now closed** — `pipeline/gate_patterns.py` classifies real gate
   data into `gates`; see this file's own "Gates" section above for the full account. Left here
   only so a future session's memory of "this was still open" gets corrected on sight.
+- **Gate propagation down `potential-gate` edges is a real, deliberately deferred scope
+  boundary** (the "Ring Segment / ascension-perk locking / gate-propagation" session) — this
+  session propagated gates down `prerequisite` edges only (the formal, declared "must research
+  first" chain). A `potential-gate` edge (`has_technology` inside `potential`) is a DIFFERENT kind
+  of dependency (an eligibility check, not a declared prerequisite), and whether/how it should
+  ALSO propagate gates was left open pending real corpus study of what that would even mean —
+  don't extend propagation there without first surveying real cases.
+- **Same-sub-column (same-band) `alternative`/`potential-gate` edges — surveyed, not
+  implemented, per explicit instruction this session.** D-17's "a dependent is never left of or
+  in line with its prerequisite within a band" guarantee only covers `prerequisite` edges. Real
+  corpus: exactly 6 edges (all `alternative`/`potential-gate`, ZERO `prerequisite`) sit in the
+  exact same x-column as their counterpart, same band, same row — 2 of these are in the Compound
+  row (`tech_qnm_utilities` → `tech_qnm_disruptors`/`tech_sm_autocannons`), matching the user's
+  reported visual location. This is a genuine, narrow gap in D-17's guarantee (never checked for
+  these two edge kinds), not a different mechanism. Recommend extending D-17's existing
+  depth-slot displacement logic to cover `alternative`/`potential-gate` edges too — a PER-CELL,
+  LOCAL fix (only the 6 affected sub-grid columns need an extra slot), not a global
+  `subgrid_width` renegotiation (already done twice — canvas width is the user's call, not
+  re-litigated here). Not implemented — the user needs to confirm the recommended fix before
+  canvas geometry changes again.
 - **P-12.9 (research path): specced, SURVEYED AND APPROVED (a later session), still not
   implemented — this is the next open work.** The feature v1 failed at: profile-blind traversal
   (didn't vary by empire type) and flattened `OR`-group (`alternative`-edge) branches instead of

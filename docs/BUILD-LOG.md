@@ -3237,3 +3237,90 @@ available (`claude-in-chrome` not connected) and no Playwright installation, and
 no client-visible UI changes (no new gate kind, no new card affordance) that would need one; the
 `?dev` monitor's content was verified directly from the rebuilt `diagnostics.json` instead. Flagged
 honestly rather than claimed.
+
+## "Ring Segment / ascension-perk locking / gate-propagation" session
+
+Nine-item prompt, driven by real user reports. Full detail lives in CLAUDE.md's own sections
+("Ascension perks are gates ..." and "Gates") and HANDOFF.md's session summary; this entry is the
+terse historical record.
+
+1. **`always = yes` never handled as a leaf** (`pipeline/availability.py`) — only `always = no` at
+   a technology's own top level was handled (a DIFFERENT mechanism, `pipeline.rendering_scope`'s
+   permanently-disabled exclusion). Fixed: `always` gets its own leaf branch. Real corpus: 1
+   technology, `tech_ring_world`.
+2. **Ascension-perk axis-locking** — CLAUDE.md's "ascension perks are gates, not profile facts"
+   locked decision corrected to a distinction: WHICH perk is a choice (unchanged); WHETHER a perk
+   is obtainable at all is a fact when the perk's own `potential` carries a genuine axis
+   constraint. Automated via `pipeline.availability.set_perk_potentials` (registers every perk's
+   own winning `potential`) plus a new `has_ascension_perk` leaf branch that only turns FALSE on a
+   definite perk LOCKED result, never on UNCERTAIN. Real corpus: 21 perks cleanly axis-restricted,
+   20 left gate-only (residual undecidable conditions), 1 real cross-perk cycle
+   (`ap_defender_of_the_galaxy` <-> `_nomads`) broken by a recursion guard. A necessary
+   `_combine_or` correction fell out of this (an EXCLUDED sibling must not let a real FALSE
+   sibling force the whole OR closed) — `pipeline.edge_constraints` needed its OWN, deliberately
+   different `_relaxed_leaf`/sensitivity mechanism preserved exactly, so it now swaps in a local
+   `_legacy_combine_or` copy for its one check.
+3. **Gate propagation down `prerequisite` edges** (`pipeline.dataset_emit.build_base_dataset`) —
+   gates previously classified only on the DECLARING technology, never inherited. Fixed via a
+   topological (Kahn's-algorithm) pass unioning each technology's own gates with every
+   `prerequisite`-ancestor's gates, deduplicated by `(kind, refId)`, tagged
+   `inherited`/`sourceTechnologyId` (two new `Gate` schema fields). Scoped to `prerequisite` edges
+   only, deliberately not `potential-gate`. Fixes the user-reported QSO family and
+   `giga_tech_repeatable_*_cap` "Management Protocols" gap.
+4. **`on_enabled -> add_research_option` perk grants** (Item 4a) — `ap_galactic_wonders` grants
+   `tech_ring_world`/`tech_dyson_sphere`/`tech_matter_decompressor` (all three structurally
+   unreachable any other way); these 3 now carry a real direct `ascension_perk` gate
+   (`pipeline.dataset_emit.ADD_RESEARCH_OPTION_PERK_GRANTS`), closing a previously-surveyed,
+   never-implemented gap. `tech_mega_engineering` (also granted this way, but reachable normally
+   too) deliberately excluded. `ap_gigastructural_constructs`'s larger grant set needed no new
+   machinery (already gate-classified via its own direct `has_ascension_perk` leaf).
+   **Cosmogenesis (Item 4b)**: surveyed, found real (`giga_tech_fe_megaworkshop_1`,
+   `tech_cosmogenesis_thesis`) but `weight_modifier`-based (`factor = 0` unless
+   `has_crisis_level`), not a `potential`/gate condition — deliberately NOT treated as a gate,
+   matching the project's weight-vs-availability separation. The "tensile buildings"
+   (`giga_tech_amb_supertensiles*`) the user also named do not share this shape; their only real
+   gate is the already-known `@giga_amb_flag` mod-config toggle.
+5. **`has_active_tradition` never handled** — resolves TRUE by default, FALSE only for the
+   user-confirmed `tr_genetics*` category (unavailable to machine-intelligence empires). Real
+   corpus: exactly 1 `potential`-scoped occurrence, `giga_tech_the_vat`. Its only other real
+   occurrence (Maginot's `tr_unyielding_federations_finish`) lives in a `weight_modifier`, out of
+   scope for availability regardless.
+6. **Localisation/icon precedence** — a vanilla-won technology (P-15 block winner) now uses
+   vanilla's OWN name/description/icon even when ACOT's loc/icon files happen to redefine the same
+   key/filename with different content. Surveyed first: exactly 3 real cases across the full
+   673-technology Vanilla-won set (`tech_dark_matter_power_core`/`_propulsion`/`_deflector`).
+   `pipeline.icons.resolve.resolve_icon_files` gained a general `source_priority_overrides`
+   parameter (not special-cased to these 3 keys). Confirmed independent of the ACOT-absent
+   reduced-build diagnostic (`VANILLA_TECHNOLOGIES_ACOT_OVERWRITES`).
+7. **Dangling "or:" gates** (Item 7a) — a technology whose entire `gates` list is one alternative
+   entry reads as a dangling reference when its true OR-sibling isn't itself gate-shaped (Birch
+   World's sibling is an `any_owned_planet` district check). Downgraded to a plain "Needs X" in
+   that exact case, deliberately excluding the `appliesToEmpireTypes`-constrained shape (Riddle
+   Escort/Missiles/Torpedoes, an existing different fix that must keep its "or:" wording). Real
+   corpus: 20 technologies. **OR-set popup grouping (Item 7b): not implemented** — `groupId` only
+   exists on `Edge`, not `Gate`; reported as a real gap, not attempted this session.
+8. **Small fixes**: enlarged the repeatable-infinity glyph (dedicated 20px style for "∞" only,
+   since the shared 10px badge style could only ever shrink it, never enlarge a naturally-small
+   glyph); rewrote the off-tree-prerequisite popup note for an end user (no decision codes, full
+   detail kept under `?dev`); confirmed the 5 null-cost technologies still render no cost line.
+9. **Same-sub-column edges — surveyed, not implemented, per explicit instruction.** 6 real edges
+   (all `alternative`/`potential-gate`, zero `prerequisite`) sit in the exact same x-column as
+   their counterpart, same band; 2 are in the Compound row, matching the user's report. D-17's
+   guarantee only ever covered `prerequisite` edges — recommended a per-cell depth-slot extension
+   (not a global `subgrid_width` renegotiation), left for the user to confirm before touching
+   canvas geometry again.
+
+**D-10 figures moved**: unconditional uncertainty 34 -> 31 (Items 1, 2, 5 combined — 3 independent
+technologies each individually verified); worst profile-dependent 15/973 (1.54%) -> 16/973
+(1.64%), still comfortably under the 3% warn threshold. Gate counts: DIRECT 136 -> 139 instances
+over 109 -> 112 technologies (purely Item 4a's 3 new grants); TOTAL (direct + inherited) 267
+instances over 196 technologies, 48 of which carry more than one (up from 24 pre-propagation).
+
+**Verification**: full `pytest tests/` (1496 passed after deliberately updating every pinned
+D-10/gate-count regression test with its own reasoning — never silenced), `tsc --noEmit` and
+`npm run build` both clean, real dataset rebuilt via `tools/build_dataset.py` (973 technologies,
+977 edges, matches). **No headless-Chromium/Playwright screenshots this session** —
+`npx playwright install chromium --with-deps` was attempted and timed out before completing in
+this environment; the client changes (inherited-gate popup rendering, the enlarged infinity
+glyph, the rewritten off-tree note) were verified by direct inspection of the rebuilt dataset JSON
+and the TypeScript build only, not visually. Flagged honestly rather than claimed.
