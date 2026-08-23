@@ -192,7 +192,16 @@ export function createCamera(app: Application, world: Container, contentBBox: Co
   app.canvas.addEventListener("pointercancel", onPointerEnd);
 
   // --- Keyboard: arrows pan, +/- zoom about viewport centre, 0 resets to fit, 1 sets 100%. ---
+  // Listens on `window`, so it fires for every keydown that bubbles up regardless of focus --
+  // including a text input (the search field). Without this guard, typing "_" (or any other
+  // shortcut character, e.g. "0"/"1") into the search box zoomed the camera instead of entering
+  // the character: a real reported bug, "-"/"_" are the camera's own zoom-out shortcut. Every
+  // printable character must reach a focused text-entry element untouched.
   const onKeyDown = (e: KeyboardEvent): void => {
+    const target = e.target as HTMLElement | null;
+    if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+      return;
+    }
     const cx = app.screen.width / 2;
     const cy = app.screen.height / 2;
     switch (e.key) {

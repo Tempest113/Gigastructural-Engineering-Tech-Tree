@@ -1128,12 +1128,14 @@ async function render(): Promise<void> {
     nodeNames.push(nameText);
     wrappedNames.push(wrappedName);
 
-    // Cost line: 15/980 rendered nodes have a null (unresolvable) cost -- render no cost line at
-    // all for those, never 0/"N/A"/a placeholder. Bottom-anchored under the icon; name is now hard
-    // -clamped to MAX_NAME_LINES so it can no longer grow into this space the way an unclamped
-    // wrapped name could before (defect fix) -- the `belowNameY` term stays only as a defensive
-    // floor, never actually the binding constraint post-clamp for the real corpus.
-    if (tech.cost !== null) {
+    // Cost line: render no cost line at all for a null (unresolvable) cost OR a literal zero cost
+    // -- the distinction is meaningless to an end user (a starting technology's real zero and an
+    // unresolvable variable both mean "nothing useful to show"), so both collapse to the same "no
+    // panel" treatment rather than "Cost: 0" for one and nothing for the other. Bottom-anchored
+    // under the icon; name is hard-clamped to MAX_NAME_LINES so it can no longer grow into this
+    // space -- the `belowNameY` term stays only as a defensive floor, never the binding constraint
+    // post-clamp for the real corpus.
+    if (tech.cost !== null && tech.cost !== 0) {
       const costText = new Text({ text: `Cost: ${Math.round(tech.cost).toLocaleString("en-US")}`, style: costStyle });
       const bottomAnchorY = y + CARD_HEIGHT - costText.height - 8;
       const belowNameY = nameText.y + nameText.height + 4;
@@ -1804,7 +1806,7 @@ async function render(): Promise<void> {
     popupContentEl.innerHTML = `
       <h2>${escapeHtml(displayedName)}</h2>
       <div class="field-value" style="color:#9fb3c8">${escapeHtml(row?.label ?? tech.rowId)} &middot; ${tierBandLabel} &middot; ${escapeHtml(displayedArea)}${displayedCategory ? ` / ${escapeHtml(displayedCategory)}` : ""}${tech.crisisFaction ? ` &middot; ${escapeHtml(tech.crisisFaction)}` : ""}</div>
-      <div class="field-value">${tech.cost !== null ? `Cost: ${Math.round(tech.cost).toLocaleString("en-US")}` : "Cost: unresolvable"}</div>
+      ${tech.cost !== null && tech.cost !== 0 ? `<div class="field-value">Cost: ${Math.round(tech.cost).toLocaleString("en-US")}</div>` : ""}
       ${tech.requiresMods.length > 0 ? `<div class="badge-row">${tech.requiresMods.map((m) => `<span class="chip" style="background:#4a5568;color:#fff">${escapeHtml(m)}</span>`).join("")}</div>` : ""}
       <div class="field-label">Availability (${escapeHtml(profileLabel(currentProfile))})</div>
       <div class="field-value" id="popup-availability">${escapeHtml(tech.availabilityMatrix[profileIndex]!)}</div>
@@ -1955,6 +1957,21 @@ async function render(): Promise<void> {
       return;
     }
 
+    // Item 2d: "blocked" is a different fact from "unavailable" -- the target itself is fine,
+    // but a specific ancestor's own locked/config-gated state breaks the only route. Name it,
+    // so the player knows nothing about THIS technology's own state is the problem.
+    if (entry.status === "blocked") {
+      const blocker = entry.blockedBy;
+      const blockerText = blocker
+        ? `${escapeHtml(blocker.name)}${blocker.reason ? ` — ${escapeHtml(blocker.reason)}` : ""}`
+        : "an ancestor technology";
+      pathEl.innerHTML = `
+        <div class="field-label">Research path</div>
+        <div class="field-value">Blocked: no route currently exists. ${blockerText} is not available for this empire type.</div>
+      `;
+      return;
+    }
+
     const steps = entry.steps ?? [];
     const stepRows = steps
       .map((s) => {
@@ -1978,9 +1995,17 @@ async function render(): Promise<void> {
       ? `<div class="field-value research-path-config-gated-note">${escapeHtml(entry.configGatedTarget.name)}: ${escapeHtml(entry.configGatedTarget.subject ? `Requires ${entry.configGatedTarget.subject} cap: 1 + Repeatables` : "config-gated")}</div>`
       : "";
 
+    // A zero-step path is real (a technology with no prerequisites, or none left after the
+    // config-gated target's own case above), not broken -- Total is then just the target's own
+    // cost. "none" next to a nonzero Total read as contradictory (a real reported bug), so make
+    // the zero-step case say what it actually means instead of leaving it to infer from a blank list.
+    const stepsBlock = steps.length > 0
+      ? `<div class="field-value"><ul>${stepRows}</ul></div>`
+      : `<div class="field-value">No prerequisites — this is the direct cost of researching it.</div>`;
+
     pathEl.innerHTML = `
       <div class="field-label">Research path (${steps.length})</div>
-      <div class="field-value">${steps.length > 0 ? `<ul>${stepRows}</ul>` : "none"}</div>
+      ${stepsBlock}
       <div class="field-value">Total: ${totalText}${estimateNote}</div>
       ${configGatedNote}
     `;
