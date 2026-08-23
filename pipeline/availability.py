@@ -670,13 +670,64 @@ def evaluate_trigger_block(block: Block | None, profile: dict) -> AvailabilityRe
     return AvailabilityResult(UNCERTAIN, reason, description, category)
 
 
+def _apply_weight_gate(
+    result: AvailabilityResult, weight_gate_blocks: list[Block], profile: dict
+) -> AvailabilityResult:
+    """A later session's Item 2b: a `weight_modifier` entry with a literal `factor = 0` is
+    Stellaris's own idiom for "this technology cannot currently be drawn as a research option at
+    all" -- not a mere weight reduction, functionally a gate (the motivating case: Cosmogenesis-
+    locked technologies, whose `weight_modifier` zeroes them out entirely until a late-game crisis
+    level is reached). `weight_gate_blocks` are the zero-factor modifiers' own condition blocks
+    (already scripted-trigger-expanded, `factor` itself stripped) -- each evaluated exactly like a
+    `potential` block, through the SAME unchanged Kleene evaluator, never a second mechanism.
+
+    Only ever applied when the technology's `potential`-based `result` is already AVAILABLE -- a
+    technology LOCKED/UNCERTAIN/CONFIG_GATED for a real `potential`-block reason keeps that reason
+    unchanged; this project's `reason` field is a single string, not a combined list, so the more
+    specific existing reason wins over a weight-based one. If ANY zero-factor condition resolves
+    definitely TRUE (the modifier fires, weight is definitely zero right now), the technology
+    downgrades to LOCKED. If none fires but at least one is UNCERTAIN, it downgrades to UNCERTAIN
+    with that leaf's own reason/description/category -- the same honest "unknown" treatment as any
+    other undecidable leaf, never guessed at."""
+    if result.state != AVAILABLE or not weight_gate_blocks:
+        return result
+    uncertain_result: AvailabilityResult | None = None
+    for cond_block in weight_gate_blocks:
+        r = evaluate_trigger_block(cond_block, profile)
+        if r.state == AVAILABLE:
+            reason = " ".join(
+                _leaf_text(item) for item in cond_block.items if isinstance(item, Assignment)
+            )
+            return AvailabilityResult(
+                LOCKED,
+                reason or None,
+                "Zero research weight: a mod-defined condition currently rules this out entirely.",
+            )
+        if r.state == UNCERTAIN and uncertain_result is None:
+            uncertain_result = r
+    if uncertain_result is not None:
+        return AvailabilityResult(
+            UNCERTAIN, uncertain_result.reason, uncertain_result.description, uncertain_result.category
+        )
+    return result
+
+
 def evaluate_technology_for_profiles(
-    block: Block | None, profiles: list[dict]
+    block: Block | None, profiles: list[dict], weight_gate_blocks: list[Block] | None = None
 ) -> dict[int, AvailabilityResult]:
     """Convenience: evaluate one technology's `potential` block against every profile in
     `profiles` (expected to be `pipeline.dataset_schema.empire_profile.all_profiles_in_canonical_order()`),
-    keyed by list index (== EmpireProfileIndex when that's the list passed)."""
-    return {i: evaluate_trigger_block(block, profile) for i, profile in enumerate(profiles)}
+    keyed by list index (== EmpireProfileIndex when that's the list passed). `weight_gate_blocks`,
+    when non-empty, additionally folds in `_apply_weight_gate`'s zero-weight-unless-condition
+    check (Item 2b) -- omitted or empty is a no-op, matching every technology with no zero-factor
+    `weight_modifier` entry."""
+    results = {i: evaluate_trigger_block(block, profile) for i, profile in enumerate(profiles)}
+    if weight_gate_blocks:
+        results = {
+            i: _apply_weight_gate(results[i], weight_gate_blocks, profile)
+            for i, profile in enumerate(profiles)
+        }
+    return results
 
 
 @dataclass(frozen=True)
@@ -718,15 +769,24 @@ class UncertaintySurvey:
         return max(self.profile_dependent_rate(i) for i in self.profile_dependent_uncertain_by_profile_index)
 
 
-def survey_uncertainty(technologies: dict[str, Block | None], profiles: list[dict]) -> UncertaintySurvey:
+def survey_uncertainty(
+    technologies: dict[str, Block | None],
+    profiles: list[dict],
+    weight_gate_conditions: dict[str, list[Block]] | None = None,
+) -> UncertaintySurvey:
     """Run the evaluator over every `(technology, profile)` pair in `technologies` (key ->
-    `potential` block, or None) and split the result per the metric definitions above."""
+    `potential` block, or None) and split the result per the metric definitions above.
+    `weight_gate_conditions` (Item 2b, a later session), when given, folds each technology's own
+    zero-factor `weight_modifier` conditions into the same evaluation -- omitted or a missing key
+    is a no-op, matching every technology with no such modifier."""
     unconditional: list[str] = []
     unconditional_categories: dict[str, ReasonCategory] = {}
     profile_dependent: dict[int, list[str]] = {i: [] for i in range(len(profiles))}
 
     for key, block in technologies.items():
-        results = evaluate_technology_for_profiles(block, profiles)
+        results = evaluate_technology_for_profiles(
+            block, profiles, (weight_gate_conditions or {}).get(key)
+        )
         uncertain_indices = [i for i, r in results.items() if r.state == UNCERTAIN]
         if not uncertain_indices:
             continue

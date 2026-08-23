@@ -331,6 +331,40 @@ def _field(block: Block, name: str) -> Assignment | None:
     return result
 
 
+def _weight_gate_condition_blocks(block: Block, trigger_catalog) -> list[Block]:
+    """A later session's Item 2b: every `weight_modifier` `modifier` entry whose own `factor` is
+    a literal zero -- Stellaris's idiom for "this technology cannot currently be offered at all,"
+    not a mere weight reduction. Deliberately `weight_modifier` only, never `ai_weight` -- the
+    latter governs AI empires' own tech choices, never what the PLAYER is offered, which is this
+    tool's whole subject. Returns the modifiers' own condition (siblings of `factor`, `factor`
+    itself stripped) as synthetic Blocks, scripted-trigger-expanded the same way `potential`
+    blocks are (`pipeline.scripted_triggers.expand_scripted_triggers`) so the same leaf-resolution
+    rules this evaluator already has apply unchanged. A technology can carry more than one such
+    modifier (real corpus: `giga_tech_amb_supertensiles` has two, one config-toggle-gated, one
+    real progression-gated) -- all are returned, and `_apply_weight_gate` treats the whole list as
+    a disjunction (ANY one firing zeroes the weight)."""
+    wm = _field(block, "weight_modifier")
+    if wm is None or not isinstance(wm.value, Block):
+        return []
+    out: list[Block] = []
+    for item in wm.value.items:
+        if not isinstance(item, Assignment) or item.key_name != "modifier" or not isinstance(item.value, Block):
+            continue
+        factor_assign = _field(item.value, "factor")
+        if factor_assign is None:
+            continue
+        fv = factor_assign.value
+        if not (isinstance(fv, NumberLiteral) and fv.value == 0):
+            continue
+        cond_items = [
+            it for it in item.value.items
+            if not (isinstance(it, Assignment) and it.key_name == "factor")
+        ]
+        cond_block = Block(items=cond_items, line=item.value.line, column=item.value.column)
+        out.append(expand_scripted_triggers(cond_block, trigger_catalog))
+    return out
+
+
 def _scalar_text(node) -> str | None:
     if isinstance(node, Identifier):
         return node.name
@@ -624,6 +658,10 @@ class BuildContext:
     # resolve to," matching CLAUDE.md's "pipeline owns all geometry" discipline applied to name
     # resolution instead.
     resolved_names: dict[str, str]
+    # Item 2b (a later session): rendered technology key -> its zero-factor `weight_modifier`
+    # condition Block(s) (see `_weight_gate_condition_blocks`), empty list for the ~majority with
+    # none. Computed ONCE here for the same "one source of truth" reason `expanded_potentials` is.
+    weight_gate_conditions: dict[str, list[Block]]
 
 
 def _sources_present(vendor_root: Path) -> list[str]:
@@ -649,6 +687,10 @@ def build_context(vendor_root: Path) -> BuildContext:
     trigger_catalog = load_scripted_trigger_catalog(vendor_root, scripts, _source_roots(vendor_root))
     expanded_potentials = {
         key: expand_scripted_triggers(_field(defn.block, "potential") and _field(defn.block, "potential").value, trigger_catalog)
+        for key, defn in rendered_defs.items()
+    }
+    weight_gate_conditions = {
+        key: _weight_gate_condition_blocks(defn.block, trigger_catalog)
         for key, defn in rendered_defs.items()
     }
 
@@ -722,6 +764,7 @@ def build_context(vendor_root: Path) -> BuildContext:
         perk_icon_refs=perk_icon_refs, edge_constraints=edge_constraints,
         sources_present=sources_present, off_tree_prerequisites=off_tree_prerequisites, history=history,
         expanded_potentials=expanded_potentials, resolved_names={},
+        weight_gate_conditions=weight_gate_conditions,
     )
     name_overrides = load_name_overrides()
     ctx.resolved_names = {key: _resolve_technology_name(key, ctx, name_overrides) for key in rendered_keys}
@@ -884,14 +927,43 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
         communicates a real fact (a non-biological-shipset empire already qualifies some other
         way) that downgrading to "Needs X" would silently lose. The two-gate case (`giga_tech_
         the_vat`'s "Needs Galactic Wonders" / "or: Mechromancy") is untouched either way, since
-        this only fires when the list has exactly one entry."""
+        this only fires when the list has exactly one entry.
+
+        **Extended (Item 3b, a later session, user-reported: tech_cloning's popup showed a
+        "Need one of:" cluster containing a SINGLE member, plus its own bare card badge read
+        "or: Driven Assimilator").** The original check above only looked at the WHOLE gates
+        list's length -- it missed the same dangling shape one level down, when a technology's
+        gates mix an ungrouped/other-group gate together with a group that itself has exactly one
+        member (tech_cloning: its own direct "Driven Assimilator" gate forms a
+        1-member `tech_cloning#gate-alt0` group, alongside a genuine 2-member INHERITED group from
+        `tech_genome_mapping`). "Need one of: [a single choice]" is exactly as dangling as a bare
+        "or:" with no sibling -- there's no real choice being presented. Fixed generally: after
+        the whole-list check, any group with exactly one member (checked per-`groupId`, not just
+        the top-level list length) is downgraded the same way, one gate at a time, regardless of
+        how many OTHER gates/groups the technology carries. `appliesToEmpireTypes`-constrained
+        gates are excluded from this check too, same reasoning as above."""
         if len(gates) == 1 and gates[0]["alternative"] and gates[0]["appliesToEmpireTypes"] is None:
             sole = gates[0]
             label = sole["label"]
             if label.startswith("or: "):
                 label = "Needs " + label[len("or: "):]
             return [{**sole, "alternative": False, "groupId": None, "label": label}]
-        return gates
+
+        group_sizes: dict[str, int] = {}
+        for g in gates:
+            if g["groupId"] is not None:
+                group_sizes[g["groupId"]] = group_sizes.get(g["groupId"], 0) + 1
+
+        result = []
+        for g in gates:
+            if g["groupId"] is not None and group_sizes[g["groupId"]] == 1 and g["appliesToEmpireTypes"] is None:
+                label = g["label"]
+                if label.startswith("or: "):
+                    label = "Needs " + label[len("or: "):]
+                result.append({**g, "alternative": False, "groupId": None, "label": label})
+            else:
+                result.append(g)
+        return result
 
     def _build_gates(owner_key: str, defn: "TechnologyDefinition") -> list[dict]:
         # Item 5 (later session): CLAUDE.md's documented "4 real pairs are both a formal
@@ -1101,7 +1173,9 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
         area_assignment = _field(defn.block, "area")
         area = _scalar_text(area_assignment.value) if area_assignment else "physics"
 
-        availability_results = evaluate_technology_for_profiles(ctx.expanded_potentials.get(key), ctx.profiles)
+        availability_results = evaluate_technology_for_profiles(
+            ctx.expanded_potentials.get(key), ctx.profiles, ctx.weight_gate_conditions.get(key)
+        )
         matrix = [availability_results[i].state for i in range(len(ctx.profiles))]
 
         requires_mods = [defn.source] if defn.source in ("ACOT", "AoT") else _potential_mod_requirements(defn.block)
@@ -1227,7 +1301,19 @@ class _UnreachablePath(Exception):
     closure hits a dead end for the current profile: a plain (non-`alternative`) prerequisite
     that is itself `locked`/`config-gated`, or an `alternative` group with zero viable candidates.
     Always caught at the per-target level -- never lets one broken ancestor closure abort the
-    whole profile's path build."""
+    whole profile's path build.
+
+    Item 2d (a later session): carries `blocking_key`, the specific ancestor whose own state broke
+    the route -- the FIRST (deepest) one found, since the exception is raised once at its origin
+    and never re-raised by an intermediate `closure()` call, so it survives unchanged up to the
+    target-level `except`. For a broken `alternative` group (no single ancestor "is" the block,
+    every member is non-viable), `blocking_key` names one representative non-viable member rather
+    than the whole group -- a real simplification, not a full account of every non-viable
+    candidate, but enough to point a player at a concrete reason."""
+
+    def __init__(self, blocking_key: str):
+        self.blocking_key = blocking_key
+        super().__init__(blocking_key)
 
 
 def _build_research_paths_for_profile(
@@ -1290,14 +1376,14 @@ def _build_research_paths_for_profile(
         for p in prereq_of.get(k, []):
             p_state = state_of(p)
             if p_state in (LOCKED, CONFIG_GATED):
-                raise _UnreachablePath()
+                raise _UnreachablePath(p)
             deps.append(p)
             _absorb(p, p_state)
 
         for group_id, members in alt_groups_of.get(k, []):
             viable = [m for m in members if state_of(m) in (AVAILABLE, UNCERTAIN)]
             if not viable:
-                raise _UnreachablePath()
+                raise _UnreachablePath(members[0] if members else k)
             chosen = min(viable, key=lambda m: (_closure_total_cost(m, closure, costs), m))
             deps.append(chosen)
             _absorb(chosen, state_of(chosen))
@@ -1349,9 +1435,17 @@ def _build_research_paths_for_profile(
             continue
         try:
             req, group_info, has_uncertain, has_null_cost = closure(key)
-        except _UnreachablePath:
+        except _UnreachablePath as exc:
             unresolvable.append(key)
-            paths[key] = {"status": "unavailable"}
+            blocking_name, _blocking_icon = display(exc.blocking_key)
+            paths[key] = {
+                "status": "blocked",
+                "blockedBy": {
+                    "technologyId": exc.blocking_key,
+                    "name": blocking_name,
+                    "reason": availability_json.get(exc.blocking_key, {}).get("reason"),
+                },
+            }
             continue
 
         order = ordered_ancestors(key, req)
@@ -1431,7 +1525,9 @@ def _compute_profile_facts(
         costs[key] = _resolve_cost(cost_assignment.value if cost_assignment else None, ctx.variable_table)
         tiers[key] = resolve_declared_tier(key, defn.block, ctx.variable_table)
 
-        result = evaluate_technology_for_profiles(ctx.expanded_potentials.get(key), [profile])[0]
+        result = evaluate_technology_for_profiles(
+            ctx.expanded_potentials.get(key), [profile], ctx.weight_gate_conditions.get(key)
+        )[0]
         reason, _needs_warning = resolve_lock_reason(key, result, lock_reason_overrides)
         availability_json[key] = {
             "state": result.state,
@@ -1654,7 +1750,7 @@ def build_search_index(ctx: BuildContext, base_dataset: dict, detail_payloads: d
 
 def build_diagnostics(ctx: BuildContext) -> dict:
     technologies_for_survey = ctx.expanded_potentials
-    survey = survey_uncertainty(technologies_for_survey, ctx.profiles)
+    survey = survey_uncertainty(technologies_for_survey, ctx.profiles, ctx.weight_gate_conditions)
     d10_section = build_d10_diagnostics_section(survey, ctx.profiles)
 
     # Item 1 (later session): the dev health monitor's data. Reuses the exact same evaluator call
@@ -1663,7 +1759,7 @@ def build_diagnostics(ctx: BuildContext) -> dict:
     name_overrides_for_diagnostics = load_name_overrides()
     uncertain_technologies: list[dict] = []
     for key, potential in sorted(technologies_for_survey.items()):
-        results = evaluate_technology_for_profiles(potential, ctx.profiles)
+        results = evaluate_technology_for_profiles(potential, ctx.profiles, ctx.weight_gate_conditions.get(key))
         uncertain_indices = [i for i, r in results.items() if r.state == UNCERTAIN]
         if not uncertain_indices:
             continue
@@ -1694,7 +1790,9 @@ def build_diagnostics(ctx: BuildContext) -> dict:
     missing_lock_reasons: set[str] = set()
     for key in ctx.rendered_defs:
         for profile in ctx.profiles:
-            result = evaluate_technology_for_profiles(ctx.expanded_potentials.get(key), [profile])[0]
+            result = evaluate_technology_for_profiles(
+                ctx.expanded_potentials.get(key), [profile], ctx.weight_gate_conditions.get(key)
+            )[0]
             if result.state == LOCKED:
                 _reason, needs_warning = resolve_lock_reason(key, result, lock_reason_overrides)
                 if needs_warning:

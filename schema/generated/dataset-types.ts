@@ -234,7 +234,8 @@ export interface EmpireOverlay {
   })[];
   /** P-12.9 (spec/P-12.9-research-path.md): the complete `prerequisite`-edge ancestor set, `alternative` (OR-group) branches resolved to the cheapest-total-cost viable candidate, computed per profile at build time -- never substituted or recomputed from a canonical path in the browser (a v1 failure this spec's own 'The failure being fixed' section documents: profile-blind traversal and flattened OR branches). Keyed by technology id; one entry per rendered technology. */
   researchPaths: { [key: string]: {
-    status: "path" | "config-gated" | "unavailable";
+    /** Item 2d (a later session): 'unavailable' means the TARGET's own state is locked -- nothing about the path matters, the tech itself is closed to this profile. 'blocked' is a DIFFERENT fact -- the target's own state is available/uncertain, but a real (non-alternative) ancestor in its prerequisite chain is locked/config-gated, or an alternative group has zero viable candidates, so no route currently exists. A player sees these as different facts to act on: 'unavailable' means check the technology's own availability reason; 'blocked' means nothing the player does about THIS technology helps until blockedBy's own reason changes. Real corpus measured before this split: 78 technologies / 472 (technology, profile) pairs hit 'blocked' (P-12.9 section 6, corrected -- the original spec claimed this case was exactly zero). */
+    status: "path" | "config-gated" | "unavailable" | "blocked";
     /** status == 'path' or 'config-gated' only. Ordered ancestor set (topological, by tier), D-14-substituted per this profile. */
     steps?: ({
       technologyId: TechnologyId;
@@ -266,6 +267,12 @@ export interface EmpireOverlay {
       icon: IconRef;
       /** Same semantics as availability.*.configGatedSubject -- null when the megastructure name itself doesn't resolve. */
       subject: null | string;
+    };
+    /** Non-null only when status == 'blocked' -- names the specific ancestor whose own locked/config-gated state broke this technology's only route (Item 2d). For a broken alternative group, names one representative non-viable member rather than the whole group -- see pipeline.dataset_emit._UnreachablePath's own docstring for why picking one is a reasonable simplification over listing every non-viable member. */
+    blockedBy?: null | {
+      technologyId: TechnologyId;
+      name: string;
+      reason: null | string;
     };
   } };
 }

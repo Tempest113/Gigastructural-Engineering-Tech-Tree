@@ -74,7 +74,10 @@
       "additionalProperties": {
         "type": "object",
         "properties": {
-          "status": { "type": "string", "enum": ["path", "config-gated", "unavailable"] },
+          "status": {
+            "type": "string", "enum": ["path", "config-gated", "unavailable", "blocked"],
+            "description": "Item 2d (a later session): 'unavailable' means the TARGET's own state is locked -- nothing about the path matters, the tech itself is closed to this profile. 'blocked' is a DIFFERENT fact -- the target's own state is available/uncertain, but a real (non-alternative) ancestor in its prerequisite chain is locked/config-gated, or an alternative group has zero viable candidates, so no route currently exists. A player sees these as different facts to act on: 'unavailable' means check the technology's own availability reason; 'blocked' means nothing the player does about THIS technology helps until blockedBy's own reason changes. Real corpus measured before this split: 78 technologies / 472 (technology, profile) pairs hit 'blocked' (P-12.9 section 6, corrected -- the original spec claimed this case was exactly zero)."
+          },
           "steps": {
             "type": "array",
             "description": "status == 'path' or 'config-gated' only. Ordered ancestor set (topological, by tier), D-14-substituted per this profile.",
@@ -147,11 +150,27 @@
                 "additionalProperties": false
               }
             ]
+          },
+          "blockedBy": {
+            "description": "Non-null only when status == 'blocked' -- names the specific ancestor whose own locked/config-gated state broke this technology's only route (Item 2d). For a broken alternative group, names one representative non-viable member rather than the whole group -- see pipeline.dataset_emit._UnreachablePath's own docstring for why picking one is a reasonable simplification over listing every non-viable member.",
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "properties": {
+                  "technologyId": { "$ref": "common.schema.json#/$defs/TechnologyId" },
+                  "name": { "type": "string" },
+                  "reason": { "oneOf": [{ "type": "null" }, { "type": "string" }] }
+                },
+                "required": ["technologyId", "name", "reason"],
+                "additionalProperties": false
+              }
+            ]
           }
         },
         "required": ["status"],
         "additionalProperties": false,
-        "description": "status == 'unavailable' carries ONLY the status field -- no steps array, no totalCost, no fabricated partial list (section 6: the target's own state is locked, or an ancestor closure has no viable route). status == 'path'/'config-gated' carry every other field."
+        "description": "status == 'unavailable' carries ONLY the status field -- no steps array, no totalCost, no fabricated partial list (the target's own state is locked). status == 'blocked' carries ONLY status and blockedBy -- same 'no fabricated partial list' discipline, since no viable route exists to list steps for. status == 'path'/'config-gated' carry every other field, never blockedBy."
       }
     }
   },

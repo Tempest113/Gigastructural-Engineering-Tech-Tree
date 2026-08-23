@@ -230,6 +230,25 @@ def _field(block: Block, name: str) -> Assignment | None:
     return result
 
 
+def _is_zero_cost(block: Block, variable_table: VariableTable) -> bool:
+    """Item 3a (a later session): whether a technology's declared `cost` resolves to a literal
+    zero -- used only to break a horizontal-ordering tie within a depth slot (never for the
+    dataset's own emitted `cost` field, `pipeline.dataset_emit._resolve_cost` owns that, null vs.
+    zero distinction and all). An unresolvable cost (no `cost` field, an `@variable` that doesn't
+    resolve, a non-numeric literal) is deliberately NOT treated as zero here -- only a genuine
+    literal/resolved `0` counts, matching this project's "never guess" discipline."""
+    assignment = _field(block, "cost")
+    if assignment is None:
+        return False
+    value = assignment.value
+    if isinstance(value, VariableReference):
+        try:
+            value = variable_table.resolve(value.name)
+        except (UndefinedVariableError, VariableCycleError):
+            return False
+    return isinstance(value, NumberLiteral) and value.value == 0
+
+
 def resolve_declared_tier(technology_key: str, block: Block, variable_table: VariableTable) -> int:
     """The node's own declared tier -- its band, full stop (D-13). Raises `UnresolvedTierError`
     rather than defaulting. `block` MUST already be `inline_script`-expanded (P-2's tier-source
@@ -528,6 +547,7 @@ def compute_layout(
     categories: dict[str, str | None] = {}
     areas: dict[str, str] = {}
     prereqs_of: dict[str, list[str]] = {}
+    zero_cost: dict[str, bool] = {}
 
     for key, tech in technologies.items():
         tiers[key] = resolve_declared_tier(key, tech.block, variable_table)
@@ -535,6 +555,7 @@ def compute_layout(
         categories[key] = category_of(tech.block)
         areas[key] = area_of(tech.block)
         prereqs_of[key] = [p for p in ordered_prerequisites(tech.block) if p in rendered_keys]
+        zero_cost[key] = _is_zero_cost(tech.block, variable_table)
 
     computed_position = _computed_position(rendered_keys, prereqs_of)
 
@@ -582,17 +603,21 @@ def compute_layout(
 
     same_band_depth = _same_band_depth(rendered_keys, prereqs_of, band_index_of, extra_same_band_edges)
 
-    # Group by (row, band); within a group, sort by (`same_band_depth`, `computed_position`, key)
-    # so members at the same depth are ordered deterministically before being wrapped into
-    # sub-columns below. `computed_position` (the full-graph longest-path depth) is only a
-    # tie-breaker here -- `same_band_depth` (same-band-only) is what the D-17 invariant is stated
-    # over.
+    # Group by (row, band); within a group, sort by (`same_band_depth`, zero-cost-first,
+    # `computed_position`, key) so members at the same depth are ordered deterministically before
+    # being wrapped into sub-columns below. `computed_position` (the full-graph longest-path
+    # depth) is only a tie-breaker here -- `same_band_depth` (same-band-only) is what the D-17
+    # invariant is stated over, and MUST stay the primary key: reordering across depths would
+    # violate D-17 (a node must never render left of/in line with its own prerequisite). The
+    # zero-cost tie-break (Item 3a, a later session, a real user report: zero-cost technologies
+    # appearing right of costed ones reads as backwards progression) only ever reorders members
+    # that ALREADY share a depth -- exactly where D-17 permits reordering freely.
     groups: dict[tuple[str, int], list[str]] = {}
     for key in rendered_keys:
         groups.setdefault((row_id_of[key], band_index_of[key]), []).append(key)
 
     for members in groups.values():
-        members.sort(key=lambda k: (same_band_depth[k], computed_position[k], k))
+        members.sort(key=lambda k: (same_band_depth[k], 0 if zero_cost[k] else 1, computed_position[k], k))
 
     # D-17 correction: depth sets the MINIMUM sub-column a node may occupy, but a depth is a
     # SLOT of one or more sub-columns, not a single unbounded stack -- members sharing a depth

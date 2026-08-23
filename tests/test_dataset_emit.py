@@ -213,15 +213,53 @@ def test_base_dataset_gates_match_the_gate_classification_survey(base_dataset):
     # AND top level (unconditional) but ap_mechromancy inside a genuine OR alongside
     # has_genetically_ascended/has_active_tradition ("robots go brrt" -- an alternative path, not
     # a strict requirement). The fix generalises correctly across gate kinds.
+    #
+    # CORRECTED (Item 3b, a later session): ap_mechromancy's own OR group has exactly one
+    # GATE-classified member (has_genetically_ascended/has_active_tradition are real siblings but
+    # neither is a registered gate leaf) -- structurally the SAME "or: X" with no visible
+    # alternative shape as Birch World's already-fixed dangling case, which this project's own
+    # `_downgrade_dangling_alternative` docstring already identifies as misleading. The original
+    # whole-list-length-only check (`len(gates) == 1`) happened to spare this technology purely
+    # because it has TWO total gates, not because this specific case was judged correct -- the
+    # function's own comment says exactly that ("untouched either way, since this only fires when
+    # the list has exactly one entry"), a mechanical accident, not a reasoned exception. Extended
+    # to check per-group size instead of whole-list length: ap_mechromancy now downgrades the same
+    # way Birch World's Vast Expanses does, real corpus tech_cloning being the case that surfaced
+    # the inconsistency (see this file's own test for tech_cloning below).
     for g in vat["gates"]:
         if g["refId"] == "ap_galactic_wonders":
             assert g["alternative"] is False
             assert g["label"] == "Needs Galactic Wonders"
         else:
             assert g["refId"] == "ap_mechromancy"
-            assert g["alternative"] is True
-            assert g["label"] == "or: Mechromancy"
+            assert g["alternative"] is False
+            assert g["label"] == "Needs Mechromancy"
         assert g["icon"]["width"] > 1  # not the degenerate 1x1 placeholder
+
+
+def test_dangling_alternative_downgrade_applies_per_group_not_just_whole_list(base_dataset):
+    """Item 3b (a later session, user-reported): tech_cloning's own direct gate ("Driven
+    Assimilator") forms a 1-member OR group (`potential`'s real OR is `is_machine_empire = no OR
+    has_civic = civic_machine_assimilator` -- exactly one gate-classified leaf, one non-gate
+    sibling, the same shape as Birch World's already-fixed case) alongside a genuine 2-member
+    INHERITED group from tech_genome_mapping (Rogue Servitor / Genesis Architects). Before this
+    fix, the whole-list check never fired (3 total gates, not 1), so the card showed a dangling
+    "or: Driven Assimilator" primary badge and the popup rendered a "Need one of:" cluster around
+    a single, non-choice entry. Both wrong for the same reason Birch World was wrong."""
+    doc, _node_bytes, _edge_bytes = base_dataset
+    cloning = next(t for t in doc["technologies"] if t["id"] == "tech_cloning")
+    assert len(cloning["gates"]) == 3
+    driven_assimilator = next(g for g in cloning["gates"] if g["refId"] == "civic_machine_assimilator")
+    assert driven_assimilator["alternative"] is False
+    assert driven_assimilator["groupId"] is None
+    assert driven_assimilator["label"] == "Needs Driven Assimilator"
+    # The card renders gates[0] as the primary badge -- must be the downgraded entry, not "or:".
+    assert cloning["gates"][0]["refId"] == "civic_machine_assimilator"
+    # The genuine 2-member inherited group is untouched -- a real choice, correctly still "or:".
+    genome_group = [g for g in cloning["gates"] if g["groupId"] == "tech_genome_mapping#gate-alt0"]
+    assert len(genome_group) == 2
+    assert all(g["alternative"] is True for g in genome_group)
+    assert {g["refId"] for g in genome_group} == {"civic_machine_servitor", "civic_machine_guided_sapience"}
 
 
 def test_riddle_escort_gate_is_an_alternative_constrained_to_biological_shipset(base_dataset):
@@ -313,8 +351,19 @@ def test_gate_classification_leaves_d10_uncertainty_unchanged(ctx, base_dataset)
     # uncertainty falls 34 -> 31 (see test_real_rates_against_projections's own writeup) while the
     # worst profile-dependent count rises by exactly one, still comfortably under the 3% warn
     # threshold (~1.64%, not the 3% ceiling).
-    assert worst_profile_dependent == 16
-    assert round(worst_profile_dependent / len(doc["technologies"]), 4) == 0.0164  # 16/973
+    #
+    # 16 -> 58, Item 2b (a later session): "zero weight IS an availability fact" -- a
+    # `weight_modifier` entry whose own `factor` is a literal 0 is folded into availability the
+    # same way a `potential` condition is (`pipeline.availability._apply_weight_gate`), since it's
+    # Stellaris's own idiom for "this technology cannot currently be offered at all," not a mere
+    # weight reduction. Real corpus: 248 technologies (301 zero-factor modifier entries) carry this
+    # shape -- materially broader than the motivating Cosmogenesis example, since the SAME idiom
+    # covers ordinary vanilla content (terraforming-variant exclusivity, policy/civic toggles,
+    # FE/crisis-chain gating), not just mod-configuration gates. This is a considered, reported
+    # tradeoff (crosses the 3% warn threshold, stays under the 10% hard ceiling), not a regression
+    # to hide -- see CLAUDE.md's "Research weight" section for the full accounting.
+    assert worst_profile_dependent == 58
+    assert round(worst_profile_dependent / len(doc["technologies"]), 4) == 0.0596  # 58/973
 
 
 def test_edge_constraints_leave_d10_uncertainty_unchanged(ctx, base_dataset):
@@ -331,7 +380,7 @@ def test_edge_constraints_leave_d10_uncertainty_unchanged(ctx, base_dataset):
         1 for t in doc["technologies"] if all(state == "uncertain" for state in t["availabilityMatrix"])
     )
     worst_profile_dependent = max(per_profile_uncertain_counts) - unconditional
-    assert worst_profile_dependent == 16  # 15 -> 16, see test_gate_classification_leaves_d10_uncertainty_unchanged
+    assert worst_profile_dependent == 58  # 16 -> 58, Item 2b -- see test_gate_classification_leaves_d10_uncertainty_unchanged
 
 
 def test_active_edge_ids_are_not_identical_across_all_twelve_profiles(ctx):
@@ -725,10 +774,15 @@ def test_diagnostics_validates_and_reports_the_unconditional_uncertain_finding(c
     # tests/test_availability_corpus.py::test_real_rates_against_projections's own writeup for the
     # three individual fixes (`always`, ascension-perk axis-locking's `_combine_or` correction,
     # `has_active_tradition`).
-    assert diagnostics["unconditionalUncertainty"]["count"] == 31
+    # 31 -> 115, Item 2b (a later session): zero-factor `weight_modifier` conditions fold into
+    # availability -- see test_gate_classification_leaves_d10_uncertainty_unchanged's own writeup
+    # and CLAUDE.md's "Research weight" section for the full accounting (248 technologies affected,
+    # 39 newly LOCKED for at least one profile, 124 newly UNCERTAIN, a considered tradeoff that
+    # crosses the 3% warn threshold but stays under the 10% ceiling).
+    assert diagnostics["unconditionalUncertainty"]["count"] == 115
     assert len(diagnostics["profileDependentUncertainty"]) == 12
     worst = max(d["rate"] for d in diagnostics["profileDependentUncertainty"])
-    assert worst == pytest.approx(0.016444, abs=1e-5)  # 0.015416 -> 0.016444 (16/973), Items 1/2/5
+    assert worst == pytest.approx(0.0596, abs=1e-4)  # 0.016444 -> 0.0596 (58/973), Item 2b
 
     cap_keys = {k for k in ctx.rendered_keys if k.startswith("giga_tech_repeatable_") and k.endswith("_cap")}
     assert len(cap_keys) == 50
