@@ -293,6 +293,32 @@ See P-13 (`spec/P-13-empire-locking.md`'s "Config-gated reason template" section
 happens next for these 50 nodes on the display side — the config-gated `reason` text, sourced from
 each technology's own resolved megastructure name, not this uncertainty accounting.
 
+### Extension — zero `weight_modifier` factor is an availability fact (Item 2b, a later session)
+
+The "weight is a separate concern from availability" rule (CLAUDE.md's "Research weight") stands
+for weight as a GRADIENT — a modifier that boosts or reduces a nonzero weight never touches
+`state`. It gains one carve-out: a `weight_modifier` entry whose own `factor` resolves to a
+literal `0` is Stellaris's own idiom for "this technology cannot currently be drawn as a research
+option at all," which is functionally a gate, not a gradient, and D-10's two-metric split now
+counts it the same way a `potential` condition is counted. `pipeline.availability.
+_apply_weight_gate` evaluates each zero-factor modifier's own condition through the SAME
+unchanged Kleene evaluator (never a second mechanism) and, only when the technology's
+`potential`-based state is already AVAILABLE, downgrades it to LOCKED (the zero-factor condition
+resolves definitely true) or UNCERTAIN (it resolves unknown) — a technology already LOCKED/
+UNCERTAIN/CONFIG_GATED for a real `potential` reason is untouched, since this project's `reason`
+field is a single string and the more specific existing reason wins.
+
+**Real corpus: 248 technologies (301 zero-factor `weight_modifier` entries) carry this shape** —
+materially broader than the motivating Cosmogenesis-locked example (Nano-Assembler, Polyatomic
+Crucible), since the same idiom is Stellaris's standard mechanism for "exclude this tech from the
+weighted draw under any condition," used throughout vanilla for ordinary things (terraforming-
+variant exclusivity via `num_owned_planets`, policy/civic toggles, FE/crisis-chain gating) as much
+as mod-configuration or crisis-progression gates. Measured effect: unconditional uncertainty
+31/973 (3.19%) → 115/973 (11.8%); worst profile-dependent rate 16/973 (1.64%) → 58/973 (5.96%) —
+crosses the 3% warn threshold, stays under the 10% hard ceiling. A considered, reported tradeoff
+per this project's own discipline (the scripted-trigger-expansion session took the same posture),
+not a regression to hide.
+
 ## D-11 — Rendering stack
 
 PixiJS over a hand-rolled WebGL renderer. Hand-rolling a 2D renderer that meets the P-10

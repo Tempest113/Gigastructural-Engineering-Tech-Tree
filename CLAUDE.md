@@ -325,586 +325,237 @@ resolves to `true`, `false`, or `unknown` (three-valued, Kleene-style short-circ
 unavailable. Output is always `(technology, empire profile) -> {state, reason}` with `state` in
 `{available, locked, uncertain}` — never a boolean (D-10/P-13).
 
-**D-10 splits into two distinct metrics, both computed over RENDERED nodes (P-16's closure —
-973 at last count, D-18's depth-1 ACOT/AoT closure down from 980, then Item 2c's always-no
-exclusion down from 977), not the full 1,879 canonical technologies** — see `spec/decisions.md`'s
-D-10 for the full reasoning; summarised:
+**D-10 splits into two distinct metrics, both computed over RENDERED nodes (973, P-16's closure)**
+— see `spec/decisions.md`'s D-10 for the full reasoning; summarised:
 
-- **Profile-dependent uncertainty** — a technology whose state varies by profile (some profiles
-  short-circuit to a definite answer, others stay stuck). This is what the thresholds below
-  govern, per profile, worst-case:
-  - Hard ceiling: 10% for any single profile. Above that, the build fails.
-  - Warn threshold: 3%, per profile.
-  - Ratchet: CI fails if any individual profile's rate rises against that same profile's figure
-    in the previous dataset, even under 10%.
+- **Profile-dependent uncertainty** — a technology whose state varies by profile. Governed by:
+  hard ceiling 10% for any single profile (build fails above it); warn threshold 3% per profile;
+  a ratchet (CI fails if any profile's rate rises against its own prior-dataset figure, even
+  under 10%).
 - **Unconditional uncertainty** — a technology `uncertain` under all twelve profiles identically
   (no axis check anywhere in its trigger structure). Never misleads a user about their specific
-  empire — it's the same honest "unknown" for everyone, reporting a fact outside the axis model
-  (crisis-chain/story progression, mid-game player state). Published as its own
+  empire — an honest "unknown" reporting a fact outside the axis model. Its own
   data-completeness figure with its own regression ratchet, but **NOT subject to the 10%
   ceiling** — a different quality signal, not a weaker version of the same one.
 
-The two denominators (all-1,879-canonical vs. rendered-973) give materially different, and
-oppositely-signed, answers: rendered-only uncertainty is *higher* than all-canonical, because
-Gigastructures' own content — not unrendered ACOT/AoT bulk — is the concentration point. Narrowing
-ACOT/AoT rendering scope does not fix a ceiling breach. Always state which denominator a reported
-rate uses. **Real corpus (current, both moves from the "path to zero uncertain" follow-up session):
-worst profile-dependent 34/973 (3.49%, back OVER the 3% warn threshold — was 33/977, 3.37%, over
-it, then 28/973, 2.88%, then 27/973, 2.77%, under it); unconditional 176/973 (was 209/977, then
-205/973, then 183/973).** The `has_ancrel` fix (below) improved both figures together, same as
-every earlier rule; the scripted-trigger expansion module (also below) improved unconditional
-uncertainty further but, in the SAME move, pushed the worst profile-dependent rate back over the
-3% line — a considered, reported tradeoff, not a regression to hide: see that module's own
-paragraph for why. See the "Availability evaluator" bullet in Open Items/BUILD-LOG for the full
-before/after category breakdown.
+Always state which of the two denominators (all-1,879-canonical vs. rendered-973) a reported rate
+uses — rendered-only uncertainty is *higher* than all-canonical, because Gigastructures' own
+content, not unrendered ACOT/AoT bulk, is the concentration point; narrowing ACOT/AoT rendering
+scope does not fix a ceiling breach.
 
-**Unconditional figure moved again, a later session ("commit + close the loop" follow-up, Item 2):
-176 → 107 (already recorded below at "Gates") → 34/973 (3.49%), while worst profile-dependent
-stayed exactly 15/973 (1.54%), unmoved.** `pipeline.trigger_text.looks_like_story_progress`'s
-naming pattern (crisis-faction fragments; `_possible`/`_solved`/`_unlocked`/`_happened`/`_complete`/
-`_aborted`/`_knowledge`/`_opened` suffixes; `encountered_`/`completed_` prefixes) — previously used
-only for DISPLAY categorisation — now also RESOLVES matching `has_country_flag`/`has_global_flag`
-names TRUE as a class, the same treatment already user-approved for `colossus_project`
-(`pipeline.availability.PROGRESSION_FLAGS_TRUE`). Every sampled real setting site is a genuine
-`is_triggered_only` country event with no empire-type restriction. Real corpus: 64 distinct flag
-names, 73 technologies move UNCONDITIONALLY uncertain → AVAILABLE for all 12 profiles; none became
-merely profile-dependent, which is why the worst profile-dependent rate is unchanged. Union
-uncertain-for-≥1-profile count: 127 → 54.
+**Current real corpus figures (reconciled, latest session, after Item 2b's zero-weight-gate fold-in
+below): unconditional 115/973 (11.8%); worst profile-dependent 58/973 (5.96%, over the 3% warn
+threshold, under the 10% ceiling); union (uncertain for ≥1 profile) 180/973.** (Pre-Item-2b:
+unconditional 31/973 (3.19%), worst profile-dependent 16/973 (1.64%), union 53/973 — see the
+"Research weight" section below for the full accounting of what moved and why.) Full move-by-move
+history — every intermediate figure and which fix moved it — lives in `docs/BUILD-LOG.md`'s
+availability/trigger-evaluation sections; do not re-derive it
+from memory, re-run the corpus survey if a figure here looks stale.
 
-**Both figures moved again, a later session ("Ring Segment / ascension-perk locking /
-gate-propagation" session, Items 1, 2 and 5): unconditional 34 → 31, worst profile-dependent
-15/973 (1.54%) → 16/973 (1.64%), union 54 → 53.** Three real, independent leaf-handling gaps, each
-never handled at all before this session (falling through to UNKNOWN unconditionally):
-- **`always`** — the most trivially resolvable leaf in Clausewitz was never given a leaf-evaluation
-  branch at all (only `always = no` at a technology's own top level was handled, via
-  `pipeline.rendering_scope`'s DIFFERENT permanently-disabled-exclusion mechanism). Real corpus: 1
-  technology, `tech_ring_world` (whole `potential` is `{ always = yes }`), moves from uncertain for
-  all 12 profiles to AVAILABLE for all 12.
-- **Ascension-perk axis-locking** (this file's own "Ascension perks are gates" section above) — one
-  further technology's OR combination resolves cleanly once an axis-locked perk can contribute a
-  real FALSE.
-- **`has_active_tradition`** — also never handled, resolves TRUE by default except for the one
-  user-confirmed restricted category (`tr_genetics*`, unavailable to machine-intelligence empires).
-  Real corpus: exactly ONE `potential`-scoped occurrence in the whole corpus, `giga_tech_the_vat`'s
-  `has_active_tradition = tr_genetics_finish_extra_traits` (its only OTHER real occurrence,
-  Maginot's `tr_unyielding_federations_finish`, lives in a `weight_modifier`, not `potential`, so is
-  out of scope for availability regardless — weight and availability are deliberately separate
-  concerns, conflating them would be a category error). `giga_tech_the_vat` moves to AVAILABLE for
-  all 12 profiles.
-
-Two more real fixes in the SAME session touch DISPLAY, not availability, and moved no D-10 figure:
-gate propagation down `prerequisite` chains and `add_research_option` perk-grants (both under
-"Gates" below), and the dangling-alternative-gate downgrade (P-3, also under "Gates").
-
-Two real cases where mods overwrite VANILLA content: **localisation/icon precedence** (a
-DIFFERENT, previously undiscovered concern from any technology-BLOCK overwrite) — surveyed the
-full 673-technology Vanilla-won set and found exactly 3 real cases where ACOT's own loc/icon
-files, though never overwriting the technology BLOCK itself, redefine the SAME name/description
-loc key and icon filename with DIFFERENT content: `tech_dark_matter_power_core`,
-`tech_dark_matter_propulsion`, `tech_dark_matter_deflector` (user-reported: the last one rendered
-as ACOT's "Dark Matter Dimensional Thruster" instead of vanilla's own "Dark Matter Propulsion").
-Fixed: `pipeline.dataset_emit.VANILLA_LOC_AND_ICON_PRECEDENCE_KEYS` looks these 3 keys up against
-Vanilla's OWN loc entries (`_vanilla_loc_entry`) and forces the technology ICON atlas to keep
-Vanilla's own file (`pipeline.icons.resolve.resolve_icon_files`'s new `source_priority_overrides`
-parameter — a general, reusable mechanism, not special-cased to these 3 keys) rather than the
-cross-source last-source-wins pick. Independent of, and does not conflict with, the ACOT-absent
-reduced-build diagnostic (`VANILLA_TECHNOLOGIES_ACOT_OVERWRITES`/
-`PLACEHOLDER_TECHNOLOGIES_REQUIRING_ACOT_AOT`) — that diagnostic is about a technology BLOCK
-reverting when ACOT is absent; this fix is about which SOURCE's loc/icon a Vanilla-BLOCK-won
-technology shows in the FULL (ACOT-present) build, and is a full no-op when ACOT is absent (no
-ACOT file exists to compete with vanilla's in that build mode anyway).
-
-Two real pattern matches are DELIBERATELY EXCLUDED (`pipeline.availability.
-PROGRESSION_PATTERN_EXCLUDED_FLAGS`) despite matching the naming pattern: `l_cluster_opened` and
-`encountered_first_lgate` are VANILLA Stellaris L-Gate storyline flags whose setting sites live in
-vanilla's `events`/`decisions`, which this project does not vendor — resolving them would rest on
-outside-corpus knowledge, not evidence, unlike every Gigastructures match. Six outliers the survey
-found NOT matching the pattern, reported but not resolved: `can_build_star_eaters`,
-`acot_databank_sophia_agreed`, `advanced_identity_creation`, `has_arcane_generator`,
-`has_quantum_catapult_insight`, `has_encountered_psionic_auras`, plus two more of the same
-non-matching shape found this session: `finish_shroud_forged_liberation_flag`,
-`machine_subspecies`. **The corpus-wide uncertain count is now a pinned, structural test invariant**
-(`tests/test_availability_corpus.py::test_uncertain_count_and_per_profile_breakdown_pinned`,
-Item 1 of the same session) — pins both the union count and the full per-profile breakdown, proven
-capable of failing by temporarily reintroducing the historical `country_uses_bio_ships` collision
-(union count jumped 127 → 213 before the reintroduction was reverted).
-
-**Founder-species/authority axis gaps (Item 3 of the same session): already closed by prior work,
-not a new gap.** `founder_species = { is_archetype = MACHINE }` never appears directly in any
-rendered technology's `potential` — the only real corpus wrapper containing it, vanilla's
-`is_individual_machine`, was already added to `EXCLUDED_KEYS` AND to
-`pipeline.gate_patterns.NOT_GATE_CLASSIFIED_EXCLUDED_KEYS` by a prior session's Item 3 (ethics/
-civic/origin display gates) — 21 rendered technologies reference it, all already resolve
-AVAILABLE with no gate badge, never UNCERTAIN. Same story for `has_authority = auth_corporate`
-via `is_megacorp` (2 technologies, `tech_executive_retreat`/`tech_xeno_tourism_agency`) — already
-excluded from availability and deliberately not gate-badged for the exact reason this session's
-Item 3b would have recommended (MegaCorp is a real 4th authority value outside the 3-axis model;
-adding it as an axis would double `EmpireProfileAxes`' cardinality — 12 → 24 profiles, doubling
-every per-profile emitted array — for 2 technologies, not worth it against the display-gate
-alternative already in place).
-
-**`@giga_amb_flag` config-toggle pattern (Item 4 of the same session): investigated, NOT applied
-— reported instead, differs from `_capped_r` in a way that matters.** `vendor/mods/gigastructures/
-common/scripted_variables/giga_amb_variables.txt:5`'s own comment (`@giga_amb_flag =
-giga_buildcap_j # menu option variable name, checked for feature activation`) confirms the
-MECHANISM matches `_capped_r` (a Gigastructures options-menu toggle, `has_global_flag`-checked) —
-but unlike `_capped_r`, which the user explicitly confirmed defaults unset in every core preset,
-there is no equivalent confirmation for `giga_buildcap_j`'s default state, and the flag name
-carries no self-describing suffix (`_forbidden`/`_disabled`/`_OFF`) the way the general convention
-does. A second, purely mechanical gap: the value is a `VariableReference` (`@giga_amb_flag`), and
-`pipeline.availability._flag_value_name` only resolves `Identifier`/`StringLiteral` today — even
-with a confirmed default, resolving it would need `evaluate_trigger_block`'s variable_table
-threaded through, not done here. Real corpus: 10 technologies (not 7 — the earlier scoping only
-counted `giga_17_alternative_mega_build.txt`'s obvious cases; `giga_tech_fe_megaworkshop_1/2` and
-`giga_tech_orbital_ring_supertensiles_mine_hub` also reference it). Left unresolved pending user
-confirmation — see the same session's report.
-
-**`has_ancrel` fix (a later session, "path to zero uncertain" Item 1) — the FIFTH instance of this
-project's recurring defect class**: `pipeline/trigger_text.py` carried a comment asserting
-`has_ancrel` was "not a scripted_trigger definition anywhere in the vendored corpus" and was a
-Gigastructures relic/precursor-questline flag, classified `CRISIS_OR_STORY_PROGRESS`. That claim
-was never checked against raw source and was wrong: the real definition is `vendor/stellaris/
-common/scripted_triggers/00_scripted_triggers.txt:2678`, `has_ancrel = { host_has_dlc =
-"Ancient Relics Story Pack" }` — a literal DLC-ownership check, already covered by assumption 2
-below. Fixed by adding `has_ancrel` to `pipeline.availability.GROUND_FACT_BOOL` (the same
-DLC-ownership rule as every other named wrapper) rather than to `trigger_text`'s category table,
-since it is no longer ever UNCERTAIN. Real corpus: 22 technologies (the `tech_archaeo_*` family)
-move UNCERTAIN → AVAILABLE, 1 (`tech_archeology_lab`, `has_ancrel = no`) moves UNCERTAIN → LOCKED.
-**What makes this the fifth instance, and distinct from the first four** (`is_repeatable`'s
-`levels < 0`, `_resolve_loc_tokens`' sibling-token bug, Compound's "confirmed real zero," the
-EAWAF flag-family dismissal — see `docs/BUILD-LOG.md`'s defect-class paragraph): those four were
-each a wrong answer *computed* by code reading the wrong signal. This one was a wrong answer
-*written down as a documented finding* — a claim in a code comment, cited and trusted by every
-later session's understanding of the corpus, that nobody re-verified against raw text until this
-session. The lesson isn't new (this project's own "raw inspection only" rule already exists for
-exactly this reason), but the FAILURE MODE is new: a documented claim is not self-verifying just
-because it's written down with confidence and a specific-sounding citation (`giga_relics.txt`'s
-`ancrel.NNNN` event-id namespace was real, but didn't support the conclusion drawn from it).
-
-**Recursive scripted-trigger expansion (same "path to zero uncertain" session, Item 2) —
-`pipeline/scripted_triggers.py`.** A technology's `potential` block can reference a scripted
-trigger by bare identifier leaf (`giga_can_use_habitables = yes`); before this module, any name
-the evaluator didn't specifically recognise was permanently `unknown`, even when the trigger's own
-real body was itself made of leaves the evaluator COULD resolve (axis facts, DLC ground facts).
-This module substitutes a trigger's real body in place of its name, recursively, then hands the
-rewritten block to `pipeline.availability`'s UNCHANGED Kleene evaluator — never a second evaluator,
-never new boolean semantics. Wired into `pipeline.dataset_emit.BuildContext.expanded_potentials`,
-computed once and reused by every availability call site in that module (matching the "pipeline
-owns all geometry" discipline, applied here to trigger content).
-
-Not `pipeline.inline_scripts` and not reusable as it stands — confirmed by survey before
-implementation: a scripted-trigger call is a bare identifier leaf, already an ordinary AST node
-once parsed, not the parameterised text substitution `inline_script` exists for. Real corpus:
-3,463 distinct trigger names after overwrite resolution (135 redefined by a later source), zero
-reference cycles, max observed reference-chain depth 8 — `MAX_EXPANSION_DEPTH` is set to 12 as a
-sanity ceiling, a hard failure if ever hit, never a silent truncation. One file
-(`zzz_overwrites.txt`'s `has_research_building`) can't be fully `inline_script`-expanded (a
-dynamic `@[...]` file-path computation this module doesn't attempt to fix); the catalog loader
-falls back to that one file's raw parse rather than losing every other definition it carries
-(notably `has_galactic_wonders`, defined later in the same file) — zero real-corpus effect, since
-no rendered technology references `has_research_building`.
-
-**`is_ai = yes` branches are stripped, not modelled** — generalising the two previously-hardcoded
-wrapper mappings' own treatment (`pipeline.gate_patterns.WRAPPER_TO_PERK`, which stays, see that
-module's own docstring for why general expansion doesn't make it redundant). Getting this right
-took three real, corpus-verified iterations, each caught by re-running the corpus survey after
-writing the previous version, not by design review — worth recording as its own instance of "a
-green test suite proved the mechanism self-consistent, not correct" until the corpus check itself
-caught it:
-1. A naive "does this subtree contain `is_ai` anywhere" check dropped whole sibling branches that
-   merely happened to share an ancestor with an `is_ai` leaf several levels down — a 110-technology
-   regression from a SEPARATE bug (below) made this one hard to see at first.
-2. **The real regression, found first and the more serious of the two**: `country_uses_bio_ships`
-   — already specially resolved by `pipeline.availability.AXIS_FACTS` as the shipset axis fact —
-   is ALSO a real scripted-trigger name whose own body opens with `exists = this` (a scope-
-   existence tautology-shaped leaf the evaluator's leaf model has no notion of). Expanding it blind
-   to what the evaluator already resolves destroyed the axis-fact shortcut for every one of its
-   ~238 real occurrences, a 110-technology regression (215 → 320 uncertain) only caught by
-   re-running the corpus survey, not by design review. Fixed: any leaf key already in
-   `AXIS_FACTS`/`GROUND_FACT_BOOL`/`DLC_NAME_CHECK_KEYS` is now skipped by expansion unconditionally
-   — those tables keep resolving it exactly as before.
-3. Once (2) was fixed, `has_galactic_wonders`'s real is_ai branch turned out to be wrapped in
-   `hidden_trigger = { and = { is_ai = yes, ... } } }`, not a bare `AND` — a real Stellaris wrapper
-   that only suppresses a tooltip, never changes truth value, but which `pipeline.availability`
-   doesn't recognise as a boolean wrapper either. Left unexpanded, it became one opaque,
-   permanently-`unknown` leaf of its own — an 11-technology regression (every real
-   `has_galactic_wonders`-gated technology). Fixed: `hidden_trigger` is recognised as droppable
-   specifically when ALL of its own direct children are themselves is_ai-gated, recursively —
-   never for a `hidden_trigger` wrapping anything else, which stays untouched rather than guessed
-   at. Verified: zero residual `is_ai` leaves anywhere in the expanded 973-node rendered corpus
-   (`tests/test_scripted_triggers_corpus.py::test_zero_residual_is_ai_leaves_after_expansion`).
-
-**Real measured effect on its own** (this session's actual corpus run, not the prior survey's
-estimate — the survey's own 238→215/23-resolved figure turned out to be ENTIRELY the has_ancrel
-fix, confirmed by rerunning with has_ancrel already fixed separately): starting from Item 1's
-already-fixed 215-uncertain baseline, general expansion leaves the "≥1 uncertain profile" COUNT
-unchanged (215 → 215 — the remaining target triggers only ever produce PARTIAL improvement, fewer
-uncertain profiles per technology, never a full resolution to zero), but the D-10 split tells the
-real story: unconditional uncertainty improves (183 → 176, 7 technologies moved from "uncertain for
-every profile identically" to "uncertain only for the profiles that could actually have it" — e.g.
-`is_wilderness_empire`'s hive-authority-only origin now correctly short-circuits to LOCKED for the
-8 non-hive profiles via the authority axis alone, leaving only the 4 hive-mind profiles genuinely
-uncertain on the real, unresolvable origin question), while the worst profile-dependent rate rises
-(2.77% → 3.49%, crossing back over the 3% warn threshold) — the SAME 7 technologies (and others)
-moving from the unconditional bucket into the profile-dependent one, which the 3%/10% thresholds
-specifically govern. More informative output, worse against this one metric — reported honestly,
-not smoothed over. See `tests/test_dataset_emit.py::
-test_gate_classification_leaves_d10_uncertainty_unchanged` for the full writeup and
-`tests/test_scripted_triggers_corpus.py` for the corpus-wide cycle/depth/is_ai regression guards.
-
-Expansion also surfaces leaf shapes the evaluator has never seen and deliberately leaves
-unresolved (no invented handling, per this session's own scope): `has_authority` (24 tech×profile
-occurrences), `founder_species` (44), `has_civic` — distinct from `has_valid_civic` (28), and
-`if = { limit = {...} }` conditional-effect blocks (48). These are real residue, not bugs; see the
-"path to zero uncertain" survey's own item 3/6 for which are further resolvable and which are
-genuinely unknowable.
+**Leaf types the evaluator resolves**, beyond the axis facts (gestalt/authority, shipset,
+nomadic) and DLC-ownership ground facts:
+- `always` (both `yes` and `no`).
+- `has_active_tradition` — TRUE by default except the user-confirmed `tr_genetics*` category
+  (unavailable to machine-intelligence empires; the only real corpus occurrence is
+  `giga_tech_the_vat`).
+- `has_ascension_perk` — resolves through the perk's own registered `potential` (see "Ascension
+  perks are gates" above); only ever contributes a real `FALSE` on a definite perk LOCKED result,
+  never on UNCERTAIN.
+- `has_ancrel` — a literal `host_has_dlc = "Ancient Relics Story Pack"` check (real definition at
+  `vendor/stellaris/common/scripted_triggers/00_scripted_triggers.txt:2678`), treated as an
+  ordinary DLC-ownership ground fact.
+- **Recursive scripted-trigger expansion** (`pipeline/scripted_triggers.py`) — a bare-identifier
+  scripted-trigger reference in `potential` (e.g. `giga_can_use_habitables = yes`) is substituted
+  with the trigger's real body, recursively, before evaluation — never a second evaluator, never
+  new boolean semantics. Any leaf already in `AXIS_FACTS`/`GROUND_FACT_BOOL`/`DLC_NAME_CHECK_KEYS`
+  is skipped by expansion unconditionally, so the axis-fact/ground-fact shortcuts for things like
+  `country_uses_bio_ships` (also a real scripted-trigger name) are never destroyed by blind
+  substitution. `is_ai = yes` branches are stripped (not modelled) during expansion, including
+  through a `hidden_trigger` wrapper whose direct children are ALL is_ai-gated. Real corpus: 3,463
+  distinct trigger names post-overwrite, zero reference cycles, max reference-chain depth 8
+  (`MAX_EXPANSION_DEPTH = 12`, a hard-failure sanity ceiling). One file
+  (`zzz_overwrites.txt`'s `has_research_building`) can't be fully expanded (a dynamic `@[...]`
+  file-path computation) — zero real-corpus effect, since no rendered technology references it.
+- `PROGRESSION_FLAGS_TRUE` (`pipeline.availability`) — `has_country_flag`/`has_global_flag` names
+  matching a crisis-faction/story-progression naming pattern
+  (`_possible`/`_solved`/`_unlocked`/`_happened`/`_complete`/`_aborted`/`_knowledge`/`_opened`
+  suffixes, `encountered_`/`completed_` prefixes) resolve TRUE as a class — every sampled real
+  setting site is a genuine `is_triggered_only` country event with no empire-type restriction.
+  Real corpus: 64 distinct flag names. Two vanilla L-Gate storyline flags (`l_cluster_opened`,
+  `encountered_first_lgate`) are deliberately EXCLUDED from the pattern — their setting sites live
+  in vanilla's `events`/`decisions`, which this project doesn't vendor, so resolving them would
+  rest on outside-corpus knowledge. `docs/BUILD-LOG.md` has the full outlier list.
 
 **Documented evaluator assumptions**, applied before anything counts as uncertain (each
-individually verified against the vendored corpus, not a blanket "assume everything works" —
-see `pipeline/availability.py`'s module docstring and `spec/decisions.md`'s D-10 for the full
-detail and the specific names each covers):
+individually verified against the vendored corpus, never a blanket "assume everything works" —
+see `pipeline/availability.py`'s module docstring and `spec/decisions.md`'s D-10 for full detail):
 
 1. Mod-config content-toggle global flags (`has_global_flag` names ending `_forbidden`,
-   `_disabled`, or `_OFF`) resolve to their unset default — content not forbidden. Flags outside
-   that pattern (`compound_invasion_happened`, `l_cluster_opened`, ...) are real undecidable state
-   and stay unresolved.
-2. All official DLC assumed owned — covers a literal `has_dlc`/`host_has_dlc` leaf and a dozen
-   named per-DLC scripted-trigger wrappers individually confirmed to be pure `host_has_dlc`
-   calls, plus `has_megacorp` (a later session — the DLC-ownership check, NOT `is_megacorp`, a
-   real empire-type/civic CHOICE fact outside this project's 3-axis model, deliberately left
-   unresolved; conflating the two would wrongly claim every profile IS a megacorp). Two
-   similarly-named triggers (`has_gigastructural_constructs`, `has_galactic_wonders`) were checked
-   and found to be ascension-perk-gate checks in disguise, not DLC checks, and are deliberately
-   left unresolved.
-3. Not-a-fallen-empire is a ground fact of all twelve profiles (`is_fallen_empire`,
-   `merg_is_fallen_empire` always resolve `no`).
-4. **Mod-content-presence flags (a later session) — `has_acot` and `has_global_flag =
-   has_aot_mod`, both resolve `true`.** Distinct reasoning from assumption 2 (DLC ownership):
-   this deployed tree already assumes ACOT/AoT content is present (the whole reason they're
-   vendored), so a technology gated on "does this mod's content exist" is not genuinely uncertain
-   about that question — the pipeline already knows. `pipeline.dataset_emit.
-   _potential_mod_requirements` separately adds the ACOT/AoT `requiresMods` card badge these
-   technologies need (Gigastructures' own "supertensile alternate" pattern,
-   `giga_17_alternative_mega_build.txt`) — availability resolution and mod-requirement display are
-   two different mechanisms even though both key off the same leaf. Real corpus: 4 technologies
+   `_disabled`, or `_OFF`) resolve to their unset default. Flags outside that pattern
+   (`compound_invasion_happened`, `l_cluster_opened`, ...) stay genuinely unresolved.
+2. All official DLC assumed owned — a literal `has_dlc`/`host_has_dlc` leaf plus a dozen named
+   per-DLC scripted-trigger wrappers individually confirmed pure `host_has_dlc` calls
+   (including `has_nemesis`/`has_infernals`), plus `has_megacorp` (the DLC-ownership check, NOT
+   `is_megacorp`, a real empire-type/civic choice fact outside the 3-axis model, deliberately
+   left unresolved). `has_gigastructural_constructs`/`has_galactic_wonders` were checked and
+   found to be ascension-perk-gate checks in disguise, not DLC checks — left unresolved here.
+3. Not-a-fallen-empire is a ground fact of all twelve profiles.
+4. **Mod-content-presence flags** — `has_acot` and `has_global_flag = has_aot_mod` both resolve
+   `true` (this deployed tree already assumes ACOT/AoT content is present). Distinct from the
+   `requiresMods` card badge (`pipeline.dataset_emit._potential_mod_requirements`), which is a
+   separate display mechanism keyed off the same leaf. Real corpus: 4 technologies
    (`giga_tech_amb_supertensiles_acot_alpha/sigma/delta/phanon`).
-5. **User-confirmed progression-state flags (a later session, one at a time, never blanket-
-   resolved from a naming pattern) — `has_country_flag`/`has_global_flag` names that gate
-   Gigastructures-internal PROGRESSION state, distinct from a genuine per-empire-type ELIGIBILITY
-   gate.** Only `colossus_project` is confirmed so far (`has_country_flag = colossus_project`, set
-   by the Colossus Project ascension perk once built, accessible to every empire type — real
-   corpus: 6 technologies, `tech_pk_cracker`/`_godray`/`_nanobots`/`_neutron`/`_shielder`/
-   `_smelter`). A larger candidate list (`giga_rings_beh`/`_gar`/`_tit`, `has_arcane_generator`,
-   `has_finished_psionic_tradition`, `has_quantum_catapult_insight`, others) was surveyed and
-   presented for confirmation but NOT resolved — see `docs/BUILD-LOG.md` for the full candidate
-   list. This is the ONE evaluator resolution category that is inherently per-flag, never a
-   pattern rule — see `pipeline.availability.PROGRESSION_FLAGS_TRUE`'s own comment before adding
-   an entry.
+5. **User-confirmed progression-state flags, one at a time, never a blanket pattern-resolve** —
+   `has_country_flag`/`has_global_flag` names gating Gigastructures-internal PROGRESSION state,
+   distinct from a genuine per-empire-type ELIGIBILITY gate. Only `colossus_project` is confirmed
+   (6 technologies, `tech_pk_cracker`/`_godray`/`_nanobots`/`_neutron`/`_shielder`/`_smelter`). A
+   larger candidate list (`giga_rings_beh`/`_gar`/`_tit`, `has_arcane_generator`,
+   `has_finished_psionic_tradition`, `has_quantum_catapult_insight`, others) is surveyed but not
+   resolved — see `docs/BUILD-LOG.md`. This is the one evaluator category that is inherently
+   per-flag, never a pattern rule — see `PROGRESSION_FLAGS_TRUE`'s own comment before adding one.
 
-`has_technology` (P-14 prerequisite-graph reachability), `has_ascension_perk` (a P-3 gate,
-D-6/P-1), and `has_gigastructural_constructs`/`has_galactic_wonders` (Gigastructures' own custom
-scripted_triggers, individually inspected and confirmed to be pure `OR`-of-`has_ascension_perk`
-chains — ascension-perk gates wearing a different name) are excluded from boolean combination
-entirely — an identity element, not resolved either way — because all four are a different
-mechanism's job; folding any into `uncertain` would be a category error. `has_nemesis` and
-`has_infernals` were added to the DLC-owned assumption's named-wrapper list after the same kind
-of individual verification (both are bare `host_has_dlc` calls).
+`has_technology` (P-14 prerequisite-graph reachability), `has_ascension_perk` (a P-3 gate), and
+`has_gigastructural_constructs`/`has_galactic_wonders` are excluded from boolean combination
+entirely — an identity element, not resolved either way, because each is a different mechanism's
+job; folding any into `uncertain` would be a category error.
 
-`common/scripted_triggers/` is the single biggest lever on the unconditional figure: this
-evaluator does not inline arbitrary custom scripted-trigger call bodies (a materially larger
-feature than what's built), so any technology gated behind one falls to `uncertain` regardless of
-what that trigger actually checks. `has_country_flag` (131 corpus occurrences, 82 distinct names)
-is confirmed to have no single resolvable pattern and is left fully unresolved.
+`common/scripted_triggers/` custom calls the evaluator can't expand (a materially larger feature
+than what's built beyond the recursive expansion above) and `has_country_flag` (131 occurrences,
+82 distinct names, no single resolvable pattern) remain the two biggest levers still left on the
+unconditional figure. Leaf shapes deliberately left unresolved, no invented handling: `has_authority`,
+`founder_species`, `has_civic` (distinct from `has_valid_civic`), `if = { limit = {...} }`
+conditional-effect blocks — real residue, not bugs, see `docs/BUILD-LOG.md` for which are further
+resolvable.
 
 ### Gates
 
-**Built (gate-classification session).** `pipeline/gate_patterns.py` classifies four registered
-trigger patterns into the schema's `Gate` shape, layered on top of P-14's universal
-`potential-gate` edge extraction — never removing or altering an edge, only adding a badge.
-Real corpus counts (raw classification, `pipeline.gate_patterns`, UNCHANGED by the display-layer
-exclusion below): `has_ascension_perk` (22 technologies), `has_technology` (22 technologies,
-25 instances — one-to-one with the 25 `potential-gate` edges), `has_gigastructural_constructs`
-(9), `has_galactic_wonders` (14) — 70 gate instances total over 60 technologies, 10 of which
-carry more than one instance (7 crossing two distinct mechanism types, 3 more carrying two
-`has_technology` targets each).
+`pipeline/gate_patterns.py` classifies registered trigger patterns into the schema's `Gate`
+shape, layered on top of P-14's universal `potential-gate` edge extraction — never removing or
+altering an edge, only adding a badge. **Curation is at the MECHANISM level, not the occurrence
+level**: once a pattern is registered, every real occurrence badges — there is no further
+per-technology editorial filter (`spec/P-03-gates.md`'s own note has the full reasoning).
 
-**Item 5 (later session): the CARD/POPUP display now excludes a "technology"-kind gate whose
-target is ALSO a true prerequisite of the same technology** — CLAUDE.md's own documented "4 real
-pairs are both a formal prerequisite and a `potential-gate`" (see "Prerequisites" below) are not
-real GATES in the P-3 sense, they redundantly encode the same dependency twice, and showing
-"Needs X" duplicated what the Prerequisites list/edge already says. This is a DISPLAY-layer
-exclusion in `pipeline.dataset_emit._build_gates` only — `pipeline.gate_patterns`' raw
-classification and the underlying `potential-gate` edges are untouched (still 70/60 and 25
-respectively). Real corpus: `giga_tech_amb_supertensiles_acot_alpha/sigma/phanon` (the ACOT/AoT
-tensile family, 3 of the 4 pairs — the 4th, `_delta`, was never actually a gate owner: its own
-`potential` has no `has_technology` leaf at all) plus `giga_tech_arkship_neutronium_harvester`
-(the other known dual-encoded pair, gated on `tech_mega_engineering`). **Emitted/displayed totals:
-66 gate instances over 56 technologies** (was 70/60), technology-kind 25 → 21.
+**Registered gate kinds and their patterns** (D-3 priority order: ascension perk > origin >
+ethics-or-civic > technology — index 0 is the primary gate, the only one the node card renders;
+the popup shows every gate in the ordered list):
+- `ascension_perk` — `has_ascension_perk` direct, plus two Gigastructures scripted-trigger
+  wrappers confirmed by direct inspection, not assumed from naming: `has_gigastructural_
+  constructs` (a 1:1 wrapper for `ap_gigastructural_constructs`) and `has_galactic_wonders` (an
+  `OR` of the base `ap_galactic_wonders` perk plus 3 DLC-variant perk IDs, displayed under the
+  single canonical base id). Both wrappers carry an `is_ai = yes` AI-only override branch,
+  deliberately not modelled, matching `pipeline.availability`'s treatment.
+- `origin` — `has_origin` direct, plus two 1:1 wrappers (`is_wilderness_empire`,
+  `giga_has_frameworld_origin`).
+- `ethics_or_civic` — `has_ethic`/`has_valid_civic`/`has_civic` direct, plus two 1:1 wrappers
+  (`is_fanatic_spiritualist`, `is_fanatic_pacifist`).
+- `technology` — `has_technology` (an engine-builtin alias, `can_research_technology`, was tried
+  and then REMOVED — see "Gate-polarity/nested-OR fixes" below, it means something different).
 
-**Curation is at the MECHANISM level, not the occurrence level.** Once a pattern is registered,
-every real occurrence badges — there is no further per-technology editorial filter. See
-`spec/P-03-gates.md`'s "Curation is at the MECHANISM level" note for the full reasoning (the
-alternative, a hand-curated per-occurrence subset, would be one more hand-maintained surface like
-the crisis-faction/flag/name override files, for no evidenced benefit at this corpus size).
+**Zero interaction with availability evaluation** — every registered leaf key is also in
+`pipeline.availability.EXCLUDED_KEYS` (an identity-element state), so gate classification adds
+only display metadata, never changes an availability result.
+`tests/test_gate_patterns.py::test_gate_leaf_keys_plus_not_classified_matches_availabilitys_
+excluded_keys_exactly` pins the two lists staying in exact sync.
 
-`has_gigastructural_constructs`/`has_galactic_wonders` are Gigastructures' own scripted-trigger
-wrappers, not literal `has_ascension_perk` checks — confirmed by direct inspection, not assumed
-from the names: `has_gigastructural_constructs` is a 1:1 wrapper for `ap_gigastructural_
-constructs`; `has_galactic_wonders` is an `OR` of the base `ap_galactic_wonders` perk plus 3
-DLC-ownership-variant perk IDs unlocking the same thing, displayed under the single canonical
-base id (the only one of the four that's actually vendored/localised). Both wrappers carry an
-`is_ai = yes` AI-only override branch the registry deliberately does not model, matching
-`pipeline.availability`'s existing treatment.
+**11 further `EXCLUDED_KEYS` entries are deliberately NOT gate-classified**
+(`pipeline.gate_patterns.NOT_GATE_CLASSIFIED_EXCLUDED_KEYS`) — genuinely compound triggers with
+no single clean `refId` (`is_void_dweller_empire`, `has_void_dweller_origin`,
+`is_giga_one_planet_origin`, `is_spiritualist`, `is_natural_design_empire`,
+`is_beastmasters_empire`, `is_world_forger_empire`), or not origin/civic/ethic-shaped despite the
+same "empire-defining choice" character (`is_megacorp` — targets a real 4th authority value
+outside the 3-axis model; `is_individual_machine`, `has_genetically_ascended`,
+`is_infernal_empire`). These resolve AVAILABLE with no gate badge — see the module's own comment
+for the full per-key reasoning. Every new `EXCLUDED_KEYS`/`NOT_GATE_CLASSIFIED_EXCLUDED_KEYS`
+entry that is ALSO a real scripted-trigger catalog name must be added to `pipeline.
+scripted_triggers._ALREADY_RESOLVED_KEYS` too, or the general trigger expander (see "Trigger
+evaluation" above) will blindly substitute its real body and silently undo the exclusion — the
+same defect class the `country_uses_bio_ships` regression already taught this project once.
 
-**Zero interaction with availability evaluation.** All four registered keys were already in
-`pipeline.availability.EXCLUDED_KEYS` (an identity-element state) before this module existed —
-gate classification adds only display metadata.
-`tests/test_gate_patterns.py::test_gate_leaf_keys_plus_not_classified_matches_availabilitys_excluded_keys_exactly`
-pins the two lists staying in exact sync, so a future change to either without the other fails
-loudly. D-10's worst-case profile-dependent uncertainty is unaffected by gate classification
-itself (still asserted directly, not assumed —
-`tests/test_dataset_emit.py::test_gate_classification_leaves_d10_uncertainty_unchanged`); see
-"Trigger evaluation" above for the CURRENT figure (15/973, 1.54%), which moved for unrelated
-reasons (the "path to zero uncertain" follow-up session's Items 1–3).
+**Icons — reported, not vendored, for origin/ethics_or_civic.** `common/civics`/`common/origins`/
+`common/ethics` aren't vendored for any source, so there's no icon file for these two gate kinds.
+`Gate.icon` is nullable; the client renders the label alone when null (see "Gate-polarity/nested-
+OR fixes" below for why this replaced an earlier, worse fallback).
 
-**Extended (later session, "path to zero uncertain" follow-up, Item 3) — ethics/civic/origin
-display gates, two new `GateKind` values.** `GATE_KIND_ORIGIN` (`has_origin` direct, plus two 1:1
-scripted-trigger wrappers, `is_wilderness_empire`/`giga_has_frameworld_origin`) and
-`GATE_KIND_ETHICS_OR_CIVIC` (`has_ethic`/`has_valid_civic`/`has_civic` direct, plus two 1:1
-wrappers, `is_fanatic_spiritualist`/`is_fanatic_pacifist`) — same registered-pattern shape
-ascension perks already use, badged the same way. `can_research_technology` (an engine-builtin
-alias of `has_technology`, not a scripted_trigger definition anywhere in the corpus) joins the
-existing `GATE_KIND_TECHNOLOGY` bucket. D-3's priority order: ascension perk > origin >
-ethics-or-civic > technology.
+**OR-context (`alternative`) gates.** A `has_technology`/perk/origin/civic leaf sitting inside a
+real source `OR` is marked `alternative: boolean` (`GateMatch`/`Edge.groupId`-style tracking, OR
+ancestry independent of negation polarity) — label wording is `"or: <name>"` for an alternative
+gate, `"Needs <name>"` only for a genuinely unconditional one. Real corpus: 11/25 (44%) of real
+`has_technology`-under-`potential` occurrences sit inside an `OR` (e.g. `tech_torpedoes_1`/
+`tech_missiles_1`'s Riddle Escort requirement, non-bio-ship empires already qualify a different
+way). A second field, `appliesToEmpireTypes` (nullable `EmpireTypeConstraint`), reuses
+`pipeline.edge_constraints`' existing per-edge axis constraint for a `"technology"`-kind
+alternative gate backed by a real `potential-gate` edge — the client filters the badge out
+entirely for a profile the edge doesn't apply to, rather than showing a misleading requirement.
+**Dangling "or:" downgrade**: when a technology's emitted `gates` list ends up with exactly ONE
+entry and it's the alternative one (its real OR-sibling isn't itself gate-shaped, e.g. a district
+check), it's downgraded to a plain "Needs X" (`pipeline.dataset_emit._downgrade_dangling_
+alternative`) — deliberately NOT when `appliesToEmpireTypes` is non-null, where "or:" is correct.
+Real corpus: 20 technologies.
 
-**11 more `EXCLUDED_KEYS` entries are deliberately NOT gate-classified** — genuinely compound
-triggers (an `OR` of several real sub-conditions, no single clean `refId`: `is_void_dweller_
-empire`, `has_void_dweller_origin`, `is_giga_one_planet_origin`, `is_spiritualist`, `is_natural_
-design_empire`, `is_beastmasters_empire`, `is_world_forger_empire`) or not origin/civic/ethic-
-shaped at all despite the same "empire-defining choice" character (`is_megacorp` — targets
-`has_authority`, a real 4th authority value outside this project's 3-axis model; `is_individual_
-machine` — species-archetype + gestalt check; `has_genetically_ascended` — tradition-completion
-check; `is_infernal_empire` — species-trait check). These resolve AVAILABLE with no gate badge,
-same as any leaf outside the registry always has, just no longer UNCERTAIN either. See
-`pipeline.gate_patterns.NOT_GATE_CLASSIFIED_EXCLUDED_KEYS`'s own comment for the full per-key
-reasoning.
+**Nested AND-of-OR gates.** `GateMatch.group_id` (mirrors `Edge.groupId`) names the specific
+`OR`/`NOR` block a gate is a direct child of, so an unconditional requirement (e.g. "Needs
+Galactic Wonders") never reads as a flat peer of a choice beneath it (e.g. "or: Mechromancy" /
+"or: a tradition"). The client nests same-`groupId` gates under their own "Need one of:" cluster.
+Real corpus: 1 technology mixes unconditional and grouped matches (`giga_tech_the_vat`).
 
-**A real, non-obvious interaction with the general scripted-trigger expander
-(`pipeline.scripted_triggers`, Item 2's own module) — found and fixed in the same session.**
-Every new `EXCLUDED_KEYS` entry that is ALSO a real scripted-trigger catalog name (`is_wilderness_
-empire`, `is_megacorp`, ... — most of them) needed adding to that module's own skip-set
-(`_ALREADY_RESOLVED_KEYS`), or the general expander would blindly substitute the excluded leaf's
-real body in place of its name, silently undoing the exclusion — the EXACT bug class the
-`country_uses_bio_ships` regression already taught this session once, recurring at a larger scale
-(19 keys, not one) the moment a second table (`EXCLUDED_KEYS`) needed the same protection as the
-first (`AXIS_FACTS`/`GROUND_FACT_BOOL`/`DLC_NAME_CHECK_KEYS`). Fixed generally: `pipeline.
-scripted_triggers._ALREADY_RESOLVED_KEYS` now includes all of `EXCLUDED_KEYS` except the two
-wrapper names (`has_gigastructural_constructs`/`has_galactic_wonders`) deliberately left
-expandable to answer `WRAPPER_TO_PERK`'s own redundancy question. See that module's own docstring
-for the full writeup.
+**Gate-polarity fix.** `_leaf_negated` XORs three independent negation channels: a `NOT`/`NOR`
+wrapper ancestor, the `!=` operator, and a leaf's own literal `= no` VALUE (Clausewitz's other way
+to write negation, no wrapper at all — the original bug: only the wrapper channel was checked).
+Safe to apply unscoped — `= no` occurs only on `is_wilderness_empire` in the real corpus (31
+technologies, all boolean-shaped). `can_research_technology` was removed from gate classification
+entirely — it means "this OTHER technology isn't currently locked out" (an eligibility fact), not
+`has_technology`'s "you have already completed this" — 1 real literal occurrence, but gate
+propagation had inherited the mis-badge onto 15 descendants.
 
-**Icons — reported, not vendored.** `common/civics`/`common/origins`/`common/ethics` are not
-vendored for ANY source (not in `tools/collect_vanilla.py`'s required-directory list, and the
-manually-pinned Gigastructures/ACOT snapshots happen to carry only their OWN custom civic/origin
-icon directories, not vanilla's). Localised display NAMES resolve fine (`localisation/english` is
-vendored in full, independent of the missing `common/` directories), but there is no icon file to
-show — `_build_gates` falls back to the same graceful-degradation stub (`_default_icon_ref`)
-already used elsewhere for a genuinely missing icon. The label text is the real informative
-content for these two new gate kinds until real icons are vendored — vendoring a new source
-directory is its own review-gated corpus-pinning change, deliberately not done this session.
+**Gates PROPAGATE down `prerequisite` chains.** A technology whose only real requirement is "my
+prerequisite needs the gate" previously showed no gate at all. `pipeline.dataset_emit.
+build_base_dataset` computes, for every rendered technology, the union of its own DIRECT gates
+plus every `prerequisite`-ancestor's gates (transitively, via topological order), deduplicated by
+`(kind, refId)` — direct declarations always win the dedup. Two new `Gate` schema fields carry
+this: `inherited: boolean`, `sourceTechnologyId: string | null` (the original declaring
+technology). Deliberately scoped to `prerequisite` edges only, NOT `potential-gate` — see Open
+Items.
 
-**Extended again, same session — Item 4: OR-context (alternative) gates, the fix for a real bug the
-user reported.** `tech_torpedoes_1` ("Space Torpedoes") displayed "Needs Riddle Escort"
-(`tech_cosmogenesis_escort`) as an unconditional requirement — wrong: its real `potential` is
-`OR = { country_uses_bio_ships = no, has_tradition = tr_nanotech_4, has_crisis_level =
-crisis_level_2, has_technology = tech_cosmogenesis_escort }`, four INDEPENDENT ways to qualify;
-non-bio-ship empires (8/12 profiles) already qualify via the first branch alone, unrelated to the
-gate. `tech_missiles_1` shares the identical shape. Real corpus: **11 of 25 (44%) real
-`has_technology`-under-`potential` occurrences sit inside an `OR`.**
+**`on_enabled → add_research_option` ascension-perk grants are a gate source too.**
+`ap_galactic_wonders`'s (Gigastructures-overwritten) `on_enabled` unconditionally grants
+`tech_ring_world`/`tech_dyson_sphere`/`tech_matter_decompressor` — all three structurally
+unreachable any other way (`weight_modifier = { factor = 0 }` unconditionally). These 3 get a
+direct `ascension_perk` gate (`pipeline.dataset_emit.ADD_RESEARCH_OPTION_PERK_GRANTS`),
+deliberately NOT `tech_mega_engineering` (also granted this way, but remains reachable normally
+too, so a gate would overstate a real requirement). DISPLAY-only — does not make these three
+LOCKED for axis-excluded profiles, since their own `potential` never references the perk.
+**Cosmogenesis-locked technologies (Nano-Assembler, Polyatomic Crucible, and the "tensile
+buildings") are `weight_modifier`-based, not `potential`/gate-based** (`factor = 0` unless a
+crisis-level condition, or the already-known `@giga_amb_flag` mod-config toggle) — surveyed twice
+(the second time specifically to check Nano-Assembler/Polyatomic Crucible for a missed perk
+requirement — none found in raw source), correctly NOT gate-classified, since that would conflate
+weight and availability (a category error this project's rules already warn against).
 
-`GateMatch` and the emitted `Gate` schema shape both gained an `alternative: boolean` field
-(`pipeline.gate_patterns._scoped_gate_leaves` now tracks OR-ancestry independent of negation
-polarity — an `OR`/`NOR` ancestor anywhere marks a descendant leaf `alternative`, an `AND`-only
-path never does). Label wording changes accordingly: `"or: <name>"` for an alternative gate,
-`"Needs <name>"` only for a genuinely unconditional one — the client renders `gate.label` directly
-in both card and popup, so no client wording logic duplicates this. **Generalises correctly beyond
-the reported bug**: `giga_tech_the_vat`'s own `ap_mechromancy` ascension-perk gate ("robots go
-brrt") is ALSO genuinely OR-context (alongside `has_genetically_ascended`/`has_active_tradition`),
-now correctly labelled `"or: Mechromancy"` where `has_galactic_wonders` on the same technology
-(AND-context, unconditional) stays `"Needs Galactic Wonders"`.
+**Current real corpus totals: DIRECT gates 107 instances (48 ascension_perk + 14 origin + 24
+ethics_or_civic + 21 technology) over 83 directly-gated technologies. TOTAL (direct + inherited)
+214 instances (104 ascension_perk + 16 origin + 61 ethics_or_civic + 33 technology) over 147
+gated technologies, 47 of which carry more than one gate instance.** Full move-by-move history —
+every intermediate count and which fix moved it — lives in `docs/BUILD-LOG.md`.
 
-**A second field, `appliesToEmpireTypes` (nullable `EmpireTypeConstraint`), closes the
-"shouldn't present as a requirement for those profiles at all" half of the fix** — for a
-`"technology"`-kind alternative gate backed by a real `potential-gate` edge,
-`pipeline.edge_constraints`' EXISTING per-edge axis constraint (already computed for
-`activeEdgeIds`, unchanged, not recomputed) is reused directly:
-`tech_torpedoes_1`/`tech_missiles_1`'s Riddle Escort gate carries `shipset: ["biological"]`. The
-CLIENT now consumes this too (`client/src/main.ts`'s `gateAppliesToProfile`, wired into both the
-card's zoom-driven LOD visibility loop — `nodePrimaryGateConstraint`, index-parallel to
-`nodeGateIcons`/`nodeGateLabels` — and the popup's gate list filter) — a Mechanical-shipset profile
-never sees the badge at all for Torpedoes/Missiles; a Biological-shipset profile does, worded as
-an alternative. Verified visually (Playwright + headless Chromium against the real built dataset,
-not a synthetic fixture): screenshots confirm the badge absent for Regular/Mechanical/Non-nomadic
-and present (icon + `"or: Riddle Escort"`) for Regular/Biological/Non-nomadic, in both card and
-popup, zero console errors either way.
+The spec's original "Tetradimensional Engineering" gate example was checked against the real
+corpus and found wrong (it gates ascension perks, not a technology) — corrected once in
+`spec/P-03-gates.md`, then found stale again since that replacement pair is one of the redundant-
+prerequisite-plus-gate pairs excluded from display. A real still-valid example: any
+`tech_lathe_*` → `tech_cosmogenesis_world` pair.
 
-**Edge extraction (`pipeline/edges.py`) was NOT touched** — confirmed not the bug, per the
-original diagnosis: its scope discipline (universal `has_technology`-under-`potential` extraction,
-deliberately including OR-context leaves for edge/traversal completeness) is a different concern
-from gate DISPLAY wording, and remains exactly as before.
-
-Ordering (D-3): ascension-perk gates outrank origin gates outrank ethics-or-civic gates outrank
-technology gates; index 0 is the primary gate, the only one the node card renders (spec's "where
-space permits, additional gates render as compact secondary badges" for a technology with more
-than one gate is not built — 24/973 real technologies now have a second gate instance, up from
-10/973 before Item 3). The popup shows every gate in the ordered list (now profile-filtered by
-`appliesToEmpireTypes`, Item 4), each with its resolved icon and localised
-`"Needs <name>"`/`"or: <name>"` label. **Real corpus, current: 136 gate instances (45
-ascension_perk + 45 origin + 24 ethics_or_civic + 22 technology) over 109 technologies** (was
-66/56 before Item 3), of which real per-technology counts include several genuinely `alternative`
-matches beyond the two reported/found this session — see `pipeline.gate_patterns.GateMatch`'s own
-docstring for the count.
-
-The spec's original "Tetradimensional Engineering" example of one technology gating another was
-checked against the real corpus and found wrong — `giga_tech_tetradimensional_engineering`
-gates several ascension perks, not any technology's `potential` block. Corrected in
-`spec/P-03-gates.md` to `giga_tech_amb_supertensiles_acot_alpha` → `tech_dark_matter_power_
-core_ae` at the time — **now itself a stale example, a later session (Item 5 above): this exact
-pair is one of the 4 excluded from card/popup display**, since it's also a true prerequisite.
-Not re-corrected in the spec file this session; the general shape (a technology gating on
-another via `has_technology` in `potential`) is unaffected, a real still-valid example is any
-`tech_lathe_*` → `tech_cosmogenesis_world` pair (unaffected by Item 5, since `tech_cosmogenesis_
-world` is not also a true prerequisite of the lathe technologies).
-
-**Gates now PROPAGATE down `prerequisite` chains (a later session, "Ring Segment /
-ascension-perk locking / gate-propagation" session) — closed a real user-reported gap.** Gates
-were previously classified only on the technology that DECLARES them, never inherited — a
-technology whose only real requirement is "research my prerequisite first, and THAT tech needs
-the perk" showed no gate at all (user reports: the QSO family, and `giga_tech_repeatable_*_cap`
-"Management Protocols" repeatables). `pipeline.dataset_emit.build_base_dataset` now computes, for
-every rendered technology, the union of its own DIRECT gates plus every gate any `prerequisite`
-ancestor (transitively, via Kahn's-algorithm topological order) declares directly, deduplicated by
-`(kind, refId)` — direct declarations always win the dedup, an inherited entry is only added when
-no direct one already covers the same `(kind, refId)`. Scoped to `prerequisite` edges only,
-deliberately NOT `potential-gate` edges (a different kind of dependency — an eligibility check, not
-a declared "must research first" chain; propagating through it is left open, pending real corpus
-study, see Open Items). Two new `Gate` schema fields carry this: `inherited: boolean` and
-`sourceTechnologyId: string | null` (the ORIGINAL declaring technology, not an intermediate hop in
-a longer chain) — the client's popup renders an inherited gate with a "(via <source technology>)"
-note (`.gate-inherited-note`), the card's single primary-gate slot is unaffected (still index 0,
-no new overflow — see the DIRECT/TOTAL count split below for why this doesn't blow out card
-space in practice).
-
-**`on_enabled → add_research_option` ascension-perk grants are now a gate source too (the SAME
-session, Item 4a) — closed a previously-surveyed-but-unimplemented gap** (HANDOFF.md's "Ordered
-next steps" used to flag this as open). `ap_galactic_wonders`'s (Gigastructures-overwritten)
-`on_enabled` unconditionally grants `tech_ring_world`, `tech_dyson_sphere` and
-`tech_matter_decompressor` — all three structurally UNREACHABLE any other way (unconditional
-`weight_modifier = { factor = 0 }`), previously invisible to this pipeline's gate/availability
-machinery entirely. `pipeline.dataset_emit.ADD_RESEARCH_OPTION_PERK_GRANTS` adds a direct
-`ascension_perk` gate (`ap_galactic_wonders`) to exactly these 3 — deliberately NOT
-`tech_mega_engineering` (also granted this way, but remains genuinely reachable by the ordinary
-weighted-draw route too, so a gate would overstate a real requirement). `ap_gigastructural_
-constructs`'s on_enabled grants a larger set (`giga_tech_hrae_mc`, `giga_tech_ringworld_behemoth`,
-`giga_tech_matrioshka_brain_1`, `giga_tech_quasi_stellar_1`, `giga_tech_birch_world_1`,
-`giga_tech_lunar_assembly`, `giga_tech_war_system_1`, `giga_tech_supermassive_ehof`) but needs no
-new machinery — every one already carries `has_ascension_perk = ap_gigastructural_constructs`
-directly in its own `potential`, confirmed already gate-classified before this fix. This is a
-DISPLAY-only extension (matching how every other gate works) — it does NOT make `tech_ring_world`/
-`tech_dyson_sphere`/`tech_matter_decompressor` LOCKED for axis-excluded profiles, since their own
-`potential` never references the perk (only the DISPLAY gate does); left this way deliberately,
-same posture as every other gate.
-
-**Real corpus, current (both extensions together): DIRECT gates 139 (48 ascension_perk + 45
-origin + 24 ethics_or_civic + 22 technology) over 112 directly-gated technologies — up from
-136/109 purely from the 3 new `add_research_option` grants. TOTAL (direct + inherited) gates: 267
-(104 ascension_perk + 53 origin + 61 ethics_or_civic + 49 technology) over 196 gated technologies,
-48 of which carry more than one gate instance** (up from 24/973 before propagation). Card space:
-unaffected in practice — the card still renders only the primary (index 0) gate, unchanged by
-propagation; the popup renders the full list already, now including inherited entries with their
-source noted.
-
-**Dangling "or:" fixed (the SAME session, Item 7a) — a real user-reported display bug, P-3.** The
-OR-context gate fix (an earlier item) marks a leaf `alternative` whenever it sits inside a real
-source `OR`, but the OR's OTHER real branches are frequently non-gate-shaped conditions never
-tracked as gates at all (Birch World's own sibling is `any_owned_planet = { ... district check
-... }`) — when a technology's emitted `gates` list ends up with exactly ONE entry and it's the
-alternative one, "or:" reads as a dangling reference with nothing to be alternative to. Downgraded
-to a plain "Needs X" requirement in exactly that case (`pipeline.dataset_emit.
-_downgrade_dangling_alternative`) — deliberately NOT when `appliesToEmpireTypes` is non-null (the
-Riddle Escort/Missiles/Torpedoes shape, an existing, deliberate, tested fix where the SAME "sole
-gate in the list" shape is correct AS "or:" for the axis where it's shown). Real corpus: 20
-technologies affected (`giga_tech_birch_world_1`, the two Gigastructural-Constructs-gated
-`Terrestrial Sculpting`/`Gene Tailoring`/`Driven Assimilator` families, ...); Riddle Escort/
-Missiles/Torpedoes and `giga_tech_the_vat`'s genuine 2-gate case are both unaffected, confirmed
-directly.
-
-**Gate-polarity bug fixed (a later session, user-reported: habitat technologies showed as
-REQUIRING a wilderness empire, backwards).** `pipeline.gate_patterns` tracked negation ONLY via a
-`NOT`/`NOR` wrapper ancestor — never a leaf's own literal boolean-false VALUE
-(`is_wilderness_empire = no`, Clausewitz's OTHER way to write a negative condition, no wrapper at
-all). `_leaf_negated` now XORs three independent negation channels: wrapper ancestry, the `!=`
-operator (zero real occurrences on a gate leaf key today, kept for symmetry with
-`pipeline.availability`'s own identical check), and a literal `= no` value (the real bug — checked
-safe to apply unscoped across every `GATE_LEAF_KEYS` member: `= no` occurs ONLY on
-`is_wilderness_empire` in the real corpus, 31 technologies, all boolean-shaped leaves — no
-VALUE-shaped key like `has_origin`/`has_technology` ever legitimately takes the literal string
-"no"). Real corpus: origin-kind DIRECT gates 45 → 14 (31 technologies, `tech_habitat_1`/`_2`,
-`tech_gene_banks`, ... lose their wrong "Needs Wilderness" badge).
-
-**`can_research_technology` removed from gate classification entirely (the SAME session, user-
-reported).** It was treated as an alias for `has_technology` ("Needs X" badge), but the two are
-genuinely different engine semantics: `has_technology` means "you have ALREADY COMPLETED this" (a
-real, satisfiable prerequisite — exactly what "Needs X" says); `can_research_technology` means
-"this OTHER technology is not currently LOCKED OUT for your empire" (a structural eligibility
-fact, nothing to "go get"). Real corpus: exactly ONE literal occurrence
-(`tech_alien_cloning`'s `OR = { is_beastmasters_empire = yes, can_research_technology =
-tech_genome_mapping }`), but gate propagation (above) had inherited the mis-badge onto 15
-descendants (16 technologies total) — matching the user's "many technologies" report exactly.
-Stays excluded from `pipeline.availability`'s boolean combination (an identity element there,
-unaffected — moved from an implicit `TECHNOLOGY_ALIAS_KEYS` entry to an explicit
-`NOT_GATE_CLASSIFIED_EXCLUDED_KEYS` one, same real-world treatment, clearer bucket). The "bioship
-technologies not showing locked" half of the same user report was surveyed and found NOT the same
-bug: of 88 real corpus technologies referencing `country_uses_bio_ships` directly, 87 already
-resolve correctly differently for mechanical vs. biological profiles (the 1 exception is an
-unrelated OR-branch case, not a polarity issue).
-
-**Nested AND-of-OR gates fixed (the SAME session, user-reported: Gargantuan Cloning Facilities
-showed "Needs Galactic Wonders" + "or: Mechromancy" as flat peers, when the real structure is
-`AND(has_galactic_wonders, OR(has_genetically_ascended, has_active_tradition, ap_mechromancy))` —
-Galactic Wonders is unconditionally required, the OR a SEPARATE branch beneath it).** `GateMatch`
-gained a `group_id` field (mirroring `Edge.groupId`'s per-owner, per-block-index identity,
-`f"{technologyId}#gate-alt{index}"`) naming the specific `OR`/`NOR` block a gate is a DIRECT child
-of — computed by `_scoped_gate_leaves`'s new `group_index`/`counter` threading, a fresh index
-allocated every time a NEW `OR`/`NOR` is entered (even nested inside another one), `AND`/`NOT`
-never allocating one. Real corpus: exactly 1 technology (`giga_tech_the_vat`) mixes unconditional
-and grouped gate matches today — the client (`main.ts`'s Gates section) now renders every
-`groupId === null` gate flat, then each distinct `groupId` nested under its own "Need one of:"
-cluster, so an AND requirement never reads as a peer of a choice beneath it. Every other
-multi-gate technology (all-one-group, or all-ungrouped) renders exactly as before.
-
-**Origin/ethics-or-civic gate icon fallback fixed (the SAME session, user-reported: these gates
-rendered a meaningless solid-colour "teal square").** `_default_icon_ref`'s degenerate 1x1-pixel
-stretched fallback is not a rare edge case for these two kinds — it fired 100% of the time, since
-no civic/origin/ethic icon source is vendored at all (CLAUDE.md's own prior "Icons — reported, not
-vendored" note). `Gate.icon` is now nullable; origin/ethics_or_civic gates emit `icon: null` and
-the client renders the label alone, no icon element. `ascension_perk`/`technology` gates keep
-their existing (real, vendored, rarely-missing) icon behaviour unchanged.
-
-**Real corpus, current (all four fixes together): DIRECT gates 107 (48 ascension_perk + 14 origin
-+ 24 ethics_or_civic + 21 technology) over 83 directly-gated technologies. TOTAL (direct +
-inherited) gates: 214 (104 ascension_perk + 16 origin + 61 ethics_or_civic + 33 technology) over
-147 gated technologies, 47 of which carry more than one gate instance.**
-
-**Item 2b survey (SAME session): Nano-Assembler/Polyatomic Crucible have NO ascension-perk
-requirement in their own `potential` block, confirmed by raw source inspection — the prior
-session's "weight-based, not gate-based" conclusion for the Cosmogenesis family stands, it was NOT
-too broad for these two.** Their only real conditions are the `@giga_amb_flag` mod-config toggle
-(already the documented, deliberately-unresolved uncertain reason) and, inside `weight_modifier`
-only, a `NOT = { has_crisis_level = crisis_cosmogenesis_level_5 }` zero-weight gate plus an
-`ap_technological_ascendancy` weight BONUS (a real vanilla perk, not the Gigastructures-flavoured
-"Cosmogenesis" the user meant) — neither is a `potential`-level requirement, so neither can
-correctly badge as a gate. Reported to the user rather than fabricated.
+**Dangling "or:" downgrade extended to a single group nested inside a longer list — real bug fix
+(Item 3b, a later session, user-reported).** The existing downgrade (above) only checked the
+WHOLE `gates` list's length; it missed a `groupId` with exactly ONE member sitting alongside other
+gates/groups — real corpus example: `tech_cloning`'s own direct gate ("Driven Assimilator") formed
+a 1-member group next to a genuine 2-member INHERITED group (`tech_genome_mapping`'s "Rogue
+Servitor"/"Genesis Architects"), so the card showed a dangling "or: Driven Assimilator" primary
+badge and the popup rendered a "Need one of:" cluster containing a single, non-choice entry.
+`pipeline.dataset_emit._downgrade_dangling_alternative` now also checks per-`groupId` size after
+the whole-list check, downgrading any lone-member group the same way (`alternative: false`,
+`groupId: null`, `"or: X"` → `"Needs X"`), regardless of how many other gates/groups the technology
+carries. `#detail-popup`'s CSS also gained explicit `overflow-x: hidden` and `overflow-wrap`
+safety on gate rows as defence-in-depth against a long localised name bleeding past the fixed-width
+panel.
 
 ### Tiers
 
@@ -921,6 +572,15 @@ band-header bug.** Tier is vanilla's and Gigastructures' own vocabulary; a band 
 contains exactly what the mod calls tier 5. Computed longest-path position still exists, but
 purely as internal geometry — it orders technologies horizontally within a band's sub-grid and
 gives the router a consistent signal for backwards edges, and is never displayed as a number.
+**Within a shared depth slot, zero-cost technologies sort left of costed ones (Item 3a, a later
+session, user-reported: zero-cost technologies appearing right of costed ones read as backwards
+progression).** `pipeline.layout.compute_layout`'s sort key gained a zero-cost tie-break
+(`same_band_depth`, then zero-cost-first, then `computed_position`, then key) — this only ever
+reorders members that ALREADY share a `same_band_depth` value, exactly where D-17 permits free
+reordering; it never changes which depth slot a node occupies, so it cannot violate D-17's own
+invariant (a node never rendering left of/in line with its own prerequisite). No real case was
+found where D-17 forbids the preferred order — the two constraints operate at different levels
+(depth slot vs. position within a slot) and never conflict.
 **Backwards edges are consequently real and expected**: an edge in a later band than its
 dependent, whenever the tail's own declared tier is higher. **Record this as a per-kind
 decomposition, never a single number — it has moved three times purely through re-scoping.**
@@ -1016,6 +676,16 @@ of D-18 — a later correctness pass resolved 10 of the originally-reported 15 v
 block's own `factor` sub-field, see `pipeline.dataset_emit._resolve_cost`'s docstring —
 unresolvable, never guessed at) is represented.
 
+**A literal zero cost and an unresolvable (`null`) cost both render NO cost panel — user decision
+(a later session, Item 2a).** Distinguishing "this costs nothing" from "we couldn't work out what
+this costs" is meaningless to an end user; both collapse to the same "no panel" treatment on the
+card and in the popup (`client/src/main.ts`'s card cost line and the popup's `field-value`
+block). Previously a zero cost rendered `Cost: 0` and a null cost rendered nothing (card) or
+`Cost: unresolvable` (popup) — three different signals for what the user experiences as two
+states worth distinguishing (has a real cost / doesn't). This is purely a client display decision
+— the pipeline still emits the real resolved `cost` value (`0`, a positive number, or `null`)
+unchanged; nothing about `_resolve_cost` or the schema changed.
+
 **This is D-13's one declared exception to "bands are declared tier, full stop"**: a repeatable
 technology bands into the terminal Repeatables band regardless of its own declared `tier`, and its
 card badges repeat count instead of the tier badge. `tier` is still resolved, still validated
@@ -1056,6 +726,49 @@ wiki anchors resolve and falls back to a wiki search URL where they do not.
 Base weight prominently, expandable modifier list beneath. No evaluated weight — static analysis
 cannot produce a number that is right often enough to present authoritatively.
 
+**Zero weight IS an availability fact — user decision (Item 2b, a later session), a carve-out on
+top of the rule above.** "Weight is a separate concern from availability" stands for weight as a
+gradient — a modifier that boosts or reduces a nonzero weight stays purely a weight concern, never
+folded into `state`. But a `weight_modifier` entry whose own `factor` is a literal `0` is
+Stellaris's own idiom for "this technology cannot currently be drawn as a research option at all"
+— functionally a gate, not a gradient. The motivating case: Cosmogenesis-locked technologies
+(Nano-Assembler, Polyatomic Crucible, the "tensile" buildings) — a prior session correctly found
+these `weight_modifier`-based, then wrongly concluded that meant no user-facing treatment at all.
+
+**Implemented**: `pipeline.dataset_emit._weight_gate_condition_blocks` extracts every zero-factor
+`weight_modifier` `modifier` entry's own condition (siblings of `factor`, `factor` itself
+stripped) per rendered technology — deliberately `weight_modifier` only, never `ai_weight` (which
+governs AI empires' own choices, not what the player is offered). Each condition is
+scripted-trigger-expanded exactly like a `potential` block, then evaluated through the SAME
+unchanged Kleene evaluator (`pipeline.availability._apply_weight_gate`) as an additional check
+layered onto the technology's `potential`-based result, only when that result is AVAILABLE: if
+the zero-factor condition resolves definitely TRUE for a profile (the modifier fires, weight is
+currently zero), the technology downgrades to LOCKED with a reason naming the raw condition; if it
+resolves UNKNOWN, it downgrades to UNCERTAIN the same honest way any other undecidable leaf does.
+A technology already LOCKED/UNCERTAIN/CONFIG_GATED for a real `potential`-block reason is
+unaffected — the more specific existing reason wins.
+
+**Real corpus: 248 rendered technologies (301 zero-factor `modifier` entries — some carry more
+than one) carry a `weight_modifier` factor=0 branch.** This is materially broader than the
+motivating Cosmogenesis example — the same idiom is Stellaris's standard mechanism for excluding a
+tech from the weighted draw under ANY condition, used throughout vanilla for ordinary things like
+"don't offer this terraforming variant when the empire has no matching planets"
+(`tech_mountain_range`/`tech_volcano`/`tech_toxic_kelp`/... via `num_owned_planets`), policy/civic
+toggles (`has_policy_flag`), and FE/crisis-chain content, not just mod-configuration or
+crisis-progression gates. Effect, measured directly (not estimated): **unconditional uncertainty
+31/973 → 115/973 (11.8%); worst profile-dependent rate 16/973 (1.64%) → 58/973 (5.96%) — crosses
+the 3% warn threshold but stays well under the 10% hard ceiling; union 53 → 180.** 39 technologies
+gain a real LOCKED verdict for at least one profile that was previously AVAILABLE (mostly Fallen
+Empire/crisis-chain content genuinely never offered through the normal weighted draw); 124 more
+gain an UNCERTAIN verdict for at least one profile that was previously AVAILABLE (dynamic in-game
+state the evaluator correctly can't resolve — planet counts, policies, crisis levels). This is a
+considered, reported tradeoff per this project's own "report honestly, don't smooth over a worse
+number" discipline (the same posture the scripted-trigger expansion session took) — the ceiling is
+not breached, and the new signal is real and more informative than silence, even though it moves
+the warn-threshold figure. The pinned corpus test
+(`tests/test_availability_corpus.py::test_uncertain_count_and_per_profile_breakdown_pinned`) was
+updated deliberately for this move, not silenced.
+
 ### Research path
 
 **Implemented (P-12.9, a later session — `spec/P-12.9-research-path.md`).** The old placeholder
@@ -1067,9 +780,13 @@ at build time in the empire overlay (`pipeline.dataset_emit._build_research_path
 memoised once per profile across all 973 targets sharing it). `status` is `"path"` (ordinary),
 `"config-gated"` (the target is one of the 50 `giga_tech_repeatable_*_cap` technologies — its own
 cost is excluded from `totalCost` entirely, per D-13's sink property: a config-gated technology
-can only ever be a path's own target, never an interior step), or `"unavailable"` (no `steps`
-array at all — either the target itself is `locked`, or a plain, non-`alternative` prerequisite
-somewhere in its ancestor chain is). An `alternative` (`OR`-group) is resolved to whichever VIABLE
+can only ever be a path's own target, never an interior step), `"unavailable"` (no `steps` array
+at all — the target ITSELF is `locked`), or **`"blocked"`** (Item 2d, a later session — no `steps`
+array either, but the target's own state is `available`/`uncertain`; a plain, non-`alternative`
+prerequisite somewhere in its ancestor chain is `locked`/`config-gated`, or an `alternative` group
+has zero viable candidates). `"unavailable"` and `"blocked"` are deliberately DIFFERENT statuses,
+not one shared state — see "When there is no route at all" below for why. An `alternative`
+(`OR`-group) is resolved to whichever VIABLE
 (`available`/`uncertain`, never `locked`/`config-gated`) candidate has the cheapest FULL recursive
 closure cost — never just its own declared cost, which is what fixes v1's "chose a branch without
 expanding its own prerequisites" bug — and the chosen step's own `alternatives` list names the
@@ -1089,7 +806,7 @@ group×profile evaluations over the corpus's 35 real `alternative` groups, 408 h
 candidate) — cheapest-total-cost is genuinely load-bearing now, not a defensible-either-way
 footnote the original survey's "0 disagreements" figure implied.
 
-**A real, previously-unmeasured finding, corrected against this session's own inherited
+**A real, previously-unmeasured finding, corrected against an earlier session's own inherited
 assumption, not suppressed to match it: the "dangerous" sub-case (an ancestor chain broken while
 the target's own state stays available/uncertain) is NOT zero on the current corpus.** Confirmed
 directly against raw source, not assumed: `tech_ehof_spinal`'s `prerequisites` block
@@ -1097,22 +814,54 @@ unconditionally (never inside an `OR`) requires `tech_arkship_tier_3`
 (`giga_09_ehof_other.txt:260`), whose own `potential` is `is_nomadic = yes`
 (`00_nomads_dlc_tech.txt`) — locked for every non-nomadic profile; `tech_ehof_spinal`'s own state
 resolves `uncertain` (an unrelated `has_arcane_generator` flag), never `locked`. Real corpus: 78
-distinct technologies / 472 (key, profile) pairs hit this — `pipeline.dataset_emit.build_
-diagnostics`'s new `unresolvableResearchPaths` field (`spec/P-12.9-research-path.md` section 6's
-tripwire) surfaces every one, `{technologyId, profile}[]`. This is corpus content drift (or a
-gap in the prior survey), not a bug in the algorithm — the mechanism is proven capable of finding
-real cases, which is exactly what a tripwire diagnostic exists for; do not "fix" this by silently
-re-asserting the old zero.
+distinct technologies / 472 (key, profile) pairs hit this.
+
+**When there is no route at all — CORRECTED (Item 2d, a later session): `spec/P-12.9-research-
+path.md` section 6 originally folded "target itself locked" and "ancestor chain broken while the
+target is fine" into ONE status (`"unavailable"`), on the strength of a stale claim that the two
+always coincide (2 of 980 technologies, both cases). That claim was never true of the real, current
+corpus (78/472, above) — a documented figure trusted across sessions without being re-verified,
+the same failure mode as the `has_ancrel` defect (see "Trigger evaluation" above). Fixed: a new,
+distinct status, `"blocked"`, carries `blockedBy: {technologyId, name, reason}` naming the specific
+ancestor whose own locked/config-gated state broke the route (one representative non-viable member
+for a broken `alternative` group, not every one) — `pipeline.dataset_emit._UnreachablePath` now
+carries the blocking key from its origin raise site up to the target-level catch, unchanged, so the
+FIRST (deepest) real cause survives, not a synthesized one. `"unavailable"` now means ONLY "the
+target's own state is locked" — 0 conflation with the ancestor-chain case going forward.
+`pipeline.dataset_emit.build_diagnostics`'s `unresolvableResearchPaths` field
+(`spec/P-12.9-research-path.md` section 6's tripwire) now tracks every `blocked` pair directly,
+same 78/472 figure at the time this status was introduced.**
+
+**The 78/472 figure moved again, same session, purely as a consequence of Item 2b (above) landing
+alongside Item 2d — reported together honestly, not chased back down to the smaller pre-Item-2b
+number.** Item 2b's weight-gate LOCKED downgrades add real new ancestor dead ends throughout the
+prerequisite graph, and every downstream descendant of a newly-LOCKED technology now legitimately
+hits the `"blocked"` case too. Real corpus, both fixes together: **958 (technology, profile) pairs
+/ 116 distinct technologies are `"blocked"`.** This is not a bug in Item 2d's own mechanism — the
+mechanism is proven correct against the smaller pre-Item-2b corpus and against direct raw-source
+tracing (`tech_ehof_spinal`, above) — it is downstream fallout of Item 2b correctly surfacing more
+real dead ends. Do not "fix" this by reverting Item 2b's weight-gate fold-in to make the smaller
+number reappear.
+
+**Nano-Assembler display bug fixed, same session, independent of the status split.**
+`giga_tech_fe_megaworkshop_1` ("Nano-Assembler") has NO `prerequisites` at all — a legitimate
+zero-step path (research it directly, `totalCost` = its own declared cost) — but the client
+rendered "Research path (0) / none / Total: 70,000 (estimate: uncertain-availability)", which
+reads as contradictory (a zero-step list next to a nonzero total). Fixed in `client/src/main.ts`'s
+`renderResearchPath`: a zero-step `"path"`/`"config-gated"` status now renders "No prerequisites —
+this is the direct cost of researching it" instead of the bare word "none", regardless of which
+status it ends up with.
 
 CLIENT: selection-triggered (matches v1's own trigger — no persistent "goal technology" pin, an
 explicitly deferred feature). `client/src/main.ts`'s `openPopup` fetches the current profile's
 overlay unconditionally (previously only for a non-`available` technology) and renders a
 `renderResearchPath` section: ordered steps with per-step cost and an `uncertain` badge, the
 running total with its estimate note where set, `alternatives` shown inline per OR-chosen step,
-and the `config-gated` target's own subject/template note. Verified with real screenshots (an
-`OR`-choice path, the nomadic Arkship-branch substitution, an `uncertain`-step estimate, an
-`unavailable` dangerous-case target, and a `config-gated` target) — zero console errors, all
-figures matching the pinned corpus tests.
+the `config-gated` target's own subject/template note, and (Item 2d) a distinct `"blocked"`
+explanatory line naming `blockedBy`. Verified with real screenshots (an `OR`-choice path, the
+nomadic Arkship-branch substitution, an `uncertain`-step estimate, an `unavailable` target, a
+`config-gated` target, a `blocked` target naming its blocking ancestor, and Nano-Assembler's
+corrected zero-step display) — zero console errors, all figures matching the pinned corpus tests.
 
 ### Localisation
 
@@ -1165,61 +914,36 @@ English only for v1. The pipeline is language-parameterised so more languages ar
   cannot-lex-differently mismatch is added to the checked-in `tests/clausewitz/
   roundtrip_allowlist.json` — read that file before touching it.
 - **The pipeline owns all geometry; the renderer consumes emitted positions and never recomputes
-  them from a parallel formula.** Any renderer-side value that is derivable from emitted geometry
-  (row/band extents, a cell's populated width, anything of that shape) MUST be derived from the
-  real emitted positions (`nodePositions`/`edgePolylines`, per `00-overview.md`), never
-  reimplemented client-side from the same inputs `pipeline/layout.py` consumes. Found the hard
-  way: `client/src/main.ts` once re-derived row/band geometry via its own copy of
-  `pipeline/layout.py`'s wrap/width formulas, and D-17's same-band depth-slot fix silently
-  desynced it — row panels, tier tints and cell labels drew nowhere near their actual cards, with
-  no error, no failing test, no warning, caught only by a headless screenshot. Two independent
-  implementations of the same geometry WILL drift the moment either one changes, and nothing
-  forces them to change together. The permanent fix, and the rule going forward: derive from the
-  real positions (min/max over the emitted `nodePositions`, grouped by row/band), so client and
-  server geometry cannot drift apart again regardless of how the underlying layout formula changes
-  in the future — not a periodic re-sync. **Audited for other instances of this pattern**: the
-  severe form (recomputing a multi-step DERIVED formula that can produce a different value than
-  the pipeline's own) is now eliminated for row/band geometry, the only place it existed. What
-  remains is a milder, harder-to-avoid form: a set of mirrored SCALAR constants
-  (`CARD_WIDTH`/`CARD_HEIGHT`, the gutter constants, `SUBGRID_WIDTH`, `AREA_ORDER`,
-  `FLOATS_PER_EDGE_POLYLINE`, `MIN_STUB`) that must still be kept numerically in sync with
-  `pipeline/layout.py`/`pipeline/geometry.py` by hand, since the dataset schema doesn't carry them
-  as data. Their blast radius if they drift is smaller than the row/band bug was — most now feed
-  only the degenerate zero-population-row/band fallback path or are diagnostic-only (`MIN_STUB`,
-  used only by `checkMinStubLength`). `CARD_WIDTH`/`CARD_HEIGHT` are the one genuinely
-  load-bearing pair, since they size the actual card draw call and the dataset carries corner
-  positions, not card dimensions. Not fixed this session (would mean adding card dimensions to the
-  schema) — flagged as a scoped follow-up rather than silently left looking fully closed.
+  them from a parallel formula.** Any renderer-side value derivable from emitted geometry
+  (row/band extents, a cell's populated width) MUST be derived from the real emitted positions
+  (`nodePositions`/`edgePolylines`), never reimplemented client-side from the same inputs
+  `pipeline/layout.py` consumes. Found the hard way: `client/src/main.ts` once re-derived row/band
+  geometry via its own copy of `pipeline/layout.py`'s formulas, and D-17's same-band depth-slot fix
+  silently desynced it — row panels, tier tints and cell labels drew nowhere near their actual
+  cards, no error, no failing test, caught only by a headless screenshot. Fixed permanently by
+  deriving from real positions (min/max over emitted `nodePositions`, grouped by row/band), not a
+  periodic re-sync — client and server geometry can't drift apart again regardless of future
+  formula changes. A milder residual form remains: mirrored SCALAR constants (`CARD_WIDTH`/
+  `CARD_HEIGHT`, gutter constants, `SUBGRID_WIDTH`, `AREA_ORDER`, `FLOATS_PER_EDGE_POLYLINE`,
+  `MIN_STUB`) still kept in sync by hand since the dataset schema doesn't carry them as data —
+  `CARD_WIDTH`/`CARD_HEIGHT` are the one genuinely load-bearing pair (they size the actual card
+  draw call); flagged as a scoped follow-up, not fixed. See `docs/BUILD-LOG.md` for the full
+  audit of what else was checked and ruled out.
 - **A second, DIFFERENT defect class produced the same visible symptom (rows overlapping) a later
-  session, and must not be confused with the parallel-formula bug above.** The screenshot-review
-  session's Item 4 (short-sub-grid-column vertical centring, `pipeline/layout.py`) introduced a
-  hard regression: `column_member_count`, a dict tracking each sub-grid column's own member
-  count, was keyed by `(row_id, col)` alone. `col` is BAND-RELATIVE — `depth_slot_start[(band_
-  index, depth)]` resets its own cursor to 0 for every band — so col 0 in one band and col 0 in a
-  LATER band of the SAME row are physically different columns (different x) but shared the same
-  dict key, silently SUMMING their member counts into one entry. That corrupted count could
-  exceed the row's real max (`row_row_counts[row_id]`) and drive the centring offset NEGATIVE,
-  shifting a column's cards upward past row 0 into the row above — real corpus example:
-  `column_member_count[('voidcraft', 0)]` corrupted to 37 against a real `row_row_counts` of 6,
-  producing `giga_tech_birch_world_1` at row **−16**. **This is a plain dict-keying bug (a missing
-  discriminator field), not a parallel-geometry violation** — nothing client-side re-derived
-  anything; `client/src/main.ts` correctly derived row panels from the (corrupted) emitted node
-  positions exactly as the rule above requires, and faithfully reproduced the bug rather than
-  masking or independently causing it. Confirmed directly (not assumed) that this rules out the
-  parallel-geometry rule as a second cause here. Fixed by keying on the full `(row_id, band_index,
-  col)` triple, which is unique by construction, plus a same-turn `assert centre_offset >= 0` in
-  `pipeline/layout.py` itself as a second line of defence. **The real lesson, and why it reached
-  the user**: the existing test suite stayed fully green through this regression — canvas
-  dimensions were genuinely unaffected (row HEIGHT is computed from `row_row_counts`, set in the
-  first pass and never touched by the buggy second pass; only individual cards' position WITHIN
-  their row was corrupted), and nothing asserted the actual invariant that matters (no two rows'
-  card-occupied extents may intersect, no node's row index is ever negative). A green suite proved
-  self-consistency, not correctness — the same lesson D-17's unbounded-stacking bug already taught
-  this project once, now recorded as a second occurrence.
-  `tests/test_layout_corpus.py::test_no_row_overlaps_and_every_card_within_its_own_row_bounds`
-  (real corpus) and `tests/test_layout.py::test_no_row_overlaps_when_the_same_row_spans_multiple_
-  bands` (fast synthetic regression case) are the missing invariant, added after this regression,
-  each proven capable of failing against the actual broken code before being trusted on the fix.
+  session — do not confuse it with the parallel-formula bug above.** A sub-grid centring fix
+  (`pipeline/layout.py`) keyed `column_member_count` by `(row_id, col)` alone, but `col` is
+  BAND-RELATIVE (its cursor resets every band) — two physically different columns in different
+  bands of the same row shared a dict key, silently summing member counts and driving the centring
+  offset negative (real corpus: one node placed at row −16). A plain dict-keying bug, not a
+  parallel-geometry violation — confirmed directly, not assumed. Fixed by keying on the full
+  `(row_id, band_index, col)` triple, plus an `assert centre_offset >= 0` as a second line of
+  defence. The existing test suite stayed green through this regression because nothing asserted
+  the actual invariant (no two rows' card extents may intersect, no row index is ever negative) —
+  the same "green suite proves self-consistency, not correctness" lesson D-17's unbounded-stacking
+  bug already taught once. `tests/test_layout_corpus.py::
+  test_no_row_overlaps_and_every_card_within_its_own_row_bounds` and `tests/test_layout.py::
+  test_no_row_overlaps_when_the_same_row_spans_multiple_bands` are the missing invariant, each
+  proven capable of failing against the broken code before being trusted on the fix.
 
 ## Commands
 
@@ -1246,200 +970,111 @@ session so far.
 
 ## Open items
 
-Full build history — every decision, measured figure, and defect found in past sessions — moved
-to `docs/BUILD-LOG.md` in a reconciliation session (CLAUDE.md had become an append-only session
-log rather than a list of open items; see that file's own header note). This section states only
-what is genuinely still open, with a pointer to detail elsewhere. Locked, load-bearing decisions
-live in this file's own body above and in `spec/decisions.md`, not here.
+Full build history — every decision, measured figure, and defect found in past sessions,
+including every item that used to be listed here as "now closed" — lives in `docs/BUILD-LOG.md`.
+This section states only what is genuinely still open. Locked, load-bearing decisions live in
+this file's own body above and in `spec/decisions.md`, not here. When an item below is resolved,
+remove it entirely — do not leave a struck-through "now closed" placeholder; `docs/BUILD-LOG.md`
+already has the closure on record.
 
-- **Gate classification (P-3) is now closed** — `pipeline/gate_patterns.py` classifies real gate
-  data into `gates`; see this file's own "Gates" section above for the full account. Left here
-  only so a future session's memory of "this was still open" gets corrected on sight.
-- **Wilderness as a fourth profile axis: surveyed (a later session), NOT implemented, real
-  decision needed.** A prior survey rejected a fourth axis because wilderness (`has_origin =
-  origin_wilderness`, hive-authority-only) is a strict subset of hive authority, not orthogonal to
-  it. Re-measured directly this session (simulate wilderness=true/false against the real evaluator
-  for all 4 hive-authority profiles): **41 of 973 rendered technologies (4.2%) / 148 (technology,
-  profile) pairs show a REAL availability difference between a wilderness and a non-wilderness
-  hive empire** — not small, comparable in scale to other thresholds this project treats
-  seriously. The display-gate-only treatment (Item "Gate-polarity bug fixed" above) is now
-  correct on its own terms, but doesn't surface these 41 technologies' real per-profile
-  availability difference at all. Cost of adding the axis, if chosen: 12 → 24 profiles, every
-  per-profile emitted array doubles (`empireProfileAxes`, `availabilityMatrix`, every overlay) —
-  re-check the ≤2MB compressed overlay budget before committing (current largest overlay: 63.5KB
-  gzip, so headroom is large, but re-measure once implemented, don't assume). User needs to
-  decide between: (a) leave as a display-gate, tell users the ~4% figure and accept it as a known
-  gap; (b) add the fourth axis.
-- **Two technologies named "Confluence of Thought" — already a known, genuine same-name pair, not
-  a new gap.** `tech_hive_confluence` (the ordinary hive-authority statecraft line,
-  `tech_hive_cluster → tech_hive_confluence`) and `tech_wilderness_confluence` (a parallel,
-  wilderness-exclusive vanilla content track, `tech_wilderness_node → tech_wilderness_cluster →
-  tech_wilderness_confluence`, confirmed real via raw source's own "# Wilderness" section header)
-  are two DIFFERENT, deliberately-parallel vanilla technology lines that happen to share a display
-  name — already recorded among the reconciliation session's "5 genuine same-name-in-the-mod
-  pairs" (`docs/BUILD-LOG.md`). Not an overwrite-resolution error or a localisation collision.
-  Left here only so a future session's memory of "is this new?" gets corrected on sight.
-- **Looping edges: surveyed this session, NONE FOUND geometrically — real corpus report is
-  either stale (predates the same-sub-column D-17 extension) or needs a specific example.** Three
-  independent geometric checks against the rebuilt, current dataset (X-direction reversal on any
-  edge's polyline, a Y-axis "hook" shape — large deviation then returning near the start Y before
-  a very different end Y, and literal polyline self-intersection) all found ZERO matching edges
-  across all 977. The D-17 same-sub-column extension (this session, see "Item 4" in HANDOFF.md's
-  own session record) already covers the one class of edge previously confirmed to double back.
-  Recommend asking the user for a screenshot or a specific technology name before investigating
-  further — this session could not reproduce the report.
-- **The "dangerous" ancestor-broken research-path case (P-12.9 section 6): surveyed, real, NOT an
-  artefact of the gate-polarity fix.** Re-measured after the gate-polarity fix landed: still
-  exactly 78 technologies / 472 (key, profile) pairs — UNCHANGED, confirming the gate-display fix
-  (which never touches `pipeline.availability`) has zero bearing on this count. Categorised by
-  cause: 44 pairs trace to a broken ancestor's `is_nomadic`-locked state (the `tech_starbase_*`
-  chain and similar), 25 to an axis-locked ascension perk (`ap_gigastructural_constructs` 10,
-  `ap_galactic_wonders` 8, `ap_celestial_printing` 7), 4 to hive-mind/shipset-locked ancestors, 2
-  to a zero-viable `OR`-group, 3 unresolved by this session's quick trace (deeper nesting, not yet
-  characterised). Every traced case is a REAL, non-alternative (`prerequisite`, not
-  `alternative`-edge) dead end — none found to be a modelling artefact (an ancestor that's
-  "really" reachable another way the evaluator missed). **Recommendation: `status: "unavailable"`
-  does NOT adequately distinguish "the target itself is closed to you" from "the target is fine,
-  but a specific ancestor blocks the only path" — these are different facts a player would act on
-  differently (a real hard no, vs. "you could get here if this one blocking ancestor were
-  reachable").** A distinct status value naming the actual blocking ancestor + its own lock reason
-  (already computable from this session's survey) is recommended; not implemented, per explicit
-  instruction to stop and report — this changes a spec decision (P-12.9 section 6) and the user
-  should see the shape before it moves.
-- **Gate propagation down `potential-gate` edges is a real, deliberately deferred scope
-  boundary** (the "Ring Segment / ascension-perk locking / gate-propagation" session) — this
-  session propagated gates down `prerequisite` edges only (the formal, declared "must research
-  first" chain). A `potential-gate` edge (`has_technology` inside `potential`) is a DIFFERENT kind
-  of dependency (an eligibility check, not a declared prerequisite), and whether/how it should
-  ALSO propagate gates was left open pending real corpus study of what that would even mean —
-  don't extend propagation there without first surveying real cases.
-- **Same-sub-column (same-band) `alternative`/`potential-gate` edges — now closed (a later
-  session).** D-17's own invariant (`spec/decisions.md`) is extended: `pipeline.layout.
-  _same_band_depth` now also takes `alternative`/`potential-gate` edges as an additional same-band
-  ordering constraint (not folded into `prereqs_of`/`computed_position`, which stay
-  prerequisite-only). Real corpus: canvas 29,670 × 13,448px → 30,060 × 13,448px (+390px, +1.3% —
-  well under the ~10% stop-and-report threshold), densest cell/row population unaffected.
-  `tests/test_layout_corpus.py::test_zero_same_sub_column_pairs_across_all_edge_kinds` asserts
-  zero same-band `(from, to)` pairs across all three edge kinds, proven to fail first (24
-  violations pre-extension) before being trusted on the fix. Left here only so a future session's
-  memory of "this was still open" gets corrected on sight.
-- **P-12.9 (research path): now implemented (a later session).** See this file's own "Research
-  path" section above for the full account — the placeholder `{ancestors, shortestChain}` shape is
-  replaced by the spec's `{status, steps, totalCost, totalCostIsEstimate, estimateReasons,
-  configGatedTarget}` shape, wired into the client popup. All three previously-stale spec figures
-  were re-measured against the current corpus in the same pass (OR tie-break 12/72 disagreements,
-  nomadic `tech_mega_engineering` total 76,250), and a fourth, more significant correction was
-  found and recorded honestly rather than forced to match the inherited assumption: the
-  "dangerous" ancestor-chain-broken sub-case is NOT zero on the current corpus (78 technologies /
-  472 pairs, `diagnostics.unresolvableResearchPaths`) — see the "Research path" section for the
-  confirmed example. Left here only so a future session's memory of "this was still open" gets
-  corrected on sight.
-- **`appliesToEmpireTypes`/`activeEdgeIds` is now closed** (a later session) — `pipeline.
-  edge_constraints` computes real per-edge empire-type constraints for `potential-gate` edges
-  (`prerequisite`/`alternative` are structurally unconstrained by construction — their own
-  `prerequisites` field is never trigger-evaluated). Uses an axis-fact-only definition of
-  "active" — an edge is inactive for a profile only when an AXIS FACT rules it out, never when an
-  unrelated unresolvable leaf merely masks it (a naive sensitivity-based definition was tried and
-  rejected specifically because it wrongly reported `giga_tech_disco_moon`'s two real gate edges
-  as never-active, an artifact of an unrelated always-unresolvable leaf, not a real fact about the
-  mod — do not "simplify" back to sensitivity, that is a regression). Real corpus: 980 → 977 → 973
-  rendered edges total (D-18, then Item 2c), 5 of which carry a genuine per-axis constraint;
-  `activeEdgeIds` varies 973–976 across the 12 profiles. See `pipeline/edge_constraints.py`'s own
-  module docstring for the full algorithm and rejected-alternative reasoning.
-- **Tech-swap display substitution (`swapMappings`, D-14) is now closed** (a later session) —
-  card name/icon substitute per the selected profile's `swapMappings` (123 real technologies: 116
-  name-only, 7 also change area/category); the popup, prerequisite/dependent lists, and search
-  results all display the profile-correct name (including for OTHER technologies looked up in
-  those lists, not just the selected one). Search matches on any profile's name (the search index
-  pools all axis-expressible swap alternate names, unconditionally) but always displays the
-  profile-correct one.
-- **The popup's Prerequisites/Dependents pooling-all-edge-kinds bug is now closed** (a later
-  session) — the lists are `kind`-labelled and `activeEdgeIds`-filtered: `prerequisite` shows as a
-  required list, `alternative` groups each render as their own "need one of" choice (filtered to
-  non-`locked` members for the selected profile via the already-emitted `availabilityMatrix`, per
-  the exact mechanism this bullet used to describe as future work), and `potential-gate` is
-  excluded entirely from both lists (already shown via the card's own Gates section — showing it
-  twice would be the exact duplication Item 5 above separately closed for the CARD gate badge).
-  `tech_mega_engineering`'s popup now correctly shows 1 required prerequisite plus two distinct
-  1-member "need one of" groups for regular/mechanical/non-nomadic, matching the real
-  availability-filtered set exactly.
-- **`subgrid_width` is settled at 6** — the user's pick from D-17's 4/6/8/12 trade-off survey
-  (`spec/decisions.md`). Not open any more; left here only so a future session's memory of "this
-  was still open" gets corrected on sight.
-- **The `EmpireProfileIndex` parallel-formula gap (this file's own "pipeline owns all geometry"
-  rule, generalised beyond geometry) is now closed** — the base dataset emits `empireProfileAxes`
-  (axis order, values, strides, `totalProfileCount`; `schema/common.schema.json`'s
-  `EmpireProfileAxes`, built by `pipeline.dataset_schema.empire_profile.
-  build_empire_profile_axes`), and `client/src/empireProfile.ts` derives its index purely from
-  that emitted data — no hardcoded stride or axis list survives client-side. Left here only so a
-  future session's memory of "this was still open" gets corrected on sight.
-- **The D-18 off-tree-prerequisite gap is now closed.** `pipeline.rendering_scope.
-  compute_off_tree_prerequisites`'s 3 accepted links now surface in each affected technology's own
-  detail payload (`offTreePrerequisiteNames`) and render in the popup under "Also requires," with
-  a fixed client-side note that the name is outside the rendered scope — see
-  `spec/P-16-mod-requirements.md`'s acceptance criteria, no longer flagged as a gap there.
-- **`repositoryLink` isn't live-validated** (no network access at build time) and its `lineRange`
-  uses the block's start line for both ends (the AST doesn't track an end-of-block line).
+- **Wilderness/Frameworld as TOGGLES layered over the 12 profiles (not new axes): surveyed (Item
+  2c, a later session), NOT implemented — real decision needed, user explicitly wants a
+  recommendation.** The user's framing: two origins with the same shape (substantial exclusive
+  content, `has_origin`-gated) is a pattern, not a special case — a toggle composes ("show me this
+  as a frameworld empire") where a flat axis multiplies, and the two origins are MUTUALLY
+  EXCLUSIVE, which bounds it to a 3-state dimension (neither / wilderness / frameworld), not two
+  independent booleans.
+  - **Scale, re-measured this session (methodology differs slightly from the original wilderness
+    survey — see caveat below, not silently reconciled to the old number): wilderness affects 54
+    technologies / 200 (technology, profile) pairs across the 4 hive-authority profiles; frameworld
+    affects 8 technologies / 96 pairs across all 12 profiles** (frameworld's authority-restriction,
+    if any, is UNCONFIRMED — `common/origins/` isn't vendored for any source, so its own `possible`
+    block can't be inspected; simulated as unrestricted across all 12). Caveat: the wilderness
+    figure was previously recorded as 41/973 (4.2%) / 148 pairs, hive-only; this session's
+    re-measurement (54/200) used a direct true-vs-false leaf simulation rather than replicating the
+    exact prior methodology bit-for-bit — flagged as an unreconciled discrepancy, not silently
+    overwritten, since re-deriving the exact original method wasn't done. Either figure supports
+    the same conclusion (both origins show a real, non-trivial availability difference).
+  - **No other origin comes close in scale** — a full corpus survey of direct `has_origin = X`
+    leaves found the next-largest at 2 technologies (`origin_shroudwalker_apprentice`,
+    `origin_endbringers`, `origin_shroud_forged`, `origin_red_giant`), an order of magnitude below
+    wilderness/frameworld — and `pipeline.gate_patterns.WRAPPER_TO_ORIGIN` confirms these two are
+    the only origin-shaped scripted-trigger WRAPPERS registered at all. **Three states (neither /
+    wilderness / frameworld) is enough** — nothing else in the real corpus argues for a fourth.
+  - **Real emitted payload cost, MEASURED not estimated**: widening `availabilityMatrix` from
+    12 to 36 slots (simulated directly against the real base dataset) moves the base dataset's
+    compressed size **60,885 → 65,704 bytes gzip (+4.8 KB, +7.9%)** — negligible against the ≤2 MB
+    base-dataset budget (spec/P-10), still ~30x headroom. A real built empire overlay for a
+    simulated wilderness/frameworld profile is **54.2 KB / 54.5 KB gzip respectively**, essentially
+    identical to an ordinary profile's overlay (currently ~56–64 KB) — overlays are explicitly
+    OUTSIDE the ≤2 MB base-dataset budget (P-10's own scope statement) and are fetched one profile
+    at a time (lazy, per-selection), so tripling the profile COUNT (12 → 36 files) does not
+    multiply what any single session actually downloads; it multiplies the total artefact COUNT on
+    disk/in a full prefetch, which was never the design's cost model anyway.
+  - **`EmpireProfileIndex` (`pipeline/dataset_schema/empire_profile.py`) extends cleanly, no
+    rework needed.** `AXES` is a plain list of `(name, ordered_values)` pairs with strides derived
+    at import time from cardinalities, plus an import-time bijection assertion — adding a single
+    3-valued axis (`("originToggle", ["neither", "wilderness", "frameworld"])`) is a one-line
+    change that correctly yields `TOTAL_PROFILE_COUNT = 36` with zero special-casing, and models
+    the mutual-exclusivity naturally (one 3-valued axis, not two independent booleans that would
+    wastefully allow a nonsensical "both" combination).
+  - **Icons: neither is vendored**, same finding as the existing "Icons — reported, not vendored"
+    note under "Gates" — `common/origins/` isn't in any source's vendored tree at all, so a visual
+    indicator would need a new source directory pinned and reviewed (a real, separate follow-up),
+    not something this toggle feature can ship with today.
+  - **Recommendation (not acted on, decision is the user's per the prompt's own instruction):
+    implement it.** The scale is real (comparable to, or larger than, thresholds this project
+    already treats seriously — e.g. the 3% D-10 warn threshold), the payload cost is negligible,
+    the indexing mechanism already generalises correctly, and the only real blocker (icons) is a
+    separate, already-known, already-scoped gap that doesn't block a text-only toggle. The main
+    design work is client-side (a toggle control, `EmpireProfileAxes` consumption already
+    data-driven per the closed "EmpireProfileIndex parallel-formula" item) plus extending
+    `AXES`/`profiles` generation and wiring `is_wilderness_empire`/`giga_has_frameworld_origin`
+    into `AXIS_FACTS` (currently `EXCLUDED_KEYS`-only, gate-display-only) the same way the three
+    existing axes are.
+- **Distinct research-path status for a broken ancestor chain: now closed (Item 2d, a later
+  session).** See "Research path" above for the new `"blocked"` status and the corrected P-12.9
+  section 6. Left here only so a future session's memory of "this was still open" gets corrected
+  on sight.
 - **Middle-click isolation (P-7) is fully specced (`spec/P-07-isolation.md`) and entirely
-  unbuilt** — confirmed on request, screenshot-review session (a user tried middle-click and got
-  ordinary left-click selection behaviour instead, since no session has ever implemented it).
-  Spec requirement, in full: middle-click (or long-press ≥400ms on touch, P-9) isolates a node
-  together with its direct prerequisites/unlocks (user-adjustable depth, default 1 hop, with a
-  full-closure option), traversing **all three edge kinds** distinctly styled per P-8 — this
-  deliberately differs from the research path (P-12.9), which is prerequisite-edges-only.
-  Dimming/hiding is a visibility mask over the static layout (never a re-layout, P-4's precedent),
-  exitable via a labelled control and `Escape`, with persistent on-screen state naming the
-  isolated technology. Adjacency lists (forward/reverse, per edge kind) must be precomputed in the
-  dataset so traversal is O(1) per node, never a full edge-set scan, to stay inside P-10's 100ms
-  interaction budget. Not started this session — left here as a real, scoped, ready-to-build
-  feature, not a vague future idea.
+  unbuilt.** Middle-click (or long-press ≥400ms on touch, P-9) isolates a node together with its
+  direct prerequisites/unlocks (user-adjustable depth, default 1 hop, full-closure option),
+  traversing all three edge kinds distinctly styled per P-8 — deliberately differs from the
+  research path (P-12.9), which is prerequisite-edges-only. Visibility mask over the static
+  layout, never a re-layout. Adjacency lists (forward/reverse, per edge kind) must be precomputed
+  in the dataset for O(1) traversal, inside P-10's 100ms budget.
 - **No pipeline-test CI workflow exists** — `pytest` still runs manually/locally only.
 - **`tools/collect_vanilla.py`'s GitHub-fetch-and-pin automation for Gigastructures, plus a
-  scheduled CI staleness check, is still unbuilt** — see this file's "Source data" section above
-  for the full context; the current manual pin is a deliberate stopgap, not a placeholder waiting
-  passively to be replaced.
+  scheduled CI staleness check, is still unbuilt** — see "Source data" above; the current manual
+  pin is a deliberate stopgap.
 - **Pattern tile for Blokkats** needs tracing to clean SVG from the supplied flag image — the
   current herringbone motif is a procedural placeholder, not traced art.
 - **Sirenalia's accent shade and Katzenartig Imperium's chevron pattern are both flagged
-  provisional** in `client/src/tokens.ts`'s own comments — Sirenalia's real geometry (curved wave
-  bands) was ported from v1, but its exact accent colour is still a placeholder; Katzenartig has no
-  in-game reference at all and its pattern is Claude's own inference, not described art.
+  provisional** in `client/src/tokens.ts`'s own comments — Sirenalia's geometry (curved wave
+  bands) was ported from v1, but its accent colour is still a placeholder; Katzenartig has no
+  in-game reference at all and its pattern is inferred, not described art.
 - **`potential-gate` edges' long-span (up to 5-band) backward routing** was left `TODO(Stage 3)`
-  when P-8 was written, before a real rendered canvas existed to design against — re-check whether
-  the v1-style router + gutter-router fallback (see `docs/BUILD-LOG.md`'s rendering section) has
-  since made this moot before treating it as still open.
+  before a real rendered canvas existed to design against — re-check whether the v1-style router +
+  gutter-router fallback (`docs/BUILD-LOG.md`'s rendering sections) has since made this moot.
 - **ΔE2000/WCAG mechanical colour checks are still unbuilt** — S-1's own CI-enforced acceptance
-  criterion (pairwise contrast across the full token set, including the new `RARE_COLOR`/
-  `DANGEROUS_COLOR` badges-slice additions). Every colour token is a first concrete pick, checked
-  by eye only.
-- **A real, previously-open gap, now closed**: the ACOT/AoT closure rule (depth vs. full
-  transitive closure) was surveyed, decided (depth-1), and implemented as D-18
-  (`spec/decisions.md`) — no longer open. Left here as a pointer only in case a future session's
-  memory of "this was still open" needs correcting.
-- **Dev-only `?dev` uncertainty health monitor: now built (a later session).** Lists every
-  rendered technology with ≥1 `uncertain` profile, grouped by `ReasonCategory`, with per-profile
-  `describe_condition()` reason text and click-through to the node. Data lives in diagnostics'
-  new `uncertainTechnologies` field (`pipeline.dataset_emit.build_diagnostics`); fetched
-  client-side only when `?dev` is present (`client/src/dataset.ts`'s `fetchDiagnostics`),
-  matching S-2's existing "lazy, dev-only, never affects P-10 budgets when unused" contract.
-- **Ascension-perk `on_enabled → add_research_option` grants: surveyed (a later session), NOT
-  implemented.** `common/ascension_perks/` is already vendored (Vanilla/Gigastructures/ACOT; AoT
-  has none) but no pipeline module has ever read a perk's own effect blocks — only icon-file
-  lookup touches that directory today. Real finding: `tech_dyson_sphere`'s `potential` is only
-  `{ is_nomadic = no }` and its `weight_modifier` is an unconditional `factor = 0` — it is
-  structurally impossible to research via the normal weighted draw; `ap_galactic_wonders`'
-  (Gigastructures-overwritten) `on_enabled → add_research_option` is the ONLY real unlock path,
-  entirely invisible to this pipeline's existing gate/availability machinery. 3 technologies
-  (`tech_ring_world`, `tech_dyson_sphere`, `tech_matter_decompressor`) share this exact
-  unconditional-zero-weight shape; several more (`tech_mega_engineering`, `tech_habitat_2/3`, two
-  storm techs, 3 Gigastructures megastructure techs) are ALSO granted this way but remain
-  genuinely reachable by the ordinary prerequisite/weighted-draw route too, so they don't need
-  the same treatment. Recommendation: extend P-3's existing gate machinery (a perk-gates-access
-  pattern is exactly what a gate badge means) rather than invent a new display concept — see
-  `docs/BUILD-LOG.md` for the full corpus table and reasoning before implementing.
-- **Hover vs. selection scope: clarified (a later session), not a gap.** No `spec/` file defines
-  either. The current implementation already has the split a user asked for (hover = immediate
-  neighbours only; selection = full ancestor/dependent closure via `computeAncestryAndDependents`)
-  — it was simply not discoverable, since nothing in the UI hints that selecting reveals more
-  than hovering does. Not changed; a discoverability affordance (e.g. a status-bar hint) is a
-  scoped, easy follow-up if wanted, not yet built.
+  criterion (pairwise contrast across the full token set). Every colour token is a first concrete
+  pick, checked by eye only.
+- **`repositoryLink` isn't live-validated** (no network access at build time) and its `lineRange`
+  uses the block's start line for both ends (the AST doesn't track an end-of-block line).
+- **Gate propagation down `potential-gate` edges is a deliberately deferred scope boundary.**
+  Gates propagate down `prerequisite` edges only (the formal "must research first" chain). A
+  `potential-gate` edge (`has_technology` inside `potential`) is a different kind of dependency
+  (an eligibility check, not a declared prerequisite); whether/how it should also propagate gates
+  needs real corpus study before extending.
+- **Looping edges: surveyed twice, none found geometrically.** Three independent geometric checks
+  (X-direction reversal, a Y-axis "hook" shape, literal polyline self-intersection) against the
+  current dataset found zero matching edges. If a user reports this again, ask for a screenshot or
+  a specific technology name rather than re-running the same survey.
+- **Hover vs. selection scope discoverability** — hover shows immediate neighbours only, selection
+  shows the full ancestor/dependent closure; the split is correct but nothing in the UI hints that
+  selecting reveals more than hovering does. A cheap, optional follow-up, not yet built.
+- **Two technologies named "Confluence of Thought" are a known, genuine same-name pair, not a
+  bug.** `tech_hive_confluence` and `tech_wilderness_confluence` are two deliberately-parallel
+  vanilla technology lines (confirmed via raw source's own "# Wilderness" section header) — one of
+  5 documented genuine same-name pairs in the mod. Not an overwrite-resolution or localisation
+  error.
