@@ -11,7 +11,7 @@ import pytest
 
 from tests.conftest import REPO_ROOT
 
-from pipeline.availability import AVAILABLE, CONFIG_GATED, LOCKED, UNCERTAIN
+from pipeline.availability import AVAILABLE, CONFIG_GATED, LOCKED, UNCERTAIN, WEIGHT_GATED
 from pipeline.dataset_emit import (
     _build_research_paths_for_profile,
     _compute_profile_facts,
@@ -125,17 +125,19 @@ def test_nomadic_chooses_arkship_branch_not_starbase(ctx):
 
 
 def test_no_step_is_locked_or_config_gated_for_its_own_profile(ctx):
-    """Every step's own `availabilityState` must be `available` or `uncertain` -- never `locked`
-    (excluded upstream: a locked plain prerequisite makes the whole path `unavailable` instead) or
-    `config-gated` (D-13's sink property: a config-gated technology can only ever be the path's
-    own TARGET, never an interior step)."""
+    """Every step's own `availabilityState` must be `available`, `uncertain` or `weight-gated` --
+    never `locked` (excluded upstream: a locked plain prerequisite makes the whole path
+    `unavailable` instead) or `config-gated` (D-13's sink property: a config-gated technology can
+    only ever be the path's own TARGET, never an interior step). `weight-gated` joined the viable
+    set in D-10's Extension (a later session): unlike locked/config-gated, a weight-gated
+    technology remains eventually researchable, so it's treated the same as `uncertain` here."""
     checked = 0
     for profile in ctx.profiles:
         overlay = build_empire_overlay(ctx, profile)
         for entry in overlay["researchPaths"].values():
             for step in entry.get("steps") or []:
                 checked += 1
-                assert step["availabilityState"] in (AVAILABLE, UNCERTAIN)
+                assert step["availabilityState"] in (AVAILABLE, UNCERTAIN, WEIGHT_GATED)
     assert checked > 0
 
 
@@ -232,7 +234,7 @@ def test_or_tiebreak_cheapest_cost_vs_fewest_steps_disagreement_count(ctx):
                     req.add(p)
                     req |= cp
             for gid, members in alt_groups_of.get(k, []):
-                viable = [m for m in members if state_of(m) in (AVAILABLE, UNCERTAIN)]
+                viable = [m for m in members if state_of(m) in (AVAILABLE, UNCERTAIN, WEIGHT_GATED)]
                 if not viable:
                     memo[k] = None
                     return None
@@ -260,7 +262,7 @@ def test_or_tiebreak_cheapest_cost_vs_fewest_steps_disagreement_count(ctx):
             return 1 + len(r)
 
         for gid, members in all_groups:
-            viable = [m for m in members if state_of(m) in (AVAILABLE, UNCERTAIN)]
+            viable = [m for m in members if state_of(m) in (AVAILABLE, UNCERTAIN, WEIGHT_GATED)]
             total_evals += 1
             if not viable:
                 continue

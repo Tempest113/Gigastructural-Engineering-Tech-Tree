@@ -353,17 +353,25 @@ def test_gate_classification_leaves_d10_uncertainty_unchanged(ctx, base_dataset)
     # threshold (~1.64%, not the 3% ceiling).
     #
     # 16 -> 58, Item 2b (a later session): "zero weight IS an availability fact" -- a
-    # `weight_modifier` entry whose own `factor` is a literal 0 is folded into availability the
+    # `weight_modifier` entry whose own `factor` is a literal 0 was folded into availability the
     # same way a `potential` condition is (`pipeline.availability._apply_weight_gate`), since it's
     # Stellaris's own idiom for "this technology cannot currently be offered at all," not a mere
     # weight reduction. Real corpus: 248 technologies (301 zero-factor modifier entries) carry this
     # shape -- materially broader than the motivating Cosmogenesis example, since the SAME idiom
     # covers ordinary vanilla content (terraforming-variant exclusivity, policy/civic toggles,
-    # FE/crisis-chain gating), not just mod-configuration gates. This is a considered, reported
-    # tradeoff (crosses the 3% warn threshold, stays under the 10% hard ceiling), not a regression
-    # to hide -- see CLAUDE.md's "Research weight" section for the full accounting.
-    assert worst_profile_dependent == 58
-    assert round(worst_profile_dependent / len(doc["technologies"]), 4) == 0.0596  # 58/973
+    # FE/crisis-chain gating), not just mod-configuration gates. This was reported as a considered
+    # tradeoff (crossing the 3% warn threshold, staying under the 10% hard ceiling), not a hidden
+    # regression -- but it was too broad, per the correction immediately below.
+    #
+    # 58 -> 16, corrected (a later session, D-10's Extension in `spec/decisions.md`): Item 2b's own
+    # generalisation folded circumstantial (bucket B) and opaque (bucket C) weight-gate conditions
+    # into `locked`/`uncertain` uniformly, which is what actually drove 16 -> 58. Both buckets now
+    # route to the new fifth `AvailabilityState`, `weight-gated`, which does NOT count toward D-10
+    # uncertainty (parallel to `config-gated`) -- restoring this exact pre-2b figure, not by
+    # reverting Item 2b, but by giving zero-weight conditions the state that actually fits them.
+    # See `docs/BUILD-LOG.md`'s "weight-gated" session entry for the full bucket survey and figures.
+    assert worst_profile_dependent == 16
+    assert round(worst_profile_dependent / len(doc["technologies"]), 4) == 0.0164  # 16/973
 
 
 def test_edge_constraints_leave_d10_uncertainty_unchanged(ctx, base_dataset):
@@ -380,7 +388,9 @@ def test_edge_constraints_leave_d10_uncertainty_unchanged(ctx, base_dataset):
         1 for t in doc["technologies"] if all(state == "uncertain" for state in t["availabilityMatrix"])
     )
     worst_profile_dependent = max(per_profile_uncertain_counts) - unconditional
-    assert worst_profile_dependent == 58  # 16 -> 58, Item 2b -- see test_gate_classification_leaves_d10_uncertainty_unchanged
+    # 16 -> 58 -> 16, Item 2b then its correction -- see
+    # test_gate_classification_leaves_d10_uncertainty_unchanged for the full history.
+    assert worst_profile_dependent == 16
 
 
 def test_active_edge_ids_are_not_identical_across_all_twelve_profiles(ctx):
@@ -779,10 +789,16 @@ def test_diagnostics_validates_and_reports_the_unconditional_uncertain_finding(c
     # and CLAUDE.md's "Research weight" section for the full accounting (248 technologies affected,
     # 39 newly LOCKED for at least one profile, 124 newly UNCERTAIN, a considered tradeoff that
     # crosses the 3% warn threshold but stays under the 10% ceiling).
-    assert diagnostics["unconditionalUncertainty"]["count"] == 115
+    # 115 -> 31, corrected (a later session, D-10's Extension in `spec/decisions.md`): the same
+    # weight-gate figures above were too broad -- circumstantial and opaque conditions now route to
+    # the new `weight-gated` state instead of `locked`/`uncertain`, which doesn't count toward D-10
+    # uncertainty at all. Restores this file's exact pre-2b figures. See `docs/BUILD-LOG.md`'s
+    # "weight-gated" session entry for the bucket survey and the technologies that keep a real
+    # weight-gate-caused LOCKED.
+    assert diagnostics["unconditionalUncertainty"]["count"] == 31
     assert len(diagnostics["profileDependentUncertainty"]) == 12
     worst = max(d["rate"] for d in diagnostics["profileDependentUncertainty"])
-    assert worst == pytest.approx(0.0596, abs=1e-4)  # 0.016444 -> 0.0596 (58/973), Item 2b
+    assert worst == pytest.approx(0.016444, abs=1e-4)  # 16/973, back to the pre-2b figure
 
     cap_keys = {k for k in ctx.rendered_keys if k.startswith("giga_tech_repeatable_") and k.endswith("_cap")}
     assert len(cap_keys) == 50
