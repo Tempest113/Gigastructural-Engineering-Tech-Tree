@@ -20,7 +20,7 @@
               { "type": "null" },
               { "type": "string" }
             ],
-            "description": "Required (non-null) when state is 'locked', 'uncertain' or 'config-gated'; null when 'available'. Two valid origins for a locked reason (P-13): trigger-derived (the specific failed condition) or structure-derived (no edge of any kind reaches this technology for this profile -- P-16). Both are ordinary strings in this one field; a structure-derived reason MUST be phrased in terms of reachability, never as though a trigger failed. An uncertain reason always carries the unresolved trigger's source text. A config-gated reason carries the mod-configuration flag's trigger text (e.g. 'has_global_flag = giga_tech_repeatable_dyson_swarm_capped_r') -- phrased around the game OPTION responsible, never as though the empire itself were the obstacle."
+            "description": "Required (non-null) when state is 'locked', 'uncertain', 'config-gated' or 'weight-gated'; null when 'available'. Two valid origins for a locked reason (P-13): trigger-derived (the specific failed condition) or structure-derived (no edge of any kind reaches this technology for this profile -- P-16). Both are ordinary strings in this one field; a structure-derived reason MUST be phrased in terms of reachability, never as though a trigger failed. An uncertain reason always carries the unresolved trigger's source text. A config-gated reason carries the mod-configuration flag's trigger text (e.g. 'has_global_flag = giga_tech_repeatable_dyson_swarm_capped_r') -- phrased around the game OPTION responsible, never as though the empire itself were the obstacle. A weight-gated reason carries the zero-factor `weight_modifier` condition's phrasing (pipeline.trigger_text.describe_condition, raw-text fallback) -- for the `always = yes` case, phrased around the technology being obtained outside the normal research draw; otherwise phrased around the draw itself, never speculating about which unmodelled mechanism (event/give_technology/special project/archaeology/relic) might actually grant it."
           },
           "configGatedSubject": {
             "oneOf": [
@@ -93,8 +93,8 @@
                   "description": "Null when this step's own cost is unresolvable (contributes 0 to totalCost; see totalCostIsEstimate/estimateReasons)."
                 },
                 "availabilityState": {
-                  "type": "string", "enum": ["available", "uncertain"],
-                  "description": "Never locked/config-gated -- a step whose own state resolves to either is excluded upstream (a plain locked prerequisite makes the whole path unavailable; a config-gated technology can only ever be the path's own target, per the sink property)."
+                  "type": "string", "enum": ["available", "uncertain", "weight-gated"],
+                  "description": "Never locked/config-gated -- a step whose own state resolves to either is excluded upstream (a plain locked prerequisite makes the whole path unavailable; a config-gated technology can only ever be the path's own target, per the sink property). 'weight-gated' IS a viable step (D-10's Extension): unlike locked/config-gated, the technology remains eventually researchable, so it's treated the same way 'uncertain' is here -- a real step, not a route-breaker."
                 },
                 "groupId": {
                   "oneOf": [{ "type": "null" }, { "type": "string" }],
@@ -128,8 +128,8 @@
           },
           "estimateReasons": {
             "type": "array",
-            "items": { "type": "string", "enum": ["uncertain-availability", "unresolved-cost"] },
-            "description": "Empty when totalCostIsEstimate is false. Can carry both reasons at once."
+            "items": { "type": "string", "enum": ["uncertain-availability", "unresolved-cost", "weight-gated-step"] },
+            "description": "Empty when totalCostIsEstimate is false. Can carry more than one reason at once. 'weight-gated-step' is set whenever any step (or the target itself) is 'weight-gated' -- distinct from 'uncertain-availability', since a weight-gated step is a determinate, known-not-currently-drawn fact, not an undecidable one, but the total is still an estimate because the weight gate could lift."
           },
           "configGatedTarget": {
             "description": "Non-null only when status == 'config-gated' -- the target itself, excluded from steps/totalCost above (P-13's fourth AvailabilityState: a settings-toggle, determinate-unavailable fact, not an uncertain one).",

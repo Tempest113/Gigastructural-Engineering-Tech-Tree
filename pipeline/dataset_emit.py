@@ -59,6 +59,7 @@ from .availability import (
     CONFIG_GATED,
     LOCKED,
     UNCERTAIN,
+    WEIGHT_GATED,
     build_d10_diagnostics_section,
     evaluate_technology_for_profiles,
     evaluate_trigger_block,
@@ -1346,31 +1347,39 @@ def _build_research_paths_for_profile(
     not assumed) -- surfaced as `diagnostics.unresolvableResearchPaths` by the caller, not
     silently absorbed into a fabricated `unavailable` status."""
 
-    memo: dict[str, tuple[frozenset, dict[str, tuple[str, list[str]]], bool, bool]] = {}
+    memo: dict[str, tuple[frozenset, dict[str, tuple[str, list[str]]], bool, bool, bool]] = {}
     direct_effective_deps: dict[str, list[str]] = {}
 
     def state_of(k: str) -> str:
         return availability_json.get(k, {}).get("state", LOCKED)
 
-    def closure(k: str) -> tuple[frozenset, dict[str, tuple[str, list[str]]], bool, bool]:
+    def closure(k: str) -> tuple[frozenset, dict[str, tuple[str, list[str]]], bool, bool, bool]:
         if k in memo:
             return memo[k]
         req: set[str] = set()
         group_info: dict[str, tuple[str, list[str]]] = {}
         has_uncertain = state_of(k) == UNCERTAIN
+        # D-10's Extension (a later session): WEIGHT_GATED is VIABLE for path traversal, unlike
+        # LOCKED/CONFIG_GATED (see the prereq/alt-group checks below), but the total is still an
+        # estimate whenever one is in the chain -- its own `estimateReasons` member
+        # ("weight-gated-step"), tracked the same way `has_uncertain` already is, deliberately
+        # NOT folded into `has_uncertain` itself (a weight gate is a determinate fact, not an
+        # undecidable one -- the two reasons are real and distinct, see schema's estimateReasons).
+        has_weight_gated = state_of(k) == WEIGHT_GATED
         has_null_cost = costs.get(k) is None
         deps: list[str] = []
 
         def _absorb(child_key: str, child_state: str) -> None:
-            nonlocal has_uncertain, has_null_cost
+            nonlocal has_uncertain, has_weight_gated, has_null_cost
             if child_key in req:
                 return
-            child_req, child_gi, child_unc, child_null = closure(child_key)
+            child_req, child_gi, child_unc, child_wg, child_null = closure(child_key)
             req.add(child_key)
             req.update(child_req)
             for gk, gv in child_gi.items():
                 group_info.setdefault(gk, gv)
             has_uncertain = has_uncertain or child_unc or child_state == UNCERTAIN
+            has_weight_gated = has_weight_gated or child_wg or child_state == WEIGHT_GATED
             has_null_cost = has_null_cost or child_null or costs.get(child_key) is None
 
         for p in prereq_of.get(k, []):
@@ -1381,7 +1390,7 @@ def _build_research_paths_for_profile(
             _absorb(p, p_state)
 
         for group_id, members in alt_groups_of.get(k, []):
-            viable = [m for m in members if state_of(m) in (AVAILABLE, UNCERTAIN)]
+            viable = [m for m in members if state_of(m) in (AVAILABLE, UNCERTAIN, WEIGHT_GATED)]
             if not viable:
                 raise _UnreachablePath(members[0] if members else k)
             chosen = min(viable, key=lambda m: (_closure_total_cost(m, closure, costs), m))
@@ -1390,7 +1399,7 @@ def _build_research_paths_for_profile(
             group_info.setdefault(chosen, (group_id, [m for m in viable if m != chosen]))
 
         direct_effective_deps[k] = deps
-        result = (frozenset(req), group_info, has_uncertain, has_null_cost)
+        result = (frozenset(req), group_info, has_uncertain, has_weight_gated, has_null_cost)
         memo[k] = result
         return result
 
@@ -1434,7 +1443,7 @@ def _build_research_paths_for_profile(
             paths[key] = {"status": "unavailable"}
             continue
         try:
-            req, group_info, has_uncertain, has_null_cost = closure(key)
+            req, group_info, has_uncertain, has_weight_gated, has_null_cost = closure(key)
         except _UnreachablePath as exc:
             unresolvable.append(key)
             blocking_name, _blocking_icon = display(exc.blocking_key)
@@ -1462,10 +1471,13 @@ def _build_research_paths_for_profile(
         # neither figure; this is the schema's own actual intent, not a deviation from it.
         total_cost = ancestors_cost if is_config_gated else ancestors_cost + (costs.get(key) or 0.0)
         target_uncertain = target_state == UNCERTAIN
+        target_weight_gated = target_state == WEIGHT_GATED
         target_null_cost = (not is_config_gated) and costs.get(key) is None
         reasons = []
         if has_uncertain or target_uncertain:
             reasons.append("uncertain-availability")
+        if has_weight_gated or target_weight_gated:
+            reasons.append("weight-gated-step")
         if has_null_cost or target_null_cost:
             reasons.append("unresolved-cost")
 
@@ -1496,7 +1508,7 @@ def _closure_total_cost(key: str, closure_fn, costs: dict[str, float | None]) ->
     per-candidate comparison figure only, deliberately NOT deduplicated against ancestors already
     chosen elsewhere in the path being built -- the final `totalCost` (computed once, over the
     actual chosen ancestor SET) is where sharing is naturally deduplicated instead."""
-    req, _gi, _unc, _null = closure_fn(key)
+    req, _gi, _unc, _wg, _null = closure_fn(key)
     return (costs.get(key) or 0.0) + sum((costs.get(a) or 0.0) for a in req)
 
 

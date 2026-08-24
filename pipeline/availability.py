@@ -1,9 +1,12 @@
 """D-10/P-13: partial trigger evaluator.
 
 Produces `(technology, empire profile) -> {state, reason}`, state always one of
-`available` / `locked` / `uncertain` / `config-gated` (schema's `AvailabilityState`, renamed from
-`ThreeState` when the fourth value was added — see `spec/decisions.md`'s D-10) — **never**
-a boolean. `unknown` (here: `uncertain`) propagates through boolean structure exactly like it
+`available` / `locked` / `uncertain` / `config-gated` / `weight-gated` (schema's
+`AvailabilityState`, renamed from `ThreeState` when the fourth value was added, now carrying a
+fifth — see `spec/decisions.md`'s D-10) — **never** a boolean. `weight-gated` (`_apply_weight_gate`
+below) is the newest: a `weight_modifier` zero-factor condition that fires or can't be resolved,
+narrower than a straightforward LOCKED because static analysis can't see `give_technology`/event/
+special-project/archaeology/relic routes that bypass the weighted draw entirely. `unknown` (here: `uncertain`) propagates through boolean structure exactly like it
 does in Stellaris's own trigger engine (Kleene three-valued logic): a `false` branch under `AND`
 or a `true` branch under `OR` short-circuits regardless of an undecidable sibling, which is the
 mechanism that separates D-10's profile-dependent metric from its unconditional one — see
@@ -98,6 +101,15 @@ UNCERTAIN = "uncertain"
 # rendering both the same way would tell a player content is off-limits when it's one options-
 # menu toggle away. See schema/common.schema.json's AvailabilityState (renamed from ThreeState).
 CONFIG_GATED = "config-gated"
+# D-10's fifth state (a later session, correcting Item 2b's overbroad weight-modifier folding --
+# see CLAUDE.md's "Research weight -> Extension" and `_apply_weight_gate`'s own docstring for the
+# full reasoning). A `weight_modifier` zero-factor condition that fires (or cannot be resolved)
+# means the technology is not currently OFFERED in the weighted research draw -- but unlike
+# LOCKED, this says nothing about whether the empire's TYPE can ever obtain it: `give_technology`,
+# events, special projects, archaeology and relics are all invisible to this static evaluator and
+# can grant the technology regardless. Parallel to CONFIG_GATED: a real, determinate fact, never
+# folded into D-10's uncertainty accounting.
+WEIGHT_GATED = "weight-gated"
 
 BOOLEAN_WRAPPERS = {"AND", "OR", "NOT", "NOR"}
 
@@ -380,13 +392,22 @@ class _State(Enum):
 class _Eval:
     state: _State
     leaf: Assignment | None  # the leaf/wrapper Assignment responsible, when state is FALSE or UNKNOWN
+    # Decision 4 (weight-gate LOCKED narrowing, a later session): True only when this result's
+    # TRUE/FALSE resolution rests SOLELY on AXIS_FACTS leaves and/or `has_ascension_perk` leaves
+    # whose own referenced perk resolved LOCKED for an axis-pure reason -- i.e. leaves that
+    # genuinely distinguish between empire TYPES, never a ground fact (DLC, `always`, mod-config
+    # toggle, progression flag) that's constant or circumstantial across every type. Meaningless
+    # for UNKNOWN/EXCLUDED; consulted only by `_apply_weight_gate` on a TRUE result, never by
+    # `evaluate_trigger_block`'s ordinary `potential` evaluation (which doesn't need this
+    # distinction -- see that function's own LOCKED branch, unchanged by this addition).
+    axis_pure: bool = False
 
 
 @dataclass(frozen=True)
 class AvailabilityResult:
     """One `(technology, empire profile)` result. `state` is always one of AVAILABLE / LOCKED /
-    UNCERTAIN / CONFIG_GATED (schema.AvailabilityState, renamed from ThreeState when this fourth
-    value was added) -- never a boolean, per D-10/P-13.
+    UNCERTAIN / CONFIG_GATED / WEIGHT_GATED (schema.AvailabilityState, renamed from ThreeState when
+    the fourth value was added, now carrying a fifth) -- never a boolean, per D-10/P-13.
 
     `reason` is the raw trigger source text (P-13: "the trigger *text* is always known, only its
     truth value isn't"). `description` is `pipeline.trigger_text.describe_condition`'s
@@ -461,9 +482,14 @@ def _flag_value_name(value) -> str | None:
     return None
 
 
-def _bool_eval(resolved: bool, negate: bool, leaf: Assignment) -> _Eval:
+def _bool_eval(resolved: bool, negate: bool, leaf: Assignment, axis_pure: bool = False) -> _Eval:
     result = resolved != negate
-    return _Eval(_State.TRUE, None) if result else _Eval(_State.FALSE, leaf)
+    # Both branches now carry `leaf` (a change from the original TRUE-branch's `None`): harmless
+    # for every existing caller, since `evaluate_trigger_block` only reads `.leaf` on a FALSE/
+    # UNKNOWN result (a TRUE overall result maps straight to AVAILABLE without consulting it) --
+    # but `_apply_weight_gate` needs to name the specific leaf responsible for a TRUE (zero-weight-
+    # condition-met) result too, to phrase its LOCKED/WEIGHT_GATED description text.
+    return _Eval(_State.TRUE, leaf, axis_pure) if result else _Eval(_State.FALSE, leaf, axis_pure)
 
 
 def _evaluate_leaf(assignment: Assignment, profile: dict) -> _Eval:
@@ -483,13 +509,31 @@ def _evaluate_leaf(assignment: Assignment, profile: dict) -> _Eval:
         # higher up the same call stack as EXCLUDED (unresolved either way) rather than recursing
         # forever.
         if perk_id is not None and perk_id in _perk_potentials and perk_id not in _perk_eval_in_progress:
+            perk_block = _perk_potentials[perk_id]
+            if perk_block is None:
+                return _Eval(_State.EXCLUDED, None)
             _perk_eval_in_progress.add(perk_id)
             try:
-                perk_result = evaluate_trigger_block(_perk_potentials[perk_id], profile)
+                # Single pass (a later session's perf fix -- a first version called both this AND
+                # the public `evaluate_trigger_block` on the same block, doubling every axis-locked
+                # perk's evaluation cost, measurable on the real corpus: ~4x slower per empire
+                # overlay for machine-intelligence profiles, where axis-restricted perks are most
+                # common). `perk_eval.state == FALSE` is exactly `evaluate_trigger_block`'s LOCKED
+                # case; the `categorize_leaf` check below reproduces that function's own
+                # LOCKED-vs-CONFIG_GATED split (a mod-config-toggle-caused FALSE must NOT turn this
+                # leaf into a real FALSE -- that's a game OPTION, not an empire-type fact) without a
+                # second full evaluation. `axis_pure` (Decision 4): a perk whose own `potential` is
+                # LOCKED for a genuine axis reason makes THIS `has_ascension_perk` leaf axis_pure
+                # too, per CLAUDE.md's D-6 correction ("a perk whose own potential carries a genuine
+                # axis constraint" is a real profile fact, not a free choice).
+                perk_children = [_evaluate_node(sub, profile) for sub in perk_block.items if isinstance(sub, Assignment)]
+                perk_eval = _combine_and(perk_children)
             finally:
                 _perk_eval_in_progress.discard(perk_id)
-            if perk_result.state == LOCKED:
-                return _bool_eval(False, negate, assignment)
+            if perk_eval.state == _State.FALSE:
+                category = categorize_leaf(perk_eval.leaf) if perk_eval.leaf is not None else None
+                if category != ReasonCategory.MOD_CONFIGURATION:
+                    return _bool_eval(False, negate, assignment, axis_pure=perk_eval.axis_pure)
         return _Eval(_State.EXCLUDED, None)
 
     if key == "has_global_flag":
@@ -558,7 +602,7 @@ def _evaluate_leaf(assignment: Assignment, profile: dict) -> _Eval:
         if target is None:
             return _Eval(_State.UNKNOWN, assignment)
         actual = AXIS_FACTS[key](profile)
-        return _bool_eval(actual == target, negate, assignment)
+        return _bool_eval(actual == target, negate, assignment, axis_pure=True)
 
     return _Eval(_State.UNKNOWN, assignment)
 
@@ -569,19 +613,31 @@ def _combine_and(children: list[_Eval]) -> _Eval:
         return _Eval(_State.EXCLUDED, None)
     false_ones = [c for c in relevant if c.state == _State.FALSE]
     if false_ones:
-        return _Eval(_State.FALSE, false_ones[0].leaf)
+        return _Eval(_State.FALSE, false_ones[0].leaf, axis_pure=false_ones[0].axis_pure)
     unknown_ones = [c for c in relevant if c.state == _State.UNKNOWN]
     if unknown_ones:
         return _Eval(_State.UNKNOWN, unknown_ones[0].leaf)
-    return _Eval(_State.TRUE, None)
+    # Every relevant child is TRUE: AND's own axis_pure requires ALL of them to be (decision 4 --
+    # a single non-axis TRUE branch is enough to make the whole conjunction's truth not solely an
+    # empire-type fact). `leaf` is only kept when there's exactly one relevant child -- with more
+    # than one, no single leaf explains the combined TRUE, so text generation falls back to the
+    # raw block text instead (see `_apply_weight_gate`).
+    return _Eval(_State.TRUE, relevant[0].leaf if len(relevant) == 1 else None, axis_pure=all(c.axis_pure for c in relevant))
 
 
 def _combine_or(children: list[_Eval]) -> _Eval:
     relevant = [c for c in children if c.state != _State.EXCLUDED]
     if not relevant:
         return _Eval(_State.EXCLUDED, None)
-    if any(c.state == _State.TRUE for c in relevant):
-        return _Eval(_State.TRUE, None)
+    true_ones = [c for c in relevant if c.state == _State.TRUE]
+    if true_ones:
+        # OR's axis_pure is conservative: True only when EVERY true branch is itself axis_pure --
+        # `_combine_or` doesn't track which branch's truth "actually" explains the overall TRUE,
+        # so a non-axis TRUE sibling alongside an axis-pure TRUE sibling must not let the whole OR
+        # claim a real empire-type distinction (decision 4's "actually distinguishes between
+        # empire types" bar -- err toward WEIGHT_GATED, never a false LOCKED).
+        leaf = true_ones[0].leaf if len(true_ones) == 1 else None
+        return _Eval(_State.TRUE, leaf, axis_pure=all(c.axis_pure for c in true_ones))
     unknown_ones = [c for c in relevant if c.state == _State.UNKNOWN]
     if unknown_ones:
         return _Eval(_State.UNKNOWN, unknown_ones[0].leaf)
@@ -599,14 +655,14 @@ def _combine_or(children: list[_Eval]) -> _Eval:
     # arose and `relevant[0]` alone (this function's PRE-Item-2 behaviour) was safe.
     if len(relevant) < len(children):
         return _Eval(_State.EXCLUDED, None)
-    return _Eval(_State.FALSE, relevant[0].leaf)
+    return _Eval(_State.FALSE, relevant[0].leaf, axis_pure=relevant[0].axis_pure)
 
 
 def _negate(inner: _Eval, wrapper: Assignment) -> _Eval:
     if inner.state == _State.TRUE:
-        return _Eval(_State.FALSE, wrapper)
+        return _Eval(_State.FALSE, wrapper, axis_pure=inner.axis_pure)
     if inner.state == _State.FALSE:
-        return _Eval(_State.TRUE, None)
+        return _Eval(_State.TRUE, None, axis_pure=inner.axis_pure)
     return inner  # UNKNOWN / EXCLUDED propagate unchanged
 
 
@@ -670,6 +726,26 @@ def evaluate_trigger_block(block: Block | None, profile: dict) -> AvailabilityRe
     return AvailabilityResult(UNCERTAIN, reason, description, category)
 
 
+_WEIGHT_GATE_UNKNOWN_ROUTE = "Not offered through the normal research draw currently."
+_WEIGHT_GATE_ALWAYS_ROUTE = "This technology is obtained outside the normal research draw, not through it."
+
+
+def _weight_gated_description(leaf: Assignment | None) -> str:
+    """Per-instance condition text for a WEIGHT_GATED result (the "CONDITION TEXT" naming
+    decision): the two real `always = yes` cases get dedicated phrasing ("obtained outside the
+    normal draw"), since static analysis can positively confirm the draw itself is permanently
+    excluded even though it can't confirm the REAL route (event/give_technology/special project/
+    archaeology/relic -- see `_apply_weight_gate`'s own docstring). Everything else routes through
+    `describe_condition` (raw-text fallback included), and a condition with no single named leaf
+    (EXCLUDED-dominated, or an AND/OR combining more than one relevant branch) gets the neutral
+    "not offered" phrasing -- never a guess at which unmodelled mechanism actually grants it."""
+    if leaf is not None and leaf.key_name == "always" and _yesno(leaf.value) is True:
+        return _WEIGHT_GATE_ALWAYS_ROUTE
+    if leaf is not None:
+        return describe_condition(leaf)
+    return _WEIGHT_GATE_UNKNOWN_ROUTE
+
+
 def _apply_weight_gate(
     result: AvailabilityResult, weight_gate_blocks: list[Block], profile: dict
 ) -> AvailabilityResult:
@@ -678,38 +754,86 @@ def _apply_weight_gate(
     all" -- not a mere weight reduction, functionally a gate (the motivating case: Cosmogenesis-
     locked technologies, whose `weight_modifier` zeroes them out entirely until a late-game crisis
     level is reached). `weight_gate_blocks` are the zero-factor modifiers' own condition blocks
-    (already scripted-trigger-expanded, `factor` itself stripped) -- each evaluated exactly like a
-    `potential` block, through the SAME unchanged Kleene evaluator, never a second mechanism.
+    (already scripted-trigger-expanded, `factor` itself stripped) -- each evaluated through the
+    SAME unchanged Kleene evaluator `evaluate_trigger_block`/`evaluate_trigger_block` uses
+    (`_evaluate_node`/`_combine_and`), never a second mechanism, but consulted here at the
+    INTERNAL `_Eval` level rather than through `evaluate_trigger_block`'s public wrapper -- see
+    "the EXCLUDED defect" below for why that distinction matters.
 
     Only ever applied when the technology's `potential`-based `result` is already AVAILABLE -- a
     technology LOCKED/UNCERTAIN/CONFIG_GATED for a real `potential`-block reason keeps that reason
     unchanged; this project's `reason` field is a single string, not a combined list, so the more
-    specific existing reason wins over a weight-based one. If ANY zero-factor condition resolves
-    definitely TRUE (the modifier fires, weight is definitely zero right now), the technology
-    downgrades to LOCKED. If none fires but at least one is UNCERTAIN, it downgrades to UNCERTAIN
-    with that leaf's own reason/description/category -- the same honest "unknown" treatment as any
-    other undecidable leaf, never guessed at."""
+    specific existing reason wins over a weight-based one.
+
+    A `weight_modifier` describes eligibility in the weighted research draw ONLY -- it says
+    nothing about `give_technology`, `add_research_option`, event grants, special projects,
+    archaeology rewards or relic activations, none of which this static evaluator can see.
+    Reporting a technology LOCKED purely because its weight is zero would therefore claim
+    something the pipeline cannot actually know: a real corpus case (`tech_akx_worm_1`, `always =
+    yes`) is confirmed granted through an exclusive event chain despite permanent zero weight.
+    Decision 4 (CLAUDE.md's "Research weight -> Extension"): a definite LOCKED verdict from a
+    weight gate is therefore permitted ONLY when the condition's TRUE resolution is grounded
+    SOLELY in AXIS_FACTS leaves (or an axis-restricted ascension perk) -- `_Eval.axis_pure`, which
+    genuinely distinguishes empire TYPES, never merely a ground fact (DLC, `always`, mod-config
+    toggle, story-progression flag) that reads the same for every profile. Every other zero-weight
+    firing -- circumstantial state (bucket B), opaque leaves (bucket C), or a non-axis-pure
+    bucket-A leaf (`always`, an unrestricted perk, an unresolved wrapper) -- downgrades to
+    WEIGHT_GATED instead: the tool CAN tell the player this isn't offered in the draw, it just
+    can't attribute that to their empire's TYPE. WEIGHT_GATED does not fold into D-10 uncertainty
+    accounting (parallel to CONFIG_GATED, not a data gap) and is treated as VIABLE by the research-
+    path builder (P-12.9), unlike LOCKED/CONFIG_GATED.
+
+    **The EXCLUDED defect (fixed here, see docs/DEFECTS.md's "EXCLUDED-as-vacuously-satisfied"
+    write-up):** `evaluate_trigger_block`'s public wrapper maps BOTH internal `_State.TRUE` and
+    `_State.EXCLUDED` to `AVAILABLE` -- correct for `potential` evaluation (EXCLUDED there means
+    "a player CHOICE, presume open", the right default for "can this empire type ever have this").
+    That default has no meaning here: an EXCLUDED-dominated weight-gate condition (e.g. `NOT =
+    { has_ascension_perk = <a perk with no axis restriction> }`, or a bare `has_galactic_wonders`
+    leaf -- both real corpus cases) means the pipeline genuinely cannot evaluate whether the zero-
+    weight condition holds, not that it's "presumed not to." Using the public wrapper here would
+    silently launder that EXCLUDED into the OLD code's real-LOCKED branch (this defect's actual
+    prior behaviour: 4 technologies reported permanently LOCKED for all 12 profiles on a condition
+    this evaluator cannot interpret at all). Fixed by working from the internal `_Eval` directly
+    and giving `_State.EXCLUDED` its own branch below, which can only ever route to WEIGHT_GATED,
+    never LOCKED -- asserted, not an emergent property of the axis_pure check (an EXCLUDED result
+    has no leaf to be axis_pure about; `axis_pure` defaults False and is never consulted for a
+    state other than TRUE, so this is enforced structurally, not merely by convention)."""
     if result.state != AVAILABLE or not weight_gate_blocks:
         return result
-    uncertain_result: AvailabilityResult | None = None
+
+    weight_gated_pick: AvailabilityResult | None = None
     for cond_block in weight_gate_blocks:
-        r = evaluate_trigger_block(cond_block, profile)
-        if r.state == AVAILABLE:
-            reason = " ".join(
-                _leaf_text(item) for item in cond_block.items if isinstance(item, Assignment)
-            )
-            return AvailabilityResult(
-                LOCKED,
-                reason or None,
-                "Zero research weight: a mod-defined condition currently rules this out entirely.",
-            )
-        if r.state == UNCERTAIN and uncertain_result is None:
-            uncertain_result = r
-    if uncertain_result is not None:
-        return AvailabilityResult(
-            UNCERTAIN, uncertain_result.reason, uncertain_result.description, uncertain_result.category
-        )
-    return result
+        children = [_evaluate_node(item, profile) for item in cond_block.items if isinstance(item, Assignment)]
+        ev = _combine_and(children)
+        reason = " ".join(_leaf_text(item) for item in cond_block.items if isinstance(item, Assignment)) or None
+
+        if ev.state == _State.TRUE:
+            if ev.axis_pure:
+                # `ev.leaf` is None whenever more than one relevant child contributed to the TRUE
+                # combination (or a NOT-wrapper's own inner had no single leaf, e.g. `has_galactic_
+                # wonders = no` after scripted-trigger expansion, a real corpus case: the axis-
+                # locked-perk-chain OR has no single named leaf once negated) -- raw block text
+                # (`reason`, always non-None whenever a TRUE result was reachable at all, since
+                # that requires >=1 relevant child) is the honest fallback, never the WEIGHT_GATED
+                # "not offered" phrasing, which would misdescribe a real, definite LOCKED verdict.
+                description = describe_condition(ev.leaf) if ev.leaf is not None else reason
+                return AvailabilityResult(LOCKED, reason, description)
+            if weight_gated_pick is None:
+                weight_gated_pick = AvailabilityResult(WEIGHT_GATED, reason, _weight_gated_description(ev.leaf))
+            continue
+
+        if ev.state in (_State.EXCLUDED, _State.UNKNOWN):
+            if weight_gated_pick is None:
+                weight_gated_pick = AvailabilityResult(WEIGHT_GATED, reason, _weight_gated_description(ev.leaf))
+            continue
+
+        # ev.state == _State.FALSE: the zero-weight condition does not currently hold for this
+        # profile -- this block contributes nothing, matching decision 3's "an A-type leaf that
+        # independently decides the outcome" case (Kleene AND already gives FALSE priority over an
+        # UNKNOWN/EXCLUDED sibling, so a definite non-firing axis fact correctly leaves the
+        # technology untouched by this block even when another leaf in it is unresolved).
+
+    return weight_gated_pick if weight_gated_pick is not None else result
 
 
 def evaluate_technology_for_profiles(
@@ -720,13 +844,32 @@ def evaluate_technology_for_profiles(
     keyed by list index (== EmpireProfileIndex when that's the list passed). `weight_gate_blocks`,
     when non-empty, additionally folds in `_apply_weight_gate`'s zero-weight-unless-condition
     check (Item 2b) -- omitted or empty is a no-op, matching every technology with no zero-factor
-    `weight_modifier` entry."""
+    `weight_modifier` entry.
+
+    Decision 5's tripwire (a later session): when `profiles` is the FULL canonical 12-profile set,
+    it must be impossible for a weight gate to turn every one of them LOCKED -- a condition that
+    locks all 12 draws no empire-type distinction at all and belongs in WEIGHT_GATED, not LOCKED
+    (see `_apply_weight_gate`'s `axis_pure` gate, which this asserts actually holds). Guarded to
+    the full 12-profile call only: a caller evaluating a single profile (e.g.
+    `pipeline.dataset_emit._compute_profile_facts`, one profile at a time) legitimately sees a
+    real axis-locked LOCKED with nothing else to compare it against, and must not trip this."""
     results = {i: evaluate_trigger_block(block, profile) for i, profile in enumerate(profiles)}
     if weight_gate_blocks:
-        results = {
+        gated = {
             i: _apply_weight_gate(results[i], weight_gate_blocks, profile)
             for i, profile in enumerate(profiles)
         }
+        if len(profiles) == 12:
+            weight_gate_caused_locked = [
+                i for i in gated
+                if gated[i].state == LOCKED and results[i].state == AVAILABLE
+            ]
+            assert len(weight_gate_caused_locked) < 12, (
+                "Decision 5 tripwire: a weight-gate condition produced LOCKED for all 12 profiles "
+                "-- it draws no empire-type distinction and must route to WEIGHT_GATED instead "
+                "(see _apply_weight_gate's axis_pure gate)."
+            )
+        results = gated
     return results
 
 
