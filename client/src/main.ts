@@ -55,6 +55,8 @@ import {
   TIER_BAND_TINT_COLOR_ODD,
   UNCERTAIN_BADGE_COLOR,
   UNCERTAIN_DIM_ALPHA,
+  WEIGHT_GATED_BADGE_COLOR,
+  WEIGHT_GATED_DIM_ALPHA,
   type RowPatternSpec,
 } from "./tokens";
 import { createCamera, type Camera, type ContentBBox } from "./camera";
@@ -1428,11 +1430,17 @@ async function render(): Promise<void> {
         alpha = UNCERTAIN_DIM_ALPHA;
         badgeColor = UNCERTAIN_BADGE_COLOR;
         glyph = "?";
-      } else {
-        // config-gated
+      } else if (state === "config-gated") {
         alpha = CONFIG_GATED_DIM_ALPHA;
         badgeColor = CONFIG_GATED_BADGE_COLOR;
         glyph = "⚙"; // ⚙ -- a game OPTION, not empire state, is the obstacle
+      } else {
+        // weight-gated (D-10's Extension): not currently drawn, but not empire-type-impossible
+        // either -- a distinct glyph from both config-gated's "game option" and locked's "cannot
+        // reach", since neither is quite right here.
+        alpha = WEIGHT_GATED_DIM_ALPHA;
+        badgeColor = WEIGHT_GATED_BADGE_COLOR;
+        glyph = "⧗"; // ⧗ -- not offered right now, could still turn up
       }
       dim.alpha = alpha;
       badge.bg.clear().roundRect(0, 0, 16, 16, 3).fill({ color: badgeColor, alpha: 0.95 });
@@ -1976,11 +1984,12 @@ async function render(): Promise<void> {
     const stepRows = steps
       .map((s) => {
         const uncertainBadge = s.availabilityState === "uncertain" ? ` <span class="research-path-uncertain">uncertain</span>` : "";
+        const weightGatedBadge = s.availabilityState === "weight-gated" ? ` <span class="research-path-weight-gated">not currently drawn</span>` : "";
         const costText = s.stepCost !== null ? Math.round(s.stepCost).toLocaleString("en-US") : "unresolved";
         const altSuffix = s.alternatives.length > 0
           ? ` <span class="research-path-alt-note">(also: ${s.alternatives.map((a) => escapeHtml(a.name)).join(", ")})</span>`
           : "";
-        return `<li>${escapeHtml(s.name)} — ${costText}${uncertainBadge}${altSuffix}</li>`;
+        return `<li>${escapeHtml(s.name)} — ${costText}${uncertainBadge}${weightGatedBadge}${altSuffix}</li>`;
       })
       .join("");
 

@@ -241,6 +241,13 @@ export const CONFIG_GATED_DIM_ALPHA = 0.45;
 export const LOCKED_BADGE_COLOR = 0xb0433d; // muted red -- "cannot reach this"
 export const UNCERTAIN_BADGE_COLOR = 0x9a8b5a; // muted amber -- "might reach this"
 export const CONFIG_GATED_BADGE_COLOR = 0x4a7a9e; // muted blue -- "a game OPTION, not your empire, is the obstacle"
+// WEIGHT_GATED fifth state (D-10's Extension, a later session): distinct hue from every other
+// badge colour (a muted violet, between CONFIG_GATED's blue and ANCESTRY_COLOR's violet but not
+// equal to either) -- "not currently drawn, but eventually reachable," the lightest dim of the
+// four non-available states since this is the LEAST restrictive one (unlike locked/config-gated,
+// the research-path builder treats it as a viable step, P-12.9's Extension).
+export const WEIGHT_GATED_DIM_ALPHA = 0.25;
+export const WEIGHT_GATED_BADGE_COLOR = 0x7a5a9e; // muted violet -- "not offered right now, but not impossible"
 
 // Search slice (reconciliation session 4): matches highlight IN PLACE on the canvas -- never a
 // filter, per this session's own instruction ("hiding nodes breaks the reading of prerequisite
