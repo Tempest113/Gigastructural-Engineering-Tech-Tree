@@ -69,9 +69,10 @@ just because it's named here.
 
 - **Empire model**: three independent axes (gestalt/authority: regular/hive/machine; shipset:
   mechanical/biological; nomadic: yes/no) = 12 profiles, composed at build time, never a flat
-  enumeration. Origins are not an axis. — D-6, `spec/P-01-empire-types.md`. **D-6 is stale**: it
-  still states the pre-correction rule below; the correction is normative and currently exists
-  only here and in `docs/BUILD-LOG.md` (flagged, not promoted — see report).
+  enumeration. Origins are not an axis. — D-6, `spec/P-01-empire-types.md`. **D-6's staleness is
+  now fixed** (a later session): `spec/decisions.md`'s own D-6 entry previously still stated the
+  pre-correction "ascension perks are gates, not profile facts" rule with no axis-lock exception;
+  it now states the correction below directly, so this flag no longer applies.
 - **Ascension perks are gates, not profile facts — with a correction.** WHICH perk a player
   chooses is always a free choice, never a profile fact — a perk-gated technology always displays
   its gate. WHETHER a perk is obtainable at all for an empire type IS a real fact when the perk's
@@ -96,12 +97,13 @@ just because it's named here.
 - **Trigger evaluation**: three-valued Kleene evaluation (`true`/`false`/`unknown`) over empire
   profile facts (`pipeline/availability.py`); `unknown` always propagates, never assumed either
   way. Output is always `(technology, profile) → {state, reason}`, `state ∈
-  {available, locked, uncertain, config-gated}` — never a boolean. — D-10, P-13.
+  {available, locked, uncertain, config-gated, weight-gated}` — never a boolean. — D-10, P-13.
   D-10 splits into **profile-dependent uncertainty** (10% hard ceiling per profile, 3% warn,
   ratchet against the prior dataset) and **unconditional uncertainty** (uncertain identically
   under all 12 profiles — its own ratchet, NOT subject to the 10% ceiling). A zero-factor
   `weight_modifier` condition is folded into this evaluation too, not treated as a pure weight
-  concern — see "Research weight" below. Current corpus figures and the full leaf-resolution
+  concern — see "Research weight" below, and note `weight-gated` (unlike `uncertain`) is NOT
+  subject to either half of this ceiling. Current corpus figures and the full leaf-resolution
   table (which flag names/leaf keys resolve and why): `docs/BUILD-LOG.md`.
 - **Gates** (`pipeline/gate_patterns.py`): classifies registered trigger patterns
   (`ascension_perk`, `origin`, `ethics_or_civic`, `technology`) into the schema's `Gate` shape,
@@ -139,12 +141,19 @@ just because it's named here.
   commit-pinned permalink; ACOT/AoT link to the mod's Workshop page; otherwise a Stellaris wiki
   link, CI-validated with a search-URL fallback. — D-5.
 - **Research weight**: base weight prominently, expandable modifier list beneath, no evaluated
-  weight (static analysis can't produce a trustworthy number). **Extension**: a `weight_modifier`
-  entry whose own `factor` is a literal `0` IS an availability fact, not a pure weight concern —
-  Stellaris's own idiom for "cannot currently be drawn as a research option at all." Folded into
-  the same evaluator as `potential` (`pipeline.availability._apply_weight_gate`): fires → LOCKED,
-  unresolvable → UNCERTAIN, only ever applied when the `potential`-based result is AVAILABLE. —
-  D-4, D-10's Extension in `spec/decisions.md`.
+  weight (static analysis can't produce a trustworthy number). **Extension, corrected (a later
+  session)**: a `weight_modifier` entry whose own `factor` is a literal `0` IS an availability
+  fact, not a pure weight concern — Stellaris's own idiom for "cannot currently be drawn as a
+  research option at all." Folded into the same evaluator as `potential`
+  (`pipeline.availability._apply_weight_gate`), but LOCKED is now narrower than a bare firing
+  condition: only a genuine empire-TYPE fact (an axis leaf, or an axis-restricted ascension perk)
+  may produce LOCKED, since a static evaluator can't see `give_technology`/event/special-project/
+  archaeology/relic routes that bypass the weighted draw entirely (confirmed real:
+  `tech_akx_worm_1`'s permanent `always = yes` is granted through a guaranteed event chain
+  regardless). Everything else that fires or can't be resolved (circumstantial state, opaque
+  leaves, `always`, an unrestricted perk) downgrades to the fifth `AvailabilityState`,
+  `weight-gated` — "not currently offered in the draw," never `locked`, and NOT subject to D-10's
+  uncertainty ceiling. — D-4, D-10's Extension in `spec/decisions.md`.
 - **Research path** (P-12.9, `spec/P-12.9-research-path.md`): `researchPaths[technologyId]` per
   profile, precomputed at build time — never recomputed in the browser. `status` is `"path"`,
   `"config-gated"` (target is one of the 50 `giga_tech_repeatable_*_cap` technologies, own cost
@@ -213,6 +222,12 @@ just because it's named here.
 - **A passing test suite proves self-consistency, not correctness** — this project has hit that
   lesson from three independent root causes. Full account: `docs/DEFECTS.md`'s "green-suite"
   section.
+- **An identity element sound for one caller is not sound for a different question asked of the
+  same evaluator** — `EXCLUDED`'s "presume open" default is correct for `potential` (a player
+  CHOICE question) and unsound for a `weight_modifier` zero-factor condition (an "is this
+  currently drawn" question); reusing it there silently laundered an unresolvable condition into a
+  false definite LOCKED. Full account: `docs/DEFECTS.md`'s "EXCLUDED-as-vacuously-satisfied"
+  section.
 
 ## Commands
 
@@ -243,13 +258,6 @@ resolved — never leave a struck-through placeholder.
   decision needed. Recommendation given (implement): scale is real (54/8 technologies), payload
   cost is negligible (+4.8 KB gzip), `EmpireProfileIndex` extends cleanly to a 3-state axis,
   neither has a vendored icon.
-- **Zero-factor `weight_modifier` conditions are folded into availability too broadly** — surveyed
-  (chat record, not yet committed to `docs/BUILD-LOG.md`): only a subset (bucket A: axis/DLC/
-  mod-config/literal-constant facts) is genuinely profile-decidable; the rest (circumstantial
-  in-game state, opaque flags) shouldn't be folded the same way. A proposed `weight-gated` state
-  (parallel to `config-gated`) is pending sign-off. Also surfaced: `docs/DEFECTS.md`'s
-  "EXCLUDED-as-vacuously-satisfied" defect (12 entries currently resolve `available` from a leaf
-  that carries no real information).
 - **Middle-click isolation (P-7)** is fully specced and entirely unbuilt.
 - **No pipeline-test CI workflow exists** — `pytest` runs manually/locally only.
 - **`tools/collect_vanilla.py`'s GitHub-fetch-and-pin automation for Gigastructures** is still

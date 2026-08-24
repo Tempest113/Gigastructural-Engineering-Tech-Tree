@@ -64,9 +64,23 @@ Origins are not an axis for v1 — there is little or no origin-gated technology
 fact registry stays extensible, so if extraction surfaces origin-gated techs, adding a fact is
 a configuration line rather than a restructure.
 
-**Ascension perks are gates, not profile facts.** A perk-gated technology always displays its
-gate. The tree shows what you would need; it never assumes you have it. Modelling perks as
-facts would silently hide the requirement from a player who has not taken the perk.
+**Ascension perks are gates, not profile facts — with a correction (a later session).** WHICH
+perk a player picks is always a free choice, never a profile fact: a perk-gated technology always
+displays its gate, so the tree shows what you would need and never assumes you have it (modelling
+perks as facts would silently hide the requirement from a player who has not taken the perk).
+WHETHER a perk is obtainable AT ALL for an empire type IS a real fact, though, when the perk's own
+`potential` carries a genuine axis restriction (Galactic Wonders is nomadic-empire-impossible, and
+21 of the corpus's perks are cleanly axis-restricted this way) — a technology gated behind one of
+those is structurally LOCKED for an axis-excluded profile, not merely gated, the same as any other
+axis-impossible technology. Automated, not hand-curated: `pipeline.availability.set_perk_
+potentials` registers every perk's own resolved `potential`, and `has_ascension_perk` leaves
+consult it — only a definite LOCKED result for the referenced perk turns the leaf into a real
+FALSE; a perk that's merely UNCERTAIN for some profile stays a gate (`EXCLUDED`), never guessed at.
+A real mutual-exclusion cycle in the corpus (`ap_defender_of_the_galaxy` ↔
+`ap_defender_of_the_galaxy_nomads`) is broken by a recursion guard rather than looping forever.
+This correction is also what lets `weight-gated`'s own LOCKED narrowing (this file's D-10
+Extension, below) recognise an axis-restricted perk as a genuine empire-type fact, not just a bare
+`AXIS_FACTS` leaf.
 
 ## D-7 — Crisis faction coverage (was OQ-7)
 
@@ -318,6 +332,71 @@ as mod-configuration or crisis-progression gates. Measured effect: unconditional
 crosses the 3% warn threshold, stays under the 10% hard ceiling. A considered, reported tradeoff
 per this project's own discipline (the scripted-trigger-expansion session took the same posture),
 not a regression to hide.
+
+### Extension, corrected — WEIGHT_GATED, a fifth AvailabilityState (a later session)
+
+Item 2b's own generalisation above was too broad. Three surveys (recorded in full in
+`docs/BUILD-LOG.md`) classified every one of the 301 zero-factor entries by whether its condition
+is decidable under the modelled axes: bucket A (profile-decidable — axis facts, DLC/ground facts,
+mod-config toggles, literal constants: 30 entries / 27 technologies) contributes zero new
+uncertainty by construction; buckets B (circumstantial in-game state: 193/159), C (opaque leaves:
+61/61) and D (mixed A+B/C: 17/12) account for 100% of the regression measured above.
+
+**`AvailabilityState` gains a fifth value, `weight-gated`.** Buckets B and C both route here, never
+to `uncertain`: D-10 uncertainty means "the tool cannot tell you whether this is available to your
+EMPIRE TYPE"; for a zero-factor weight condition the tool CAN tell you that — it's available to
+your type, gated on something that is not your type. `weight-gated` does NOT count toward D-10
+uncertainty, exactly as `config-gated` doesn't. Bucket D resolves per profile: an A-type leaf that
+independently decides a profile's outcome (Kleene AND/OR's own false/true-dominance) still stands;
+otherwise that profile gets `weight-gated` too. This need not be hand-classified per leaf — it
+falls out of running the SAME Kleene evaluator `pipeline.availability.evaluate_trigger_block`
+already uses and reading its `_State`/`axis_pure` result, so a leaf that becomes decidable later
+(the wilderness/frameworld axis landing, for one) reclassifies automatically.
+
+**A definite LOCKED verdict from a weight gate is narrower than bucket A**, not identical to it.
+`weight_modifier` describes eligibility in the weighted research draw only — it is blind to
+`give_technology`, events, special projects, archaeology and relics, any of which can grant a
+technology regardless of its weight (confirmed for `tech_akx_worm_1`: permanent `always = yes`
+zero weight, yet obtained through a guaranteed event chain). So LOCKED requires the deciding
+leaf(s) to be genuine empire-TYPE facts — `AXIS_FACTS`, or an ascension perk whose own `potential`
+carries a real axis restriction (D-6's correction, below) — never a ground fact that reads the same
+for every profile (`always`, DLC, a mod-config toggle, an unrestricted perk, an unresolved
+wrapper); everything else in bucket A gets `weight-gated` too. Real corpus (`pipeline.dataset_emit.
+build_context`, verified by direct evaluation, not asserted): exactly 5 technologies keep a real,
+axis-narrowed LOCKED from a weight gate alone — `tech_fe_assembly_1` (`is_hive_empire = yes`, 4
+profiles), `tech_fe_clinic_1` (`is_machine_empire = yes`, 4), `tech_fe_entertainment_1` /
+`tech_fe_market_1` (`is_gestalt = yes`, 8 each), and `giga_tech_maginot_world` (`has_galactic_
+wonders = no`, 6 profiles — nomadic ones only, because this leaf is a Gigastructures scripted
+trigger that `pipeline.dataset_emit._weight_gate_condition_blocks`'s own scripted-trigger
+expansion turns into a real `has_ascension_perk`-chain, and the Galactic Wonders perk family is
+genuinely nomadic-excluded; the pre-implementation survey's own worked example assumed this leaf
+would resolve as an opaque `EXCLUDED_KEYS` shortcut instead and predicted it would reclassify to
+`weight-gated` for all 12 — that assumption did not hold once the same expansion this project
+already applies to every weight-gate condition was actually run, and the axis-narrowed LOCKED for
+6 nomadic-profile pairs is the more accurate result, not a bug). `tech_akx_worm_1`/`_2` (`always =
+yes`) and `tech_gene_seed_purification` (`NOT = { has_ascension_perk = ap_engineered_evolution }`,
+an unrestricted perk) reclassify to `weight-gated` exactly as the survey predicted.
+
+**The EXCLUDED-as-vacuously-satisfied defect (`docs/DEFECTS.md`)**: the original `_apply_weight_
+gate` read `evaluate_trigger_block`'s PUBLIC result, which maps both a real `TRUE` and an
+`EXCLUDED` (has_technology/has_ascension_perk/origin-ethic-civic — a player CHOICE, "presume open"
+for `potential` evaluation) to `AVAILABLE` — correct for `potential`, meaningless for a weight
+gate, where "presume open" has no sense and silently laundered an unresolvable condition into a
+definite LOCKED for all 12 profiles. Fixed by working from the internal `_Eval` state directly, so
+`EXCLUDED` gets its own branch that can only ever route to `weight-gated`. A standing assertion
+(`evaluate_technology_for_profiles`, the full 12-profile call only) makes it structurally
+impossible for a weight gate to produce LOCKED for all 12 profiles again — such a condition draws
+no empire-type distinction by definition and belongs in `weight-gated`.
+
+**Research path (P-12.9) treats `weight-gated` as VIABLE**, unlike `locked`/`config-gated`: the
+technology remains eventually researchable, so it's a real step (like `uncertain`), never a route-
+breaker. Its own `estimateReasons` member, `weight-gated-step`, is distinct from `uncertain-
+availability` — a determinate fact, not an undecidable one, but the total is still an estimate
+because the gate could lift.
+
+Post-fix D-10 figures (rendered set, both metrics recomputed against the same `pipeline.
+dataset_emit.build_context`): see `docs/BUILD-LOG.md` for the full reconciliation table against
+this Extension's own pre-fix numbers above.
 
 ## D-11 — Rendering stack
 

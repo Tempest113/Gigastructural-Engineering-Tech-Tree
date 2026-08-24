@@ -6524,3 +6524,223 @@ docstring named before touching the logic.
 All of the above are gated behind `vendor/` being populated locally (gitignored, CI never has
 it) — see each test file's `skipif`. CI-safe regression coverage over a small committed fixture
 subset exists in parallel (`tests/fixtures/`, manifest-driven, `tools/regenerate_fixtures.py`).
+
+## `weight-gated` — the fifth `AvailabilityState`, correcting Item 2b's overbroad weight-modifier folding (a later session)
+
+**Background.** Item 2b (an earlier session, `docs/BUILD-LOG.md` above) folded every zero-factor
+`weight_modifier` entry into availability uniformly: a firing condition → `LOCKED`, an unresolvable
+one → `UNCERTAIN`. Real corpus: 301 such entries across 248 of the 973 rendered technologies.
+Measured effect at the time: unconditional uncertainty 31/973 (3.19%) → 115/973 (11.8%); worst
+profile-dependent rate 16/973 (1.64%) → 58/973 (5.96%) — crossed D-10's 3% warn threshold, stayed
+under the 10% hard ceiling, reported as a considered tradeoff rather than hidden.
+
+**Three surveys (chat record, committed here in full for the first time) reclassified every entry
+into four buckets** by whether its condition is decidable under the modelled empire axes:
+
+| Bucket | Meaning | Entries | Technologies |
+| --- | --- | ---: | ---: |
+| A — PROFILE-DECIDABLE | every leaf resolves definitely: axis facts, DLC/ground facts, mod-config toggles, literal constants | 30 | 27 |
+| B — CIRCUMSTANTIAL | mutable in-game state: owned planets, deposits, policies, crisis levels, resources, communications, traditions | 193 | 159 |
+| C — OPAQUE | genuinely undecidable leaves (`check_variable` count-vs-cap, unknown-meaning `has_country_flag` values) | 61 | 61 |
+| D — MIXED | both A-type and B/C-type leaves in one condition | 17 | 12 |
+
+Folding B/C/D in accounts for 100% of the regression above — bucket A alone contributes ZERO new
+uncertainty, by construction (every bucket-A leaf resolves definitely for every profile).
+
+**Two figure pairs that looked inconsistent across the surveys are not**, recorded so a future
+session doesn't re-litigate them: 159 (bucket-A-only-counterfactual vs. current) and 163 (pre-2b vs.
+current) differ by exactly 4 technologies (`tech_fe_assembly_1`/`_clinic_1`/`_entertainment_1`/
+`_market_1`) which hold a genuine axis LOCKED either way. The previously-recorded 39/124 split is
+correct as stated: 39 = 35 locked-only + 4 both; 124 = uncertain-only, deliberately non-overlapping.
+
+**Decisions taken, in full:**
+
+1. Bucket A retains a definite verdict, subject to decision 4's narrowing (below).
+2. Buckets B and C both map to the new fifth `AvailabilityState`, `weight-gated` — never to
+   `uncertain`. D-10 uncertainty means "the tool cannot tell you whether this is available to your
+   EMPIRE TYPE"; for B and C the tool CAN tell you that (it's available to your type, gated on
+   something that isn't your type) — C differs from B only in how well the condition can be
+   phrased, a presentation question, not a different kind of fact. `weight-gated` does NOT count
+   toward D-10 uncertainty, exactly as `config-gated` doesn't.
+3. Bucket D resolves per profile: where an A-type leaf independently decides a profile's outcome
+   (Kleene AND/OR's own false/true-dominance — no extra mechanism needed), that verdict stands;
+   otherwise that profile gets `weight-gated`.
+4. A real LOCKED verdict from a weight gate is narrower than bucket A: `weight_modifier` describes
+   eligibility in the weighted research draw ONLY, blind to `give_technology`, events, special
+   projects, archaeology and relics — confirmed for `tech_akx_worm_1` (permanent `always = yes`
+   zero weight, yet granted through a guaranteed event chain; `vendor/stellaris/` has no `events/`,
+   `common/special_projects/`, `common/decisions/`, `common/on_actions/`, `common/relics/` or
+   `common/archaeological_site_types/` by design, so a clean grep there is not evidence of
+   absence). LOCKED is therefore permitted only when the deciding leaves are genuine empire-TYPE
+   facts: `AXIS_FACTS`, or an ascension perk whose own `potential` carries a real axis restriction
+   (D-6's correction, `spec/decisions.md`) — everything else in bucket A (`always`, an unrestricted
+   perk, an unresolved wrapper) gets `weight-gated` too.
+5. Tripwire: a weight-gate condition that yields LOCKED for all 12 profiles draws no empire-type
+   distinction by definition and is misclassified — asserted directly in
+   `pipeline.availability.evaluate_technology_for_profiles` (the full 12-profile call only), not
+   left as an emergent property of the bucket routing.
+
+**Implementation** (`pipeline/availability.py`): `_Eval` gained an `axis_pure` field, threaded
+through `_bool_eval`/`_combine_and`/`_combine_or`/`_negate` alongside the existing Kleene state —
+`True` only when a result's TRUE/FALSE rests solely on `AXIS_FACTS` leaves and/or an axis-locked
+`has_ascension_perk`. `_apply_weight_gate` was rewritten to work from the internal `_State`
+directly (see the EXCLUDED defect below) rather than `evaluate_trigger_block`'s public wrapper:
+internal `TRUE` + `axis_pure` → real `LOCKED`; internal `TRUE` without `axis_pure`, or `EXCLUDED`,
+or `UNKNOWN` → `weight-gated`; internal `FALSE` → untouched (the condition doesn't currently hold).
+Condition text is wired through `pipeline.trigger_text.describe_condition` for both the real-LOCKED
+and `weight-gated` branches (previously a fixed string), with a dedicated phrase for the two real
+`always = yes` cases ("obtained outside the normal research draw, not through it") and a neutral
+"not offered through the normal research draw currently" fallback everywhere the responsible leaf
+isn't nameable — never speculating about which unmodelled mechanism might actually grant it.
+
+**The EXCLUDED-as-vacuously-satisfied defect**, found while implementing this: the OLD
+`_apply_weight_gate` read `evaluate_trigger_block`'s PUBLIC result, which maps both a real internal
+`TRUE` and `EXCLUDED` (has_technology/has_ascension_perk/origin-ethic-civic — "presume open," the
+right default for `potential`'s "does empire type exclude this" question) to `AVAILABLE`. That
+default has no meaning for "is the zero-weight condition currently met," and silently laundered an
+unresolvable condition into a false-definite `LOCKED` for all 12 profiles — 12 zero-factor
+`weight_modifier` entries (11 technologies) were affected before the fix. Full write-up, including
+why the other three `EXCLUDED`-touching call sites in this codebase are each sound for their own
+specific, checkable reason (not by any general property of the identity element):
+`docs/DEFECTS.md`'s "EXCLUDED-as-vacuously-satisfied" section.
+
+**Real corpus verification (`pipeline.dataset_emit.build_context`, direct evaluation, not
+asserted)**: exactly 5 technologies keep a real, axis-narrowed LOCKED from a weight gate alone —
+
+| Technology | Deciding leaf | Locked profiles |
+| --- | --- | ---: |
+| `tech_fe_assembly_1` | `is_hive_empire = yes` | 4 |
+| `tech_fe_clinic_1` | `is_machine_empire = yes` | 4 |
+| `tech_fe_entertainment_1` | `is_gestalt = yes` | 8 |
+| `tech_fe_market_1` | `is_gestalt = yes` | 8 |
+| `giga_tech_maginot_world` | `has_galactic_wonders = no` (expanded) | 6 (nomadic profiles) |
+
+`tech_akx_worm_1`/`_2` (`always = yes`) and `tech_gene_seed_purification` (`NOT = {
+has_ascension_perk = ap_engineered_evolution }`, an unrestricted perk) reclassify to `weight-gated`
+for every profile where their own `potential` doesn't already lock them for an unrelated reason
+(8/12 for `tech_gene_seed_purification`, whose own `potential` separately locks the 4
+machine-intelligence profiles on a genetics-tradition ground unrelated to this weight gate).
+
+**`giga_tech_maginot_world` diverges from the pre-implementation survey's own worked example, and
+this is a genuine finding, not a bug — reported per this task's own "stop and report" instruction
+rather than adjusted to match.** The survey's worked example assumed `has_galactic_wonders = no`
+would resolve via the `EXCLUDED_KEYS` shortcut (a bare, unexpanded literal key) and predicted
+`weight-gated` for all 12 profiles, the same treatment as `giga_tech_maginot_world`'s OTHER
+zero-factor modifier (a `NOR` over `has_tradition`/`has_active_tradition` leaves, which genuinely
+does resolve `weight-gated` via the `has_active_tradition` default-true leaf). But
+`pipeline.dataset_emit._weight_gate_condition_blocks` scripted-trigger-expands every weight-gate
+condition exactly the way `potential` blocks already are (`ctx.expanded_potentials`) — and
+`has_galactic_wonders` is itself a Gigastructures scripted trigger
+(`vendor/mods/gigastructures/common/scripted_triggers/zzz_overwrites.txt:2095`) that expands into
+`NOT = { OR = { has_ascension_perk = ap_galactic_wonders, ..._utopia, ..._megacorp,
+..._utopia_and_megacorp } }`. The Galactic Wonders perk family is genuinely nomadic-excluded (the
+same D-6 axis-restricted-perk fact CLAUDE.md's "Ascension perks are gates" section already
+documents), so for the 6 nomadic profiles every branch of that `OR` resolves a real, axis-pure
+`FALSE` (via the existing `has_ascension_perk` axis-lock mechanism, unchanged by this session),
+making the `NOT` a real, axis-pure `TRUE` — a genuine LOCKED, not a misclassification. For the 6
+non-nomadic profiles, the same perks are ordinary unclaimed choices (`EXCLUDED`), so the `NOT`
+stays `EXCLUDED` → `weight-gated`, matching the survey's prediction for those profiles. The
+scripted-trigger expansion this session relies on (`expand_scripted_triggers`, unchanged,
+pre-existing) is what the hand-derived survey example didn't run — the actual pipeline result (6
+LOCKED / 6 weight-gated, split exactly on the nomadic axis) is MORE precise than "all 12
+weight-gated," not a defect to chase down.
+
+**Per-state population, full 12×973 evaluation (`build_context`, this session's own verification
+script)**:
+
+| State | Count |
+| --- | ---: |
+| available | 7,492 |
+| locked | 1,466 |
+| uncertain | 482 |
+| config-gated | 600 |
+| weight-gated | 1,636 |
+
+Of the 1,466 LOCKED and 1,636 weight-gated pairs, only 6 LOCKED pairs and roughly 1,830 weight-gated
+pairs (163 technologies, up to 12 profiles each) are actually CAUSED by a weight gate specifically
+(as opposed to the technology's own `potential`) — the 5-technology table above accounts for the
+LOCKED side; 163 technologies carry a weight-gate-caused `weight-gated` verdict for at least one
+profile (`giga_tech_maginot_world`, `tech_akx_worm_1`/`_2`, `tech_gene_seed_purification`, plus 159
+more spanning bucket B/C conditions — deposit/building/megastructure ownership,
+`has_market_access`/other internal flags, `is_country_type = fallen_empire`, `num_owned_planets`,
+crisis-level gates, and others).
+
+**Observation, recorded and acted on nowhere (explicitly out of scope this session)**:
+`tech_akx_worm_1`/`_2`'s `weight_modifier`-level `always = yes` is a weight-side analogue of D-18's
+`potential`-level `always = no` pattern (the 4 technologies excluded from rendering entirely,
+`pipeline.rendering_scope._is_permanently_disabled`) — both are a literal boolean constant used to
+permanently gate something, just at different points in the evaluation (rendering-scope exclusion
+vs. a draw-eligibility gate). The node SET is untouched by this session either way: `always = yes`
+inside `weight_modifier` doesn't affect rendering (D-18 only inspects `potential`), and this
+session made no change to `pipeline.rendering_scope`. Noted as a parallel worth being aware of, not
+a discrepancy to reconcile.
+
+**D-10 diagnostics and research-path status counts, from an actual `tools/build_dataset.py` run
+against the corrected pipeline (`client/public/dataset/diagnostics.*.json`, `base-dataset.*.json`,
+`overlays/*.json`)**:
+
+- Unconditional uncertainty: **31/973 (3.186%)**, exactly the pre-2b figure — matches
+  `previousCount: 31` (no regression against the ratchet).
+- Worst profile-dependent rate: **16/973 (1.644%)**, exactly the pre-2b figure — every one of the
+  12 profiles reports `"status": "ok"`.
+- Union (uncertain for at least 1 of 12 profiles): **53/973**, exactly the pre-2b figure.
+- Per-state population, full 12×973 matrix: `available` 7,492, `locked` 1,466, `uncertain` 482,
+  `config-gated` 600, `weight-gated` 1,636.
+- Research-path status, `(technology, profile)` pairs / distinct technologies across all 12
+  overlays: `path` 9,330/920, `unavailable` 1,466/233, `config-gated` 390/50, **`blocked` 490/81**.
+  The bucket-A-only counterfactual predicted 526/82; the actual reduction (526→490 pairs, 82→81
+  technologies) is exactly the weight-gated-is-viable rule (P-12.9's Extension) unblocking routes
+  whose only broken ancestor was a technology that's now `weight-gated` (eventually researchable)
+  rather than the counterfactual's `locked` (a hard route-breaker).
+
+**The 5 technologies that survive as a real, weight-gate-caused LOCKED**, confirmed directly
+against the built dataset's overlays (not just the earlier hand survey): `tech_fe_assembly_1`,
+`tech_fe_clinic_1`, `tech_fe_entertainment_1`, `tech_fe_market_1`, `giga_tech_maginot_world` — see
+the table earlier in this entry for each one's deciding leaf and locked-profile count.
+
+**Live-render verification (a headless Chromium against the actual built `client/dist`, driven via
+CDP + `playwright-core` — no dedicated Playwright test suite exists in this repo yet, so this was
+ad hoc rather than a committed test)**: 0 console errors, 0 failed/4xx+ requests, across the
+default profile and two profile switches. `giga_tech_blokkat_engineering_repeatable` (regular/
+mechanical/non-nomadic) renders with the violet weight-gated dim (alpha 0.25) and `⧗` badge on its
+card, and its popup shows `weight-gated — Unresolved internal flag: blokkat_crisis_defeated` plus
+`Total: 576,000 (estimate: weight-gated-step)` on its research path. `tech_akx_worm_1` shows the
+dedicated always-yes phrasing (`This technology is obtained outside the normal research draw, not
+through it.`); `giga_tech_maginot_world` shows the neutral fallback
+(`Not offered through the normal research draw currently.`) since its own deciding leaf has no
+single nameable form after scripted-trigger expansion. Switching to hive_mind/mechanical/
+non-nomadic and reselecting `tech_fe_assembly_1` shows it flip to a real `locked — Hive mind
+empires`, red badge (`✕`), alpha 0.55 — the same technology, two profiles, two states, both
+matching what the pipeline emits.
+
+**Test suite regressions found and fixed while verifying this session's own work** (full account
+in `docs/DEFECTS.md`-adjacent commentary, kept here since these are this session's own bugs, not a
+recurring class):
+
+1. `_build_research_paths_for_profile`'s `closure()` return tuple grew from 4 to 5 elements (the
+   new `has_weight_gated` flag) but `_closure_total_cost` still unpacked 4 — every `alternative`
+   OR-group evaluation raised `ValueError: not enough values to unpack`, breaking the whole
+   research-path builder and 20+ dependent tests (`test_dataset_emit.py`,
+   `test_research_paths.py`). One-line fix.
+2. The first version of the `has_ascension_perk` axis_pure computation called BOTH the public
+   `evaluate_trigger_block` and a second, redundant internal `_combine_and` pass over the same
+   perk `potential` block whenever the perk was LOCKED — doubling that leaf's evaluation cost.
+   Measured impact: building all 12 empire overlays went from ~8s to ~32s (worst, machine-
+   intelligence profiles, where axis-restricted perks are most common), enough to make
+   `test_dataset_emit.py` time out under CI-like conditions. Fixed by computing the perk's
+   internal `_Eval` exactly once and deriving both the LOCKED-vs-CONFIG_GATED split and
+   `axis_pure` from that single pass — restored to ~8s for all 12 overlays.
+3. Three pinned test figures needed updating to the corrected (post-fix, pre-2b-equal) values, not
+   silenced: `test_gate_classification_leaves_d10_uncertainty_unchanged` /
+   `test_edge_constraints_leave_d10_uncertainty_unchanged` (worst profile-dependent 58 → 16),
+   `test_diagnostics_uncertain_technologies_matches_d10` (unconditional 115 → 31, worst rate
+   0.0596 → 0.016444), `test_no_step_is_locked_or_config_gated_for_its_own_profile` (added
+   `weight-gated` to the allowed per-step states), and
+   `test_or_tiebreak_cheapest_cost_vs_fewest_steps_disagreement_count` (its own independent
+   closure reimplementation needed `weight-gated` added to its viability check too — once added,
+   its figures returned to the exact pre-2b baseline: 420 evaluations / 408 viable / 72 genuine
+   choices / 12 disagreements, unchanged from before this whole saga).
+
+Full suite: **1,515/1,515 pipeline tests pass** (`pytest`, vendor populated), `tsc --noEmit` clean,
+`vite build` clean, schema drift test clean (TypeScript types regenerated via
+`tools/generate_typescript_types.py`).

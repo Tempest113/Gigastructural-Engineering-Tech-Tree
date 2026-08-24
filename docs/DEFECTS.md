@@ -106,17 +106,44 @@ section states for `repr()`/raw-inspection, applied to test coverage instead of 
 
 ## EXCLUDED-as-vacuously-satisfied: an identity-element leaf standing alone resolves to a false-definite result
 
-*Pending sign-off — surveyed, not yet fixed.* `pipeline.availability.EXCLUDED_KEYS` (`has_technology`,
-`has_valid_civic`, `has_origin`, `has_ethic`, and others) is correctly an identity element for
-`potential`-block evaluation — it means "not this evaluator's job, defer to P-14/gates," and
-`_combine_and`/`_combine_or` treat an EXCLUDED-only child as vacuously satisfied so the surrounding
-AND/OR can still resolve. That's correct for `potential`. It is NOT correct when the same leaf
-stands alone as a `weight_modifier` zero-factor condition (Item 2b) — `evaluate_trigger_block`
-still returns `available` (the condition is "definitely true," i.e. the modifier fires) for a
-condition consisting solely of an EXCLUDED-key leaf, which is wrong: the evaluator has no actual
-information about whether the player has that civic/origin/ethic/researched-technology. Confirmed
-empirically against the real corpus: 12 zero-factor `weight_modifier` entries (11 technologies —
-`tech_capacity_boosters`, `tech_housing_2`, `tech_psionic_suppression`, `tech_selected_lineages`,
-others) resolve `available` unconditionally, for all 12 profiles, purely because of this. See the
-weight-gate classification survey (chat record, not yet in `docs/BUILD-LOG.md`) for the full
-worked examples and counts; folding a fix into `pipeline.availability` is future work, not done.
+**Fixed (a later session, alongside the `weight-gated` AvailabilityState).** `pipeline.availability.
+EXCLUDED_KEYS` (`has_technology`, `has_valid_civic`, `has_origin`, `has_ethic`, and others) is
+correctly an identity element for `potential`-block evaluation — it means "not this evaluator's
+job, defer to P-14/gates," and `_combine_and`/`_combine_or` treat an EXCLUDED-only child as
+vacuously satisfied so the surrounding AND/OR can still resolve. That's correct for `potential`.
+It was NOT correct when the same leaf stood alone as a `weight_modifier` zero-factor condition
+(Item 2b) — the OLD `_apply_weight_gate` read `evaluate_trigger_block`'s PUBLIC result, which maps
+both internal `TRUE` and internal `EXCLUDED` to `AVAILABLE` (correct for `potential`'s "presume
+open," meaningless for "is the zero-weight condition currently met"). That silently laundered an
+unresolvable condition into a definite LOCKED for every one of the 12 profiles — confirmed
+empirically against the real corpus, 12 zero-factor `weight_modifier` entries (11 technologies)
+were affected before the fix.
+
+**The general lesson, generalised beyond this one call site**: EXCLUDED's soundness in `potential`
+evaluation comes from two *specific, checkable* facts, never from any general property of the
+identity element that automatically transfers to a new caller asking a different question of the
+same evaluator:
+
+- For `has_technology`, P-14 extracts every such leaf as a real `potential-gate` EDGE, so the
+  deferral is caught downstream by the edge system — the fact is already conveyed visually,
+  EXCLUDED here just avoids double-counting it as a trigger truth value too.
+- For the origin/ethic/civic/perk keys, these are player CHOICES, not empire-TYPE facts, and
+  `available` is the literally correct answer to "does empire type exclude this" — matching the
+  project's show-what's-needed-never-assume stance (D-6).
+- `pipeline.dataset_emit`'s `technology_swap` axis filter is structurally unreachable for this
+  defect: only swaps with `axis_expressible = True` are evaluated, and that flag requires every
+  leaf to be in `AXIS_FACTS`, which excludes `EXCLUDED_KEYS` entirely by construction.
+- `pipeline.edge_constraints._edge_active_per_profile` is sound by purpose, not accident: it's a
+  sensitivity comparison using its own monkeypatched leaf/combine functions (forcing a leaf true
+  vs. false and checking whether state equality changes) — it never asserts a state as a verdict
+  at all, so EXCLUDED's meaning there is moot.
+
+`_apply_weight_gate` was the only unsound caller, because it asks a THIRD, different question ("is
+weight currently zero") for which "presume open" has no meaning at all — the fix (working from the
+internal `_State` directly rather than the public `AVAILABLE`/`LOCKED`/`UNCERTAIN`/`CONFIG_GATED`
+wrapper, and giving `_State.EXCLUDED` its own branch that can only ever route to the new
+`weight-gated` state, never `LOCKED`) is asserted with a standing test
+(`evaluate_technology_for_profiles`'s decision-5 tripwire: impossible for a weight gate to lock all
+12 profiles), not left as an emergent property of the `axis_pure` bucket routing that a future
+change could silently reintroduce. Full write-up of the fix and the corpus figures:
+`spec/decisions.md`'s D-10 Extension, `docs/BUILD-LOG.md`.
