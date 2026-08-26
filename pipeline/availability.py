@@ -747,7 +747,8 @@ def _weight_gated_description(leaf: Assignment | None) -> str:
 
 
 def _apply_weight_gate(
-    result: AvailabilityResult, weight_gate_blocks: list[Block], profile: dict
+    result: AvailabilityResult, weight_gate_blocks: list[Block], profile: dict,
+    gate_expressible: list[bool] | None = None,
 ) -> AvailabilityResult:
     """A later session's Item 2b: a `weight_modifier` entry with a literal `factor = 0` is
     Stellaris's own idiom for "this technology cannot currently be drawn as a research option at
@@ -797,12 +798,28 @@ def _apply_weight_gate(
     and giving `_State.EXCLUDED` its own branch below, which can only ever route to WEIGHT_GATED,
     never LOCKED -- asserted, not an emergent property of the axis_pure check (an EXCLUDED result
     has no leaf to be axis_pure about; `axis_pure` defaults False and is never consulted for a
-    state other than TRUE, so this is enforced structurally, not merely by convention)."""
+    state other than TRUE, so this is enforced structurally, not merely by convention).
+
+    **Weight-condition gate extraction (a later session):** `gate_expressible`, when given, is a
+    `weight_gate_blocks`-index-aligned list of booleans (`pipeline.dataset_emit.BuildContext.
+    weight_gate_expressible_mask`) -- `True` at position `i` iff block `i` classifies to at least
+    one registered gate pattern (`pipeline.gate_patterns.classify_weight_gate_condition`). A
+    gate-expressible block's non-axis-pure TRUE/EXCLUDED/UNKNOWN branches are suppressed (skipped
+    exactly like a FALSE block: contributes nothing) rather than becoming `weight_gated_pick` --
+    the technology's own `gates` list badges the card instead
+    (`pipeline.dataset_emit._build_gates`), so the same condition must not ALSO read WEIGHT_GATED.
+    The axis-pure TRUE branch is deliberately UNCHANGED by this mask: whether a gate's own target
+    (e.g. an ascension perk) is obtainable at all for an empire type is a genuine fact this
+    evaluator must keep surfacing as a real LOCKED, per CLAUDE.md's "Ascension perks are gates,
+    not profile facts -- with a correction" -- a gate badge is display metadata layered on top of
+    that fact, never a replacement for it."""
     if result.state != AVAILABLE or not weight_gate_blocks:
         return result
+    if gate_expressible is None:
+        gate_expressible = [False] * len(weight_gate_blocks)
 
     weight_gated_pick: AvailabilityResult | None = None
-    for cond_block in weight_gate_blocks:
+    for cond_block, is_gate in zip(weight_gate_blocks, gate_expressible):
         children = [_evaluate_node(item, profile) for item in cond_block.items if isinstance(item, Assignment)]
         ev = _combine_and(children)
         reason = " ".join(_leaf_text(item) for item in cond_block.items if isinstance(item, Assignment)) or None
@@ -818,11 +835,15 @@ def _apply_weight_gate(
                 # "not offered" phrasing, which would misdescribe a real, definite LOCKED verdict.
                 description = describe_condition(ev.leaf) if ev.leaf is not None else reason
                 return AvailabilityResult(LOCKED, reason, description)
+            if is_gate:
+                continue
             if weight_gated_pick is None:
                 weight_gated_pick = AvailabilityResult(WEIGHT_GATED, reason, _weight_gated_description(ev.leaf))
             continue
 
         if ev.state in (_State.EXCLUDED, _State.UNKNOWN):
+            if is_gate:
+                continue
             if weight_gated_pick is None:
                 weight_gated_pick = AvailabilityResult(WEIGHT_GATED, reason, _weight_gated_description(ev.leaf))
             continue
@@ -837,7 +858,8 @@ def _apply_weight_gate(
 
 
 def evaluate_technology_for_profiles(
-    block: Block | None, profiles: list[dict], weight_gate_blocks: list[Block] | None = None
+    block: Block | None, profiles: list[dict], weight_gate_blocks: list[Block] | None = None,
+    weight_gate_expressible: list[bool] | None = None,
 ) -> dict[int, AvailabilityResult]:
     """Convenience: evaluate one technology's `potential` block against every profile in
     `profiles` (expected to be `pipeline.dataset_schema.empire_profile.all_profiles_in_canonical_order()`),
@@ -845,6 +867,9 @@ def evaluate_technology_for_profiles(
     when non-empty, additionally folds in `_apply_weight_gate`'s zero-weight-unless-condition
     check (Item 2b) -- omitted or empty is a no-op, matching every technology with no zero-factor
     `weight_modifier` entry.
+
+    `weight_gate_expressible` (weight-condition gate extraction, a later session) is passed
+    straight through to `_apply_weight_gate` -- see that function's own docstring.
 
     Decision 5's tripwire (a later session): when `profiles` is the FULL canonical 12-profile set,
     it must be impossible for a weight gate to turn every one of them LOCKED -- a condition that
@@ -856,7 +881,7 @@ def evaluate_technology_for_profiles(
     results = {i: evaluate_trigger_block(block, profile) for i, profile in enumerate(profiles)}
     if weight_gate_blocks:
         gated = {
-            i: _apply_weight_gate(results[i], weight_gate_blocks, profile)
+            i: _apply_weight_gate(results[i], weight_gate_blocks, profile, weight_gate_expressible)
             for i, profile in enumerate(profiles)
         }
         if len(profiles) == 12:

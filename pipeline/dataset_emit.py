@@ -79,7 +79,7 @@ from .dataset_schema.empire_profile import (
 )
 from .edge_constraints import compute_potential_gate_constraints, edge_active_for_profile
 from .edges import compute_typed_edges
-from .gate_patterns import GATE_KIND_PRIORITY, classify_gates, order_gates
+from .gate_patterns import GATE_KIND_PRIORITY, GateMatch, classify_gates, classify_weight_gate_condition, order_gates
 from .geometry import pack_edge_polylines, pack_node_positions
 from .icons.build import build_atlases, decode_resolved_icons
 from .icons.overrides import load_overrides as load_icon_overrides
@@ -662,7 +662,25 @@ class BuildContext:
     # Item 2b (a later session): rendered technology key -> its zero-factor `weight_modifier`
     # condition Block(s) (see `_weight_gate_condition_blocks`), empty list for the ~majority with
     # none. Computed ONCE here for the same "one source of truth" reason `expanded_potentials` is.
+    # Every block is kept here, gate-expressible or not -- see `weight_gate_expressible_mask`
+    # below for why the block itself is never dropped from evaluation.
     weight_gate_conditions: dict[str, list[Block]]
+    # **Weight-condition gate extraction (a later session).** Parallel, index-aligned to
+    # `weight_gate_conditions[key]`: `True` at position `i` iff that block classifies to at least
+    # one registered gate pattern (`pipeline.gate_patterns.classify_weight_gate_condition`).
+    # `pipeline.availability._apply_weight_gate` consults this to suppress a `WEIGHT_GATED`
+    # verdict from a gate-expressible block (it badges the card as a real `Gate` instead --
+    # `weight_gate_gate_matches` below holds the match) -- but NOT to suppress a real axis-pure
+    # `LOCKED` verdict from the same block: whether the gate's own target (e.g. an ascension perk)
+    # is obtainable at all for an empire type is a genuine fact the evaluator must still surface,
+    # per CLAUDE.md's "Ascension perks are gates, not profile facts -- with a correction." The
+    # block is therefore never dropped from `weight_gate_conditions` itself -- only its
+    # WEIGHT_GATED-producing branch is masked, evaluated per-profile exactly as before.
+    weight_gate_expressible_mask: dict[str, list[bool]]
+    # The GateMatch(es) extracted from every block flagged in `weight_gate_expressible_mask` above
+    # (one entry per technology key, possibly empty) -- consumed by `_build_gates` to badge the
+    # card.
+    weight_gate_gate_matches: dict[str, list[GateMatch]]
 
 
 def _sources_present(vendor_root: Path) -> list[str]:
@@ -690,10 +708,28 @@ def build_context(vendor_root: Path) -> BuildContext:
         key: expand_scripted_triggers(_field(defn.block, "potential") and _field(defn.block, "potential").value, trigger_catalog)
         for key, defn in rendered_defs.items()
     }
-    weight_gate_conditions = {
-        key: _weight_gate_condition_blocks(defn.block, trigger_catalog)
-        for key, defn in rendered_defs.items()
-    }
+    # Weight-condition gate extraction (a later session): each zero-factor `weight_modifier`
+    # condition block is classified against the same gate-pattern registry `classify_gates`
+    # already uses on `potential` (`classify_weight_gate_condition` -- see that function's
+    # docstring). A block with at least one match badges the card as a real GATE; it stays in
+    # `weight_gate_conditions` (the axis-pure-LOCKED branch of `_apply_weight_gate` still needs to
+    # see it -- see that dict's own docstring) but is flagged in `weight_gate_expressible_mask` so
+    # `_apply_weight_gate` never lets it also produce WEIGHT_GATED.
+    weight_gate_conditions: dict[str, list[Block]] = {}
+    weight_gate_expressible_mask: dict[str, list[bool]] = {}
+    weight_gate_gate_matches: dict[str, list[GateMatch]] = {}
+    for key, defn in rendered_defs.items():
+        raw_blocks = _weight_gate_condition_blocks(defn.block, trigger_catalog)
+        mask: list[bool] = []
+        matches_for_key: list[GateMatch] = []
+        for index, cond_block in enumerate(raw_blocks):
+            block_matches = classify_weight_gate_condition(key, cond_block, index)
+            mask.append(bool(block_matches))
+            if block_matches:
+                matches_for_key.extend(block_matches)
+        weight_gate_conditions[key] = raw_blocks
+        weight_gate_expressible_mask[key] = mask
+        weight_gate_gate_matches[key] = matches_for_key
 
     # Item 2 (later session): registers every ascension perk's own winning `potential` block so
     # `has_ascension_perk` leaves can resolve a real LOCKED result when the referenced perk is
@@ -765,7 +801,8 @@ def build_context(vendor_root: Path) -> BuildContext:
         perk_icon_refs=perk_icon_refs, edge_constraints=edge_constraints,
         sources_present=sources_present, off_tree_prerequisites=off_tree_prerequisites, history=history,
         expanded_potentials=expanded_potentials, resolved_names={},
-        weight_gate_conditions=weight_gate_conditions,
+        weight_gate_conditions=weight_gate_conditions, weight_gate_expressible_mask=weight_gate_expressible_mask,
+        weight_gate_gate_matches=weight_gate_gate_matches,
     )
     name_overrides = load_name_overrides()
     ctx.resolved_names = {key: _resolve_technology_name(key, ctx, name_overrides) for key in rendered_keys}
@@ -981,8 +1018,30 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
         # "Edge-kind membership is NOT mutually exclusive" precedent for the edge graph itself
         # stands; only the CARD/POPUP gate-badge display is filtered here).
         true_prerequisites = set(ordered_prerequisites(defn.block))
+        # Weight-condition gate extraction (a later session): a zero-factor `weight_modifier`
+        # condition classified to a registered gate pattern (`ctx.weight_gate_gate_matches`,
+        # built alongside `ctx.weight_gate_conditions` in `build_context`) badges the card the
+        # same way a `potential`-derived match does. Deduped by `(kind, refId)` -- NOT by kind
+        # alone, since a technology can legitimately carry two different gates of the same kind
+        # (e.g. two distinct ascension-perk gates) -- with the `potential`-derived match winning
+        # on a collision (real corpus: 6 `tech_lathe_*` technologies whose weight condition names
+        # the exact same perk their own `potential` already gates on). D-3 priority ordering
+        # (`order_gates`, applied to the MERGED list below) is unchanged -- a weight-derived match
+        # is not second-class and gets no tiebreak of its own; it can outrank and displace a
+        # `potential`-derived match to secondary the same way two `potential`-derived matches of
+        # different kinds would (real corpus: `tech_neuro_quantum_links`'s weight-derived
+        # ascension-perk match outranks its own `potential`-derived ethics-or-civic match).
+        potential_matches = classify_gates(owner_key, defn.block)
+        seen_idents = {(m.kind, m.ref_id) for m in potential_matches}
+        combined_matches = list(potential_matches)
+        for m in ctx.weight_gate_gate_matches.get(owner_key, []):
+            ident = (m.kind, m.ref_id)
+            if ident in seen_idents:
+                continue
+            seen_idents.add(ident)
+            combined_matches.append(m)
         matches = [
-            m for m in order_gates(classify_gates(owner_key, defn.block))
+            m for m in order_gates(combined_matches)
             if not (m.kind == "technology" and m.ref_id in true_prerequisites)
         ]
         gates: list[dict] = []
@@ -1175,7 +1234,8 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
         area = _scalar_text(area_assignment.value) if area_assignment else "physics"
 
         availability_results = evaluate_technology_for_profiles(
-            ctx.expanded_potentials.get(key), ctx.profiles, ctx.weight_gate_conditions.get(key)
+            ctx.expanded_potentials.get(key), ctx.profiles, ctx.weight_gate_conditions.get(key),
+            ctx.weight_gate_expressible_mask.get(key),
         )
         matrix = [availability_results[i].state for i in range(len(ctx.profiles))]
 
@@ -1538,7 +1598,8 @@ def _compute_profile_facts(
         tiers[key] = resolve_declared_tier(key, defn.block, ctx.variable_table)
 
         result = evaluate_technology_for_profiles(
-            ctx.expanded_potentials.get(key), [profile], ctx.weight_gate_conditions.get(key)
+            ctx.expanded_potentials.get(key), [profile], ctx.weight_gate_conditions.get(key),
+            ctx.weight_gate_expressible_mask.get(key),
         )[0]
         reason, _needs_warning = resolve_lock_reason(key, result, lock_reason_overrides)
         availability_json[key] = {
@@ -1771,7 +1832,9 @@ def build_diagnostics(ctx: BuildContext) -> dict:
     name_overrides_for_diagnostics = load_name_overrides()
     uncertain_technologies: list[dict] = []
     for key, potential in sorted(technologies_for_survey.items()):
-        results = evaluate_technology_for_profiles(potential, ctx.profiles, ctx.weight_gate_conditions.get(key))
+        results = evaluate_technology_for_profiles(
+            potential, ctx.profiles, ctx.weight_gate_conditions.get(key), ctx.weight_gate_expressible_mask.get(key),
+        )
         uncertain_indices = [i for i, r in results.items() if r.state == UNCERTAIN]
         if not uncertain_indices:
             continue
@@ -1803,7 +1866,8 @@ def build_diagnostics(ctx: BuildContext) -> dict:
     for key in ctx.rendered_defs:
         for profile in ctx.profiles:
             result = evaluate_technology_for_profiles(
-                ctx.expanded_potentials.get(key), [profile], ctx.weight_gate_conditions.get(key)
+                ctx.expanded_potentials.get(key), [profile], ctx.weight_gate_conditions.get(key),
+                ctx.weight_gate_expressible_mask.get(key),
             )[0]
             if result.state == LOCKED:
                 _reason, needs_warning = resolve_lock_reason(key, result, lock_reason_overrides)

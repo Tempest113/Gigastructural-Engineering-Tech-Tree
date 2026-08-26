@@ -13,13 +13,22 @@ see `spec/P-03-gates.md`'s "Curation is at the MECHANISM level" note for the ful
 Once a pattern is registered here, every real occurrence of it produces a `GateMatch` -- there is
 no further per-technology allowlist filtering individual occurrences out.
 
-**This module never touches availability.** `has_ascension_perk`, `has_technology`,
-`has_gigastructural_constructs` and `has_galactic_wonders` are already excluded from
-`pipeline.availability`'s boolean combination (`EXCLUDED_KEYS`, an identity-element state
+**This module never touches `potential`-based availability.** `has_ascension_perk`,
+`has_technology`, `has_gigastructural_constructs` and `has_galactic_wonders` are already excluded
+from `pipeline.availability`'s boolean combination (`EXCLUDED_KEYS`, an identity-element state
 predating this module) -- gate classification adds display metadata on top of a graph P-14
 already builds and an evaluator that already ignores these four leaf keys; it changes zero
 availability-evaluation code paths and zero edge counts (`tests/test_gate_patterns.py::
 test_building_gate_classification_does_not_change_potential_gate_edge_count` pins this).
+
+**A later session's addition, `classify_weight_gate_condition`, is the one exception.** A
+zero-factor `weight_modifier` condition that classifies to a registered gate pattern is excluded
+from `pipeline.availability._apply_weight_gate`'s evaluation entirely (see
+`pipeline.dataset_emit.build_context`'s `weight_gate_conditions`/`weight_gate_gate_matches`
+split) -- it badges the card as a `Gate` instead of contributing a `weight-gated` verdict for that
+condition. This is a deliberate, documented exception to the "never touches availability" rule
+above, not a violation of it: the condition still resolves the SAME question ("is this currently
+offered"), just through the gate-display channel instead of the `AvailabilityState` channel.
 
 **The two scripted-trigger wrappers are NOT literal `has_ascension_perk` checks in a technology's
 own block** -- confirmed by direct inspection of `giga_scripted_triggers.txt` /
@@ -317,22 +326,31 @@ def _scoped_gate_leaves(
     return results
 
 
-def classify_gates(technology_key: str, block: Block) -> list[GateMatch]:
-    """Every gate-pattern-registry match in `block`'s `potential` sub-block, in declaration
-    order (before `order_gates`' D-3 priority sort). Excludes a negated match (see module
-    docstring) and a bare leaf with no resolvable target name. `technology_key` is used ONLY to
-    compose a stable, globally-unique `GateMatch.group_id` (`f"{technology_key}#gate-alt{index}"`,
-    mirroring `Edge.groupId`'s own `f"{technology_key}#alt{index}"` convention) -- it plays no role
-    in which leaves match."""
-    potential = _field(block, "potential")
-    if potential is None or not isinstance(potential.value, Block):
-        return []
+def _classify_leaves_in_block(
+    technology_key: str, root: Block, group_label: str, filter_negated: bool = True,
+) -> list[GateMatch]:
+    """Shared dispatch for both `classify_gates` (a technology's own `potential` sub-block) and
+    `classify_weight_gate_condition` (a zero-factor `weight_modifier` condition block -- see that
+    function's docstring). `group_label` namespaces `GateMatch.group_id` so the two callers never
+    collide on the same id for the same technology.
 
+    `filter_negated` (weight-condition gate extraction): `classify_gates` (default, `True`) keeps
+    dropping a negated leaf -- a `potential` block's own polarity already IS the requirement, and
+    "must NOT have perk X" is not a positive "Needs X" gate. `classify_weight_gate_condition`
+    passes `False`: a zero-factor `weight_modifier` condition names the same perk/origin/civic/
+    technology either way a `weight_modifier` names it AT ALL is the informative fact worth
+    badging (real corpus: `tech_lathe_*`'s condition wraps `has_ascension_perk = ap_cosmogenesis`
+    in a `NOT`, `tech_housing_2`'s names `civic_agrarian_idyll` completely unwrapped -- both name
+    the same real requirement/exclusion pair a player cares about, and both badge identically to
+    their own swap-pair sibling, `tech_housing_agrarian_idyll`, which names the same civic from
+    the opposite polarity). Gate badges are already an approximate, best-effort display layer
+    elsewhere (an `alternative`'s "or:" wording, a dangling-alternative downgrade) -- this is a
+    deliberate continuation of that, not a new precision bar."""
     matches: list[GateMatch] = []
-    for leaf_key, target, negated, alternative, group_index in _scoped_gate_leaves(potential.value, False):
-        if target is None or negated:
+    for leaf_key, target, negated, alternative, group_index in _scoped_gate_leaves(root, False):
+        if target is None or (filter_negated and negated):
             continue
-        group_id = f"{technology_key}#gate-alt{group_index}" if alternative and group_index is not None else None
+        group_id = f"{technology_key}#{group_label}{group_index}" if alternative and group_index is not None else None
         if leaf_key == "has_ascension_perk":
             matches.append(GateMatch(GATE_KIND_ASCENSION_PERK, target, leaf_key, alternative, group_id))
         elif leaf_key == "has_technology" or leaf_key in TECHNOLOGY_ALIAS_KEYS:
@@ -348,6 +366,37 @@ def classify_gates(technology_key: str, block: Block) -> list[GateMatch]:
         elif leaf_key in WRAPPER_TO_ETHIC:
             matches.append(GateMatch(GATE_KIND_ETHICS_OR_CIVIC, WRAPPER_TO_ETHIC[leaf_key], leaf_key, alternative, group_id))
     return matches
+
+
+def classify_gates(technology_key: str, block: Block) -> list[GateMatch]:
+    """Every gate-pattern-registry match in `block`'s `potential` sub-block, in declaration
+    order (before `order_gates`' D-3 priority sort). Excludes a negated match (see module
+    docstring) and a bare leaf with no resolvable target name. `technology_key` is used ONLY to
+    compose a stable, globally-unique `GateMatch.group_id` (`f"{technology_key}#gate-alt{index}"`,
+    mirroring `Edge.groupId`'s own `f"{technology_key}#alt{index}"` convention) -- it plays no role
+    in which leaves match."""
+    potential = _field(block, "potential")
+    if potential is None or not isinstance(potential.value, Block):
+        return []
+    return _classify_leaves_in_block(technology_key, potential.value, "gate-alt")
+
+
+def classify_weight_gate_condition(technology_key: str, condition_block: Block, index: int) -> list[GateMatch]:
+    """Extends gate extraction (a later session, "weight-condition gate extraction") to a single
+    zero-factor `weight_modifier` condition block -- already `factor`-stripped and scripted-
+    trigger-expanded by `pipeline.dataset_emit._weight_gate_condition_blocks`, the same input
+    `pipeline.availability._apply_weight_gate` consumes. Classified with the exact same registry
+    and `_scoped_gate_leaves` descent discipline `classify_gates` uses on a `potential` block --
+    this is a new INPUT to gate extraction, not a new gate mechanism (CLAUDE.md's "curation is at
+    the MECHANISM level").
+
+    `index` disambiguates the `group_id` namespace across a technology's own multiple
+    `weight_modifier` entries (a real corpus shape: `giga_tech_amb_supertensiles` has two), and
+    from `classify_gates`' own `#gate-alt` namespace, so two independent OR-groups -- one from
+    `potential`, one from a weight condition -- never collide on the same `groupId` even when both
+    belong to the same technology. See `_classify_leaves_in_block`'s `filter_negated` for why this
+    call passes `filter_negated=False`, unlike `classify_gates`."""
+    return _classify_leaves_in_block(technology_key, condition_block, f"weight-gate{index}-alt", filter_negated=False)
 
 
 def order_gates(matches: list[GateMatch]) -> list[GateMatch]:
