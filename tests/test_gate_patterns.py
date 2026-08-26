@@ -374,3 +374,86 @@ def test_two_independent_or_groups_get_distinct_group_ids():
     assert group_ids["ap_a"] == group_ids["ap_b"]
     assert group_ids["ap_c"] == group_ids["ap_d"]
     assert group_ids["ap_a"] != group_ids["ap_c"]
+
+
+# ---------------------------------------------------------------------------
+# Weight-condition gate extraction (a later session): `classify_weight_gate_condition`.
+# ---------------------------------------------------------------------------
+
+
+def test_weight_condition_not_wrapped_perk_produces_a_gate_despite_reading_negated():
+    """`tech_lathe_*`'s real shape: `NOT = { ..., has_ascension_perk = ap_cosmogenesis }` inside
+    a zero-factor `weight_modifier` condition. The leaf reads NEGATED under the standard
+    `_scoped_gate_leaves` polarity (same as `classify_gates` would compute), but weight-condition
+    extraction does not filter on polarity -- see `classify_weight_gate_condition`'s own
+    docstring for why."""
+    from pipeline.gate_patterns import classify_weight_gate_condition
+
+    condition = _block("""
+    {
+        NOT = {
+            any_owned_planet = { is_planet_class = pc_cosmogenesis_world }
+            has_ascension_perk = ap_cosmogenesis
+        }
+    }
+    """)
+    matches = classify_weight_gate_condition("tech_lathe_overclocker", condition, 0)
+    assert len(matches) == 1
+    assert matches[0].kind == GATE_KIND_ASCENSION_PERK
+    assert matches[0].ref_id == "ap_cosmogenesis"
+    assert matches[0].alternative is False
+
+
+def test_weight_condition_unwrapped_civic_produces_a_gate_from_either_polarity():
+    """`tech_housing_2`/`tech_housing_agrarian_idyll`'s real civic-swap-pair shape: one names the
+    civic completely unwrapped, the other under a `NOT` -- both must badge identically, since both
+    name the same real fact (`civic_agrarian_idyll`) from opposite sides of the same swap."""
+    from pipeline.gate_patterns import classify_weight_gate_condition
+
+    unwrapped = _block("{ has_valid_civic = civic_agrarian_idyll }")
+    wrapped = _block("{ NOT = { has_valid_civic = civic_agrarian_idyll } }")
+    for condition in (unwrapped, wrapped):
+        matches = classify_weight_gate_condition("tech_housing_2", condition, 0)
+        assert len(matches) == 1
+        assert matches[0].kind == GATE_KIND_ETHICS_OR_CIVIC
+        assert matches[0].ref_id == "civic_agrarian_idyll"
+
+
+def test_weight_condition_nor_of_perks_produces_an_alternative_group():
+    """`tech_neuro_quantum_links`'s real shape: `NOR = { has_ascension_perk = X, Y, Z }` as a
+    zero-factor condition means "offered only if the empire holds ANY of X/Y/Z" -- a genuine
+    alternative group, all three members sharing one `group_id`."""
+    from pipeline.gate_patterns import classify_weight_gate_condition
+
+    condition = _block("""
+    {
+        NOR = {
+            has_ascension_perk = ap_the_flesh_is_weak
+            has_ascension_perk = ap_organo_machine_interfacing
+            has_ascension_perk = ap_organo_machine_interfacing_assimilator
+        }
+    }
+    """)
+    matches = classify_weight_gate_condition("tech_neuro_quantum_links", condition, 0)
+    assert len(matches) == 3
+    assert all(m.kind == GATE_KIND_ASCENSION_PERK for m in matches)
+    assert all(m.alternative is True for m in matches)
+    assert len({m.group_id for m in matches}) == 1
+    assert {m.ref_id for m in matches} == {
+        "ap_the_flesh_is_weak", "ap_organo_machine_interfacing", "ap_organo_machine_interfacing_assimilator",
+    }
+
+
+def test_weight_condition_group_id_namespace_never_collides_with_potential_gate_alt():
+    """`index` disambiguates a technology's own multiple `weight_modifier` entries from each
+    other AND from `classify_gates`' own `#gate-alt` namespace -- both a `potential`-derived and a
+    weight-derived alternative group on the SAME technology must get distinct group ids."""
+    from pipeline.gate_patterns import classify_weight_gate_condition
+
+    potential_block = _block("""
+    { potential = { OR = { has_ascension_perk = ap_a has_ascension_perk = ap_b } } }
+    """)
+    potential_matches = classify_gates("tech_x", potential_block)
+    weight_condition = _block("{ NOR = { has_ascension_perk = ap_c has_ascension_perk = ap_d } }")
+    weight_matches = classify_weight_gate_condition("tech_x", weight_condition, 0)
+    assert {m.group_id for m in potential_matches}.isdisjoint({m.group_id for m in weight_matches})

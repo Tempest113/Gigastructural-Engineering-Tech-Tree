@@ -76,7 +76,7 @@ def test_base_dataset_edge_count_matches_p14_survey(base_dataset):
     }
 
 
-def test_base_dataset_gates_match_the_gate_classification_survey(base_dataset):
+def test_base_dataset_gates_match_the_gate_classification_survey(ctx, base_dataset):
     """P-3 (gate-classification session): real per-mechanism counts, pinned so a future corpus
     change is caught rather than silently drifting. 45 ascension_perk-kind gate instances (22
     has_ascension_perk + 9 has_gigastructural_constructs + 14 has_galactic_wonders), unaffected by
@@ -140,57 +140,97 @@ def test_base_dataset_gates_match_the_gate_classification_survey(base_dataset):
        TOTAL technology-kind drops 33 (16 fewer instances, direct + inherited, than it would
        otherwise be).
 
-    Real corpus, current: DIRECT 107 gate instances (48 ascension_perk + 14 origin + 24
-    ethics_or_civic + 21 technology) over 83 directly-gated technologies. TOTAL (direct +
-    inherited) 214 gate instances (104 ascension_perk + 16 origin + 61 ethics_or_civic + 33
-    technology) over 147 gated technologies, 47 of which carry more than one gate instance."""
+    Real corpus, THEN (pre weight-condition gate extraction): DIRECT 107 gate instances (48
+    ascension_perk + 14 origin + 24 ethics_or_civic + 21 technology) over 83 directly-gated
+    technologies. TOTAL (direct + inherited) 214 gate instances (104 ascension_perk + 16 origin +
+    61 ethics_or_civic + 33 technology) over 147 gated technologies, 47 of which carry more than
+    one gate instance.
+
+    **A later session ("weight-condition gate extraction") adds a SECOND input to direct gate
+    classification: a zero-factor `weight_modifier` condition (D-10's Extension) that itself
+    classifies to a registered gate pattern now badges the card too, deduped by `(kind, refId)`
+    against any `potential`-derived match on the same technology (real corpus: `tech_lathe_*`'s
+    6 technologies each dedupe an identical `ap_cosmogenesis` match). Unlike `classify_gates` on a
+    `potential` block, a weight condition's own leaf polarity is NOT used to filter matches --
+    `pipeline.gate_patterns.classify_weight_gate_condition`'s own docstring has the full reasoning
+    (a condition and its logical negation name the SAME requirement/exclusion pair from opposite
+    sides, e.g. `tech_housing_2`/`tech_housing_agrarian_idyll`'s civic-swap pair, both badging
+    `civic_agrarian_idyll`). This is a substantially larger source than `potential` alone (90
+    technologies carry at least one weight-derived match, some contributing more than one, e.g.
+    `tech_neuro_quantum_links`'s 3-perk `NOR`-alternative group) and, propagated down `prerequisite`
+    chains the same as any other direct gate, cascades further than the direct figures alone
+    suggest -- real corpus, NOW: DIRECT 274 gate instances (106 ascension_perk + 24 origin + 56
+    ethics_or_civic + 88 technology) over 165 directly-gated technologies. TOTAL (direct +
+    inherited) 643 gate instances (198 ascension_perk + 69 origin + 179 ethics_or_civic + 197
+    technology) over 304 gated technologies, 195 of which carry more than one gate instance. See
+    `docs/BUILD-LOG.md`'s "weight-condition gate extraction" session entry for the full accounting."""
     from collections import Counter
 
     doc, _node_bytes, _edge_bytes = base_dataset
     gated = [t for t in doc["technologies"] if t["gates"]]
     all_gates = [g for t in doc["technologies"] for g in t["gates"]]
-    assert len(all_gates) == 214
+    assert len(all_gates) == 643
     assert dict(Counter(g["kind"] for g in all_gates)) == {
-        "ascension_perk": 104, "origin": 16, "ethics_or_civic": 61, "technology": 33,
+        "ascension_perk": 198, "origin": 69, "ethics_or_civic": 179, "technology": 197,
     }
-    assert len(gated) == 147
-    assert sum(1 for t in gated if len(t["gates"]) > 1) == 47
+    assert len(gated) == 304
+    assert sum(1 for t in gated if len(t["gates"]) > 1) == 195
 
     direct_gates = [g for t in doc["technologies"] for g in t["gates"] if not g["inherited"]]
     directly_gated = [t for t in doc["technologies"] if any(not g["inherited"] for g in t["gates"])]
-    assert len(direct_gates) == 107
+    assert len(direct_gates) == 274
     assert dict(Counter(g["kind"] for g in direct_gates)) == {
-        "ascension_perk": 48, "origin": 14, "ethics_or_civic": 24, "technology": 21,
+        "ascension_perk": 106, "origin": 24, "ethics_or_civic": 56, "technology": 88,
     }
-    assert len(directly_gated) == 83
+    assert len(directly_gated) == 165
 
+    # `giga_tech_arkship_neutronium_harvester` stays empty (Item 5 excludes its own direct
+    # dual-encoded gate, and it inherits no weight-derived gate from an ancestor). All FOUR
+    # amb_supertensiles variants (including `_delta`, which never had a direct gate of its own --
+    # its `potential` has no `has_technology` leaf at all) now inherit a NEW gate their shared
+    # parent `giga_tech_amb_supertensiles` gained from weight-condition gate extraction (its own
+    # `weight_modifier` names `tech_starbase_3` inside a `NOR` alongside two non-gate-shaped
+    # siblings -- a dangling 1-member alternative group, downgraded to a plain "Needs Starhold"
+    # the same way Birch World's own dangling case is).
+    tech = next(t for t in doc["technologies"] if t["id"] == "giga_tech_arkship_neutronium_harvester")
+    assert tech["gates"] == []
     for key in [
         "giga_tech_amb_supertensiles_acot_alpha", "giga_tech_amb_supertensiles_acot_sigma",
         "giga_tech_amb_supertensiles_acot_delta", "giga_tech_amb_supertensiles_acot_phanon",
-        "giga_tech_arkship_neutronium_harvester",
     ]:
         tech = next(t for t in doc["technologies"] if t["id"] == key)
-        assert tech["gates"] == []
+        assert [(g["kind"], g["refId"], g["inherited"], g["sourceTechnologyId"]) for g in tech["gates"]] == [
+            ("technology", "tech_starbase_3", True, "giga_tech_amb_supertensiles"),
+        ]
 
-    # Every "has_technology"-sourced DIRECT gate instance is one of the 25 potential-gate edges
-    # (still 25 -- Item 5 only filters the CARD-DISPLAY gate list, never the edge extraction
-    # itself). A LATER session removed `can_research_technology` from gate classification
-    # entirely (see this test's own module docstring above) -- the ONE extra pair that
-    # relationship used to need (`tech_genome_mapping`/`tech_alien_cloning`, from that removed
-    # key) is gone, so `gate_tech_pairs` is now a clean STRICT SUBSET of `potential_gate_pairs`
-    # (25 - 4 Item-5 exclusions = 21), asserted directly rather than as a set-difference. Restricted
-    # to DIRECT gates -- an INHERITED technology-kind gate is a different (ancestor, descendant)
-    # pair than any potential-gate edge, by construction, so including inherited entries here
-    # would just be noise against this specific direct-edge correspondence check.
+    # Every `potential`-sourced "has_technology" DIRECT gate instance is one of the 25
+    # potential-gate edges (still 25 -- Item 5 only filters the CARD-DISPLAY gate list, never the
+    # edge extraction itself). Recomputed via `classify_gates` directly (bypassing the final,
+    # merged `gates` field) so this check stays scoped to `potential`-derived matches only --
+    # weight-condition gate extraction (a later session) adds a SECOND source of direct
+    # technology-kind gates that was never part of `potential_gate_pairs` to begin with (P-14's
+    # edge extraction is `potential`-only, confirmed by
+    # `tests/test_edges.py::test_weight_modifier_has_technology_is_not_a_potential_gate_edge`), so
+    # folding them into this specific correspondence check would be noise, not a regression. A
+    # LATER session removed `can_research_technology` from gate classification entirely (see this
+    # test's own module docstring above) -- the ONE extra pair that relationship used to need
+    # (`tech_genome_mapping`/`tech_alien_cloning`, from that removed key) is gone, so
+    # `potential_gate_tech_pairs` is now a clean STRICT SUBSET of `potential_gate_pairs`
+    # (25 - 4 Item-5 exclusions = 21), asserted directly rather than as a set-difference.
+    from pipeline.gate_patterns import classify_gates as _classify_potential_gates
+    from pipeline.edges import ordered_prerequisites as _ordered_prerequisites
+
     potential_gate_pairs = {(e["from"], e["to"]) for e in doc["edges"] if e["kind"] == "potential-gate"}
     assert len(potential_gate_pairs) == 25
-    gate_tech_pairs = {
-        (g["refId"], t["id"])
-        for t in doc["technologies"] for g in t["gates"]
-        if g["kind"] == "technology" and not g["inherited"]
-    }
-    assert len(gate_tech_pairs) == 21
-    assert gate_tech_pairs <= potential_gate_pairs
+    potential_gate_tech_pairs = set()
+    for key in ctx.rendered_keys:
+        defn = ctx.rendered_defs[key]
+        true_prerequisites = set(_ordered_prerequisites(defn.block))
+        for m in _classify_potential_gates(key, defn.block):
+            if m.kind == "technology" and m.ref_id not in true_prerequisites:
+                potential_gate_tech_pairs.add((m.ref_id, key))
+    assert len(potential_gate_tech_pairs) == 21
+    assert potential_gate_tech_pairs <= potential_gate_pairs
     # 4 real exclusions, not the 4 amb_supertensiles technologies as originally assumed --
     # `giga_tech_amb_supertensiles_acot_delta`'s own `potential` has no `has_technology` leaf at
     # all (only `has_acot`/`has_global_flag`), so it was never a potential-gate owner to begin
@@ -198,7 +238,7 @@ def test_base_dataset_gates_match_the_gate_classification_survey(base_dataset):
     # pair (CLAUDE.md's edge-typing example): `tech_mega_engineering ->
     # giga_tech_arkship_neutronium_harvester`, unrelated to the ACOT/AoT tensile family but the
     # same underlying redundant-encoding shape.
-    assert potential_gate_pairs - gate_tech_pairs == {
+    assert potential_gate_pairs - potential_gate_tech_pairs == {
         ("tech_dark_matter_power_core_ae", "giga_tech_amb_supertensiles_acot_alpha"),
         ("tech_dark_matter_power_core_se", "giga_tech_amb_supertensiles_acot_sigma"),
         ("tech_civil_phanon_application", "giga_tech_amb_supertensiles_acot_phanon"),
