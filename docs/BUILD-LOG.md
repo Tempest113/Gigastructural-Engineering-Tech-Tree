@@ -6898,3 +6898,230 @@ present) against the real dev server: 0 console errors, 0 failed requests, acros
 verification cases. `spec/P-03-gates.md` gained a normative section on weight-condition gate
 extraction (the full mechanism backfill it's still missing otherwise remains open, per CLAUDE.md's
 existing flag).
+
+## Weight-gate completeness gaps (Items 1 and 2, a later session)
+
+Two bounded completeness gaps in `_apply_weight_gate`/`_weight_gate_condition_blocks`, plus a
+report-only sizing of a third.
+
+**Item 1 — the player-is-standard-country-type ground fact.** `pipeline.availability`'s
+`COUNTRY_TYPE_NEVER_PLAYER` (previously just `{"acot_phanon_base"}`) gains `"fallen_empire"` and
+`"awakened_fallen_empire"`, user-confirmed: the player empire is always a standard
+(`is_country_type = default`) country type. Surveyed exhaustively, walking the exact same AND/OR/
+NOT/NOR descent `_evaluate_node` itself uses (so a value nested inside an unrecognised scope
+switch like `any_relation`/`any_country` — never reachable as a direct leaf regardless — is
+correctly excluded): across every rendered technology's `potential` AND zero-factor
+`weight_modifier` condition, exactly THREE `is_country_type` values are ever directly reachable —
+`acot_phanon_base` (already handled), and `fallen_empire`/`awakened_fallen_empire` (the same 9
+technologies for both: `tech_dark_matter_deflector`/`_power_core`/`_propulsion`, and the six
+`tech_weaver_bio_*_6` anti-fire-rate/evasion/anti-evasion/healing/fire-rate/confuser variants), each
+a `NOR = { is_country_type = fallen_empire, is_country_type = awakened_fallen_empire }` zero-factor
+weight condition. No `marauder_*`/`enclave*` value is ever a direct leaf anywhere in the corpus.
+
+**Sole documented exception (user-confirmed): `is_country_type = blokkat_stripminers`** (and its
+`_ascended_country`/`_blokkwork`/`_defeated` variants) is deliberately NOT added — a player CAN
+become that type mid-playthrough (the Blokkat crisis's conversion mechanic), and no
+`blokkat_stripminers*` value is a direct leaf anywhere in the corpus today regardless, so this is a
+documented non-extension, not a behaviour change.
+
+**Real effect, verified against the built pipeline, not assumed: NONE of the 9 technologies change
+AVAILABILITY STATE.** Both leaves now resolve a real `FALSE` (previously `UNKNOWN`); `NOR` over two
+`FALSE` children is a real `TRUE` (the zero-weight condition provably fires for every player
+profile) — `_apply_weight_gate`'s non-axis-pure TRUE branch (`is_country_type` is a ground fact, not
+an `AXIS_FACTS` entry, so `axis_pure` stays `False`) reaches the EXACT SAME `WEIGHT_GATED` outcome
+the old UNKNOWN branch already reached, for every one of the 9 technologies across all 12 profiles.
+None become MORE restricted (none become `locked`, confirmed directly and structurally: `axis_pure`
+can never be `True` for a ground fact, and `_apply_weight_gate`'s LOCKED branch is gated on
+`axis_pure`). One real, reported (not silently normalised away) side effect: the TRUE branch's
+`_negate`-collapsed leaf is `None` (no single leaf survives negating a real FALSE), so
+`_weight_gated_description` falls to the neutral `_WEIGHT_GATE_UNKNOWN_ROUTE` copy — for these 9
+technologies specifically, description text actually LOSES the (technically one-sided, misleading
+on its own) `is_country_type = fallen_empire` text the old UNKNOWN branch happened to carry, in
+favour of the honest "Not offered through the normal research draw currently." This is reported as
+the real, sole finding rather than forced to match a prior expectation of "these become available"
+— the value of the fix is that the WEIGHT_GATED verdict for these 9 now rests on a PROVEN fact
+instead of an accidentally-correct-looking UNKNOWN.
+
+**Item 2 — bare top-level `factor = 0`.** `_weight_gate_condition_blocks` only ever iterated
+`modifier`-keyed sub-items of `weight_modifier`; a BARE top-level `factor = N` (Stellaris's own
+"always apply this factor" shorthand, no `modifier` wrapper) was invisible to it regardless of
+value. Real corpus (verified directly against `BuildContext.rendered_defs`, not assumed): 222
+rendered technologies use this bare shorthand (matches the investigation's own figure exactly); of
+those, 24 carry a literal `factor = 0` with no other real (non-comment) sibling assignment — an
+unconditional, permanent exclusion from the weighted draw, the same idiom `tech_akx_worm_1`'s
+`modifier = { factor = 0, always = yes }` already expresses, just spelled without the wrapper.
+
+Represented as an EMPTY synthetic condition Block (not a synthesized `always = yes` leaf):
+`_combine_and([])` already resolves to `_State.EXCLUDED`/`leaf=None`, which `_apply_weight_gate`
+already routes to `WEIGHT_GATED` with the neutral `_WEIGHT_GATE_UNKNOWN_ROUTE` copy — never the
+`always = yes`-specific copy, which POSITIVELY CLAIMS a real route exists. That claim is earned for
+`tech_akx_worm_1` by the user's own hand-confirmed event chain; it is not earned for these 24
+(`vendor/stellaris/` has no `events/`, `common/special_projects/`, `common/decisions/` or
+`common/relics/` at all, so this static pipeline cannot see what actually grants them).
+
+**The 24, individually, and their split (exactly as required — "several", not all, pre-covered):**
+
+| Technology | Pre-covered by `ADD_RESEARCH_OPTION_PERK_GRANTS`? |
+| --- | --- |
+| `tech_dyson_sphere` | Yes (`ap_galactic_wonders`) |
+| `tech_matter_decompressor` | Yes (`ap_galactic_wonders`) |
+| `tech_ring_world` | Yes (`ap_galactic_wonders`) |
+| `tech_btc_1` | No |
+| `tech_dragon_armor` | No |
+| `tech_enigmatic_decoder` | No |
+| `tech_enigmatic_encoder` | No |
+| `tech_frameworld_defensive_station_2` | No |
+| `tech_frameworld_defensive_station_3` | No |
+| `tech_frameworld_defensive_station_4` | No |
+| `tech_frameworld_defensive_station_5` | No |
+| `tech_gargantuan_evolution` | No |
+| `tech_leviathan_techgenesis` | No |
+| `tech_lgate_activation` | No |
+| `tech_nanite_autocannon` | No |
+| `tech_nanite_flak_batteries` | No |
+| `tech_nanite_repair_system` | No |
+| `tech_neuroregeneration` | No |
+| `tech_orbital_trash_dispersal` | No |
+| `tech_prescient_data_modeling` | No |
+| `tech_psionic_barrier` | No |
+| `tech_regenerative_hull_tissue` | No |
+| `tech_subspace_drive` | No |
+| `tech_xeno_linguistics` | No |
+
+3 pre-covered (already badge "Needs Galactic Wonders", untouched by this fix — no double-handling:
+their existing gate badge is a completely separate mechanism from availability, and both now
+correctly co-exist: `tech_dyson_sphere`/`tech_matter_decompressor` show `locked` for the 6
+nomadic profiles — Galactic Wonders' own real axis restriction, unrelated to this fix — and
+`weight-gated` for the other 6; `tech_ring_world` has no `potential` restriction of its own, so it
+is `weight-gated` for all 12). 21 gain a NEW `weight-gated` verdict the pre-fix pipeline never
+produced at all — except `tech_btc_1`, `tech_lgate_activation` and `tech_xeno_linguistics`, whose
+own `potential` is never plainly AVAILABLE for any profile to begin with (uncertain/locked for an
+unrelated reason in every profile), so `_apply_weight_gate` never even reaches them — this fix has
+zero VISIBLE effect for exactly these three, reported rather than silently asserted away.
+
+**Per-state population, full 12×973 matrix, verified directly (not estimated):**
+
+| State | Before | After |
+| --- | ---: | ---: |
+| available | 8,278 | 8,038 |
+| locked | 1,466 | 1,466 |
+| uncertain | 482 | 482 |
+| config-gated | 600 | 600 |
+| weight-gated | 850 | 1,090 |
+| **Total** | **11,676** | **11,676** |
+
+`weight-gated`: 850/85 technologies → 1,090/106 technologies (+240 pairs / +21 technologies — all
+from Item 2; Item 1 contributes exactly 0 pairs, per the finding above). `available` drops by
+exactly 240 (240 pairs move `available` → `weight-gated`, everything else held fixed) — the ENTIRE
+net movement is Item 2 pulling previously (wrongly) `available` bare-zero-factor technologies into
+their correct `weight-gated` state; `locked`/`uncertain`/`config-gated` are untouched to the pair,
+confirming neither fix reached into those buckets.
+
+**D-10's three figures, confirmed via `build_diagnostics` directly, EXACTLY unchanged:** unconditional
+uncertainty 31/973 (3.186%), worst profile-dependent 16/973 (1.6444%), union (`uncertainTechnologies`)
+53 — expected, since `_apply_weight_gate` only ever fires on a `potential`-derived AVAILABLE result
+and never itself produces UNCERTAIN; neither fix touches an UNCERTAIN leaf.
+
+Gate counts (274 direct / 643 total) are unaffected by either fix — confirmed by rebuilding the real
+dataset and recomputing both figures directly against it (`274`/`643`, `Counter` breakdown by kind
+identical to the prior session's own table) — none of the 24 bare-zero-factor blocks (now
+synthetic EMPTY Blocks) ever classify to a registered gate pattern, and the 9 country-type
+technologies' gate classification is untouched by an availability-only fix.
+
+## Gate-count reconciliation (multi-kind matching, direct vs. inherited growth)
+
+The prior session's survey predicted 110 entry-level matches (ascension_perk 59, origin 5,
+ethics_or_civic 14, technology 32) from running `classify_weight_gate_condition` over the
+206 zero-factor `weight_modifier` blocks, and the actual DIRECT gate-instance total moved 107 → 274
+(+167). Reconciled directly against the current pipeline (not re-assumed):
+
+- Re-running `classify_weight_gate_condition` over every `weight_gate_conditions` block today finds
+  **109 condition-block entries carry at least one match** (1 short of the survey's 110 — expected
+  methodology drift, the same tolerance this project's own prior session already established for
+  the parallel "90 vs 87 technologies" gap, not chased further), across **90 distinct technologies**.
+- Those 109 entries produce **173 raw `GateMatch` instances** — 43 entries produce MORE than one
+  instance each (multi-kind matches, e.g. an `OR`/`NOR`-alternative group naming several distinct
+  perks/technologies), contributing 64 instances beyond one-per-entry (109 + 64 = 173). Kind
+  breakdown of the 173 raw matches: ascension_perk 64, technology 67, ethics_or_civic 32, origin 10.
+- Of those 173, **6 dedupe against an already-existing `potential`-derived direct gate of the same
+  `(kind, refId)`** on the same technology (the 6 `tech_lathe_*` technologies, each redundantly
+  re-matching `ap_cosmogenesis`) and are dropped before reaching the card's `gates` field.
+- **173 − 6 = 167 net NEW direct gate instances** — exactly the observed 107 → 274 growth. Multi-kind
+  matching is therefore the full, shown (not assumed) explanation: 109 entries is close to the
+  survey's 110, and it is the 64 extra multi-kind instances (minus the 6 real dedup collisions) that
+  turn ~110 entries into +167 net direct instances, not a discrepancy needing further chasing.
+- The TOTAL gate-instance growth (214 → 643, +429) decomposes as **+167 direct** (above) **+262
+  newly-inherited** (429 − 167 = 262) — the same pre-existing `prerequisite`-chain propagation
+  mechanism (unchanged by this session) now also propagating these 167 new direct weight-derived
+  gates down to their descendants, exactly as it already does for `potential`-derived direct gates.
+  Not a new cascade bug — the largest single gates list after the full weight-condition-extraction
+  session was still 11 entries (documented already), unaffected by this reconciliation.
+
+## Item 3 (report only — no implementation)
+
+Sizing the remaining gap: `factor` values expressed as an `@variable` reference or a `value:X`
+scripted-value reference are skipped unconditionally by `_weight_gate_condition_blocks` (both the
+pre-existing `modifier`-wrapped path and this session's new bare-top-level path), since neither is
+a `NumberLiteral`.
+
+**(a) `@variable` factor references: verified, zero resolve to literal zero.** Scanning every
+rendered technology's `weight_modifier` (bare top-level factor AND `modifier`-wrapped factor, both
+paths) for a `VariableReference` factor value finds **1,372 entries** (close to the investigation's
+1,336 — expected minor methodology drift, e.g. whether a technology's OWN multiple `modifier`
+sub-blocks are each counted once) resolving to **16 distinct variable names**, every one already
+declared as a `scripted_variables` entry `pipeline.variables.VariableTable` resolves cleanly (zero
+resolution errors). Resolving all 16 via the existing `VariableTable.resolve` machinery:
+`EnigmaticEngineeringDraw` 0.025, `ap_grasp_the_void_travel_tech` 1.5, `ap_pending_tech_boost` 10,
+`eager_explorer_effect` 5, `federation_perk_factor` 2, `giga_tech_weight_boost_five` 5,
+`giga_tech_weight_boost_greater` 4, `giga_tech_weight_boost_large` 2,
+`giga_tech_weight_boost_massive` 6, `giga_tech_weight_boost_medium` 1.5,
+`giga_tech_weight_boost_small` 1.25, `giga_tech_weight_boost_ten` 10,
+`giga_tech_weight_malus_large` 0.5, `giga_tech_weight_malus_medium` 0.75,
+`repatableTechFactor` 0.5, `storm_chasers_storm_tech_weight_mult` 2.0. **None is zero** — this
+population is a real, size-able weight SCALING concern (boosts/penalties), never a hidden gate;
+no false negative exists here today. Cheap to check (as expected): `pipeline.variables` already
+does the resolution, no new machinery needed to confirm this.
+
+**(b) `value:X` scripted-value references: CANNOT be resolved with the current pipeline/vendored
+corpus at all — this is real new work, not a cheap check.** 26 entries (close to the
+investigation's 27) reference 2 distinct scripted values (`storm_callers_councilor_tech_discovery_
+chance_multiplier`, `tech_weight_likelihood`). No `pipeline.scripted_values`-equivalent module
+exists, and — checked directly, not assumed — **no `common/scripted_values` directory is vendored
+by any of the four sources at all** (it is not one of CLAUDE.md's required directories). Resolving
+these would require: (1) adding `common/scripted_values` to every source's required-directory list
+and `tools/collect_vanilla.py`'s collection scope, (2) vendoring it (a `collect_vanilla.py`/manual
+re-vendor step outside this session's scope), (3) building a NEW resolution module analogous to
+`pipeline.variables` (scripted values have their own, more complex trigger-based conditional-value
+shape in Stellaris, not simply `@name = <literal>` — a materially different, larger parser/resolver
+surface than variable resolution). None of this exists today.
+
+**(c) Moot given (a) and (b): zero new `weight-gated` pairs are knowable from either source without
+new work.** (a) found no zero-resolving `@variable`, so no new pairs there. (b) cannot be evaluated
+at all without vendoring a new source directory and writing a new resolution module — sizing that
+work (not doing it) is the deliverable here: a `pipeline.scripted_values` module comparable in scope
+to `pipeline.variables` (242 lines), plus updating `_load_expanded`/`_weight_gate_condition_blocks`
+to consult it, plus a corpus re-vendor to actually populate `common/scripted_values/`. Until that
+work happens, both `storm_callers_councilor_tech_discovery_chance_multiplier` and
+`tech_weight_likelihood` remain an acknowledged, unquantified blind spot — reported plainly rather
+than guessed at.
+
+## Known unmodelled case: `add = N` weight modifiers
+
+6 real corpus entries (`tech_terrestrial_sculpting`, `tech_xeno_linguistics`, `tech_crystal_armor_1`,
+`giga_tech_maginot_world` ×2, `tech_mine_rare_crystals`) use `add = N` inside a `weight_modifier`
+`modifier` block instead of `factor = N` — a structurally different additive mechanic (adds to the
+base weight rather than multiplying it), never a hard zero-or-nonzero gate concern the way `factor`
+is. Confirmed real, deliberately left unmodelled per this session's own scope fence — no
+implementation, no config file, no suppression.
+
+Full suite: pytest all pipeline tests pass (vendor populated; two new regression tests added:
+`tests/test_availability.py::test_country_type_fallen_and_awakened_resolve_false_as_ground_facts`
+and `tests/test_dataset_emit.py::test_weight_gate_condition_blocks_catches_bare_top_level_zero_factor`
+plus `test_country_type_ground_fact_and_bare_zero_factor_real_corpus_effect` against the real
+corpus — each individually confirmed capable of failing against the pre-fix code before being
+trusted). `tsc --noEmit` clean, `vite build` clean, a real `tools/build_dataset.py` rebuild against
+the corrected pipeline, and headless-Chromium verification (Playwright, driven via CDP) against the
+rebuilt `client/dist`: 0 console errors, 0 failed requests; `tech_dark_matter_deflector` and
+`tech_nanite_flak_batteries` both show `weight-gated` across all 12 profiles in the live dataset,
+`tech_dyson_sphere` shows its pre-existing `ascension_perk: ap_galactic_wonders` gate badge
+undisturbed alongside its new `weight-gated`/`locked` split.

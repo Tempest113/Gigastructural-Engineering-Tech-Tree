@@ -398,6 +398,27 @@ Post-fix D-10 figures (rendered set, both metrics recomputed against the same `p
 dataset_emit.build_context`): see `docs/BUILD-LOG.md` for the full reconciliation table against
 this Extension's own pre-fix numbers above.
 
+**Two completeness gaps, closed (a later session).** `pipeline.availability.COUNTRY_TYPE_NEVER_PLAYER`
+(D-6/P-1's ground-fact mechanism, already used for `acot_phanon_base`) is extended with
+`fallen_empire`/`awakened_fallen_empire`: the player empire is always a standard (`is_country_type
+= default`) country type, user-confirmed, with `is_country_type = blokkat_stripminers` (and its
+variants) deliberately excluded — a player CAN become that type mid-playthrough via the Blokkat
+crisis's conversion mechanic. Real corpus: 9 technologies' zero-factor `weight_modifier` condition
+(`NOR = { is_country_type = fallen_empire, is_country_type = awakened_fallen_empire }`) now
+resolves on a proven fact rather than an unresolved leaf — verified to change zero technologies'
+final `weight-gated` state (a ground fact is never `axis_pure`, so this can never newly produce
+`locked`) — see `docs/BUILD-LOG.md` for the full accounting.
+
+Separately, `_weight_gate_condition_blocks` gains coverage for a BARE top-level `factor = N`
+directly on `weight_modifier` (Stellaris's own "always apply this factor, no condition"
+shorthand) — previously invisible to this Extension entirely, since only `modifier`-keyed
+sub-items were scanned. An unconditional bare `factor = 0` (24 real technologies) is folded into
+the same `weight-gated` evaluation as any other zero-factor condition, represented as an empty
+condition Block (never a synthesized `always = yes` leaf, which would claim a specific
+acquisition route this static pipeline cannot verify for these 24 the way it could for
+`tech_akx_worm_1`). `docs/BUILD-LOG.md` has the full technology-by-technology split against
+`pipeline.dataset_emit.ADD_RESEARCH_OPTION_PERK_GRANTS` and the before/after per-state population.
+
 ## D-11 — Rendering stack
 
 PixiJS over a hand-rolled WebGL renderer. Hand-rolling a 2D renderer that meets the P-10
