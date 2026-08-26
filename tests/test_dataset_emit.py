@@ -277,6 +277,69 @@ def test_base_dataset_gates_match_the_gate_classification_survey(ctx, base_datas
         assert g["icon"]["width"] > 1  # not the degenerate 1x1 placeholder
 
 
+def test_country_type_ground_fact_and_bare_zero_factor_real_corpus_effect(ctx, base_dataset):
+    """Items 1 and 2 (a later session), against the REAL corpus (not the synthetic unit tests in
+    `tests/test_availability.py` / this file's own `_weight_gate_condition_blocks` test above).
+
+    Item 1: the 9 real `is_country_type = fallen_empire`/`awakened_fallen_empire` technologies
+    stay `weight-gated` for every profile -- proven NOT to regress into `locked` for all 12
+    profiles (Decision 5's own tripwire in `evaluate_technology_for_profiles` would raise if it
+    did) and not to silently become `available` either, matching this session's own reporting
+    that the leaf-resolution fix changes the deciding FACT, not the final STATE, for this group.
+
+    Item 2: of the 24 real unconditional bare `factor = 0` technologies, exactly 3
+    (`ADD_RESEARCH_OPTION_PERK_GRANTS`) already carried a real ascension-perk gate badge before
+    this fix and must keep it, undisturbed, alongside their newly-correct `weight-gated`
+    verdict -- never double-handled or overridden. The other 21 gain a real `weight-gated`
+    verdict (for at least one profile) that the pre-fix pipeline never produced at all, since the
+    bare shorthand was invisible to `_weight_gate_condition_blocks` entirely."""
+    doc, _node_bytes, _edge_bytes = base_dataset
+    by_id = {t["id"]: t for t in doc["technologies"]}
+
+    nine_country_type_techs = [
+        "tech_dark_matter_deflector", "tech_dark_matter_power_core", "tech_dark_matter_propulsion",
+        "tech_weaver_bio_anti_fire_rate_6", "tech_weaver_bio_anti_evasion_6",
+        "tech_weaver_bio_evasion_6", "tech_weaver_bio_fire_rate_6", "tech_weaver_bio_healing_6",
+        "tech_weaver_bio_confuser_6",
+    ]
+    for key in nine_country_type_techs:
+        matrix = by_id[key]["availabilityMatrix"]
+        assert "weight-gated" in matrix
+        assert "available" not in matrix  # never silently swept into available
+        # A `locked` entry CAN legitimately appear here (e.g. the `tech_weaver_bio_*` family's
+        # OWN `potential` separately locks non-bio-ship profiles via `country_uses_bio_ships` --
+        # unrelated to this fix), but it must never be caused by the country-type ground fact
+        # itself, which is not an AXIS_FACTS leaf and so can never contribute `axis_pure=True`.
+
+    already_perk_gated = {"tech_dyson_sphere", "tech_matter_decompressor", "tech_ring_world"}
+    for key in already_perk_gated:
+        gate_kinds = {(g["kind"], g["refId"]) for g in by_id[key]["gates"]}
+        assert ("ascension_perk", "ap_galactic_wonders") in gate_kinds
+        assert "weight-gated" in by_id[key]["availabilityMatrix"]
+
+    # tech_btc_1, tech_lgate_activation and tech_xeno_linguistics are the 3 of the 24 whose own
+    # `potential` is never plainly AVAILABLE for any profile to begin with (uncertain/locked for
+    # an unrelated reason in every profile), so `_apply_weight_gate` never even reaches them --
+    # this fix genuinely has zero visible effect for exactly these three, reported rather than
+    # asserted away.
+    for key in ["tech_btc_1", "tech_lgate_activation", "tech_xeno_linguistics"]:
+        assert "weight-gated" not in by_id[key]["availabilityMatrix"]
+
+    for key in [
+        "tech_frameworld_defensive_station_2", "tech_frameworld_defensive_station_3",
+        "tech_frameworld_defensive_station_4", "tech_frameworld_defensive_station_5",
+        "tech_nanite_autocannon", "tech_nanite_flak_batteries", "tech_nanite_repair_system",
+        "tech_orbital_trash_dispersal", "tech_regenerative_hull_tissue",
+        "tech_leviathan_techgenesis", "tech_gargantuan_evolution", "tech_neuroregeneration",
+        "tech_prescient_data_modeling", "tech_psionic_barrier", "tech_subspace_drive",
+        "tech_dragon_armor", "tech_enigmatic_encoder", "tech_enigmatic_decoder",
+    ]:
+        assert "weight-gated" in by_id[key]["availabilityMatrix"], (
+            f"{key}: bare unconditional `factor = 0` must now produce weight-gated, invisible to "
+            "the pre-fix _weight_gate_condition_blocks"
+        )
+
+
 def test_dangling_alternative_downgrade_applies_per_group_not_just_whole_list(base_dataset):
     """Item 3b (a later session, user-reported): tech_cloning's own direct gate ("Driven
     Assimilator") forms a 1-member OR group (`potential`'s real OR is `is_machine_empire = no OR
@@ -668,6 +731,48 @@ def test_resolve_cost_handles_block_form_and_still_refuses_to_guess():
     assert _resolve_cost(_field(tech_x_cost, "cost").value, var_table) == 2500.0
     assert _resolve_cost(_field(tech_y_cost, "cost").value, var_table) is None  # @undefined_var never resolves
     assert _resolve_cost(_field(tech_z_cost, "cost").value, var_table) is None  # no `factor` field at all
+
+
+def test_weight_gate_condition_blocks_catches_bare_top_level_zero_factor():
+    """Item 2 (a later session): `_weight_gate_condition_blocks` originally only ever scanned
+    `modifier`-keyed sub-items of `weight_modifier` -- a BARE top-level `factor = N` (Stellaris's
+    own "always apply this factor, no condition" shorthand, real corpus: 222 rendered
+    technologies, e.g. `tech_dyson_sphere`/`tech_xeno_linguistics`) was silently skipped
+    regardless of value. Proven capable of failing against the pre-fix code: before this fix,
+    `tech_bare_zero` below produced an EMPTY list (the bug), identical to `tech_bare_nonzero`'s
+    correct empty list -- this test would pass unmodified pre-fix for `tech_bare_nonzero` alone
+    but fail its `tech_bare_zero` assertion.
+
+    An unconditional zero (no other real sibling assignment) is represented as an EMPTY synthetic
+    condition Block, not a synthesized `always = yes` leaf -- see this function's own docstring
+    for why (the neutral WEIGHT_GATED copy must never claim a route this static pipeline can't
+    see). A bare NON-zero factor (ordinary weight scaling, not a gate) must still produce nothing,
+    exactly as before this fix."""
+    from pipeline.clausewitz import parse_text
+    from pipeline.dataset_emit import _weight_gate_condition_blocks
+
+    doc = parse_text(
+        "tech_bare_zero = { weight_modifier = { factor = 0 } }\n"
+        "tech_bare_nonzero = { weight_modifier = { factor = 0.5 } }\n"
+        "tech_bare_zero_with_sibling = { weight_modifier = { factor = 0 modifier = { factor = 0 is_nomadic = yes } } }\n",
+        path="x.txt",
+    )
+    tech_bare_zero = doc.items[0].value
+    tech_bare_nonzero = doc.items[1].value
+    tech_bare_zero_with_sibling = doc.items[2].value
+
+    zero_blocks = _weight_gate_condition_blocks(tech_bare_zero, {})
+    assert len(zero_blocks) == 1
+    assert zero_blocks[0].items == []  # unconditional: no leaf, never a synthesized `always = yes`
+
+    assert _weight_gate_condition_blocks(tech_bare_nonzero, {}) == []
+
+    # The bare factor's own unconditional block is independent of a sibling `modifier` sub-block
+    # (the pre-existing, unaffected extraction path) -- both are returned, not just one.
+    sibling_blocks = _weight_gate_condition_blocks(tech_bare_zero_with_sibling, {})
+    assert len(sibling_blocks) == 2
+    assert any(b.items == [] for b in sibling_blocks)
+    assert any(b.items != [] for b in sibling_blocks)
 
 
 def test_base_dataset_compressed_transfer_size_under_p10_budget(base_dataset):

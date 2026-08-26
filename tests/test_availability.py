@@ -206,6 +206,39 @@ def test_has_ancrel_resolves_true_as_a_dlc_ground_fact():
     assert evaluate_trigger_block(block2, REGULAR_MECH_SEDENTARY).state == LOCKED
 
 
+def test_country_type_fallen_and_awakened_resolve_false_as_ground_facts():
+    # Item 1 (a later session), user-confirmed: the player empire is always a standard
+    # (`is_country_type = default`) country type -- `fallen_empire` and `awakened_fallen_empire`
+    # are therefore never the player, same mechanism as `acot_phanon_base` above. Proven capable
+    # of failing against the pre-fix code: both leaves used to fall through to the generic UNKNOWN
+    # case (bare `is_country_type` leaf, no COUNTRY_TYPE_NEVER_PLAYER entry), so this test's
+    # `LOCKED`/`AVAILABLE` assertions below would instead see `UNCERTAIN` pre-fix.
+    #
+    # Real corpus shape (9 technologies: `tech_dark_matter_deflector`/`_power_core`/`_propulsion`,
+    # the `tech_weaver_bio_*_6` family): `NOR = { is_country_type = fallen_empire, is_country_type
+    # = awakened_fallen_empire }` as a zero-factor `weight_modifier` condition. Both leaves now
+    # resolve a real FALSE for the player; NOR-of-two-FALSE is a real TRUE -- exercised here at the
+    # `potential`-evaluation level, where a bare leaf's FALSE/TRUE maps directly to LOCKED/AVAILABLE
+    # (see `tests/test_dataset_emit.py`'s own corpus-level test for confirmation that this does NOT
+    # change the real 9 technologies' final `weight-gated` verdict -- `_apply_weight_gate`'s
+    # non-axis-pure TRUE branch reaches the same state the old UNKNOWN branch already reached; only
+    # the leaf's own truth value moves from unresolved to proven).
+    block = _block("{ is_country_type = fallen_empire }")
+    assert evaluate_trigger_block(block, REGULAR_MECH_SEDENTARY).state == LOCKED
+    block2 = _block("{ is_country_type = awakened_fallen_empire }")
+    assert evaluate_trigger_block(block2, REGULAR_MECH_SEDENTARY).state == LOCKED
+
+    block3 = _block("{ NOR = { is_country_type = fallen_empire is_country_type = awakened_fallen_empire } }")
+    assert evaluate_trigger_block(block3, REGULAR_MECH_SEDENTARY).state == AVAILABLE
+
+    # Sole documented exception (user-confirmed): a player CAN become `blokkat_stripminers`
+    # mid-playthrough (the Blokkat crisis's conversion mechanic) -- deliberately NOT added to
+    # COUNTRY_TYPE_NEVER_PLAYER, stays UNCERTAIN, never swept in by name-pattern proximity to the
+    # two real ground facts above.
+    block4 = _block("{ is_country_type = blokkat_stripminers }")
+    assert evaluate_trigger_block(block4, REGULAR_MECH_SEDENTARY).state == UNCERTAIN
+
+
 def test_not_fallen_empire_ground_fact():
     block = _block("{ is_fallen_empire = yes }")
     result = evaluate_trigger_block(block, REGULAR_MECH_SEDENTARY)
