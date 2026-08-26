@@ -6744,3 +6744,157 @@ recurring class):
 Full suite: **1,515/1,515 pipeline tests pass** (`pytest`, vendor populated), `tsc --noEmit` clean,
 `vite build` clean, schema drift test clean (TypeScript types regenerated via
 `tools/generate_typescript_types.py`).
+
+## Weight-condition gate extraction (a later session)
+
+A prior survey (recorded in this session's own handoff, not re-run) found: of the 206 zero-factor
+`weight_modifier` blocks producing the 1,636-pair / 163-technology `weight-gated` population above,
+running `pipeline/gate_patterns.py`'s existing classifier over those conditions matched an
+ALREADY-REGISTERED gate pattern for 866 pairs / 87 technologies (ascension_perk 59 entries/43
+techs/482 pairs, origin 5/5/54, ethics_or_civic 14/13/124, technology 32/32/272). No new pattern
+registration was needed. This session extended gate extraction to cover that population: a
+zero-factor condition that classifies to a registered gate pattern now badges the card as a
+`Gate` and no longer produces a `weight-gated` verdict for that condition.
+
+**Implementation.** `pipeline/gate_patterns.py` gained `classify_weight_gate_condition(technology_
+key, condition_block, index)`, sharing `classify_gates`' dispatch table and `_scoped_gate_leaves`
+descent via a new `_classify_leaves_in_block` helper. The one real design question: **polarity**.
+`classify_gates` drops a negated leaf (a `potential` block's own polarity IS the requirement — "must
+NOT have perk X" is not a positive "Needs X"). A naive first attempt applied the SAME filter to
+weight conditions and found almost nothing (11 technologies, not 87) — `tech_lathe_*`'s real shape
+wraps `has_ascension_perk = ap_cosmogenesis` in a `NOT` (zero weight unless the planet+perk
+condition holds), and `tech_neuro_quantum_links` wraps three perks in a `NOR` (zero weight unless
+the empire holds ANY of them) — both read NEGATED under the standard scoping. A second attempt
+flipped the descent's starting polarity (`ancestor_negated=True`) to match `_apply_weight_gate`'s
+own "the offered condition is the NEGATION of the zero-factor condition" framing — this recovered
+`tech_lathe_*`/`tech_neuro_quantum_links` correctly but produced ZERO gates for `tech_housing_2`,
+whose raw condition is a completely UNWRAPPED `has_valid_civic = civic_agrarian_idyll` (no `NOT` at
+all — direct inspection of `vendor/stellaris/common/technology/00_eng_tech.txt:3768`). Investigating
+that specific corpus case settled it: `tech_housing_2` and its swap-pair sibling `tech_housing_
+agrarian_idyll` both zero their OWN weight based on the SAME civic, from OPPOSITE polarities (one
+excludes Agrarian Idyll players, the other requires them) — and the intended, useful signal in both
+cases is identical: "this technology's availability depends on the Agrarian Idyll civic." Final
+design: `classify_weight_gate_condition` does NOT filter on leaf polarity at all (`filter_negated=
+False`) — a `weight_modifier` condition naming a registered gate-pattern leaf badges the card
+regardless of which side of the condition it appears on. This is a deliberate, documented departure
+from `classify_gates`' own precision bar (recorded in `pipeline.gate_patterns`'s module docstring
+and `spec/P-03-gates.md`), not an oversight — gate badges are already an approximate, best-effort
+display layer elsewhere (an `alternative`'s "or:" wording, the dangling-alternative downgrade).
+
+**Availability-side change, and the one correctness pitfall found while implementing it.** The
+first cut simply DROPPED a gate-expressible block from `weight_gate_conditions` entirely before it
+reached `_apply_weight_gate` — LOCKED dropped by 6 (1,466 → 1,460), which turned out to be wrong:
+those 6 pairs were a REAL axis-pure LOCKED (a referenced ascension perk is genuinely unobtainable
+for that empire type, D-6's corrected rule), not a `weight-gated` verdict — dropping the block
+entirely lost that fact along with the (correct) suppression of `weight-gated`. Fixed by keeping
+every block in `weight_gate_conditions` (so the axis-pure-LOCKED branch still sees it) and adding a
+parallel `weight_gate_expressible_mask: dict[str, list[bool]]` on `BuildContext`, threaded through
+`evaluate_technology_for_profiles`/`_apply_weight_gate` as a new optional parameter: a
+gate-expressible block's non-axis-pure TRUE/EXCLUDED/UNKNOWN branches are suppressed (contribute
+nothing, like a FALSE block) rather than becoming the `weight_gated_pick`, while its axis-pure TRUE
+branch is untouched and still returns a real LOCKED. Result: LOCKED stays EXACTLY 1,466 (unchanged),
+`weight-gated` drops from 1,636/163 pairs/technologies to **850/85**, and the freed pairs move to
+AVAILABLE (7,492 → 8,278).
+
+**`_build_gates`** (`pipeline/dataset_emit.py`) now merges `classify_gates(owner_key, defn.block)`
+with `ctx.weight_gate_gate_matches[owner_key]` (the gate-expressible blocks' own matches, computed
+once in `build_context`), deduped by `(kind, refId)` — NOT by kind alone, since a technology can
+legitimately carry two different gates of the same kind — with the `potential`-derived match
+winning a collision. The merged list is priority-sorted (`order_gates`, D-3, unchanged) AFTER the
+merge, so a weight-derived match can outrank and displace a `potential`-derived match to secondary
+exactly like two `potential`-derived matches of different kinds would.
+
+**The two named verification cases, both reproduced exactly:**
+1. **Deduplication**: 6 `tech_lathe_*` technologies (`_overclocker`, `_preserver`, `_validator`,
+   `_life_support`, `_cogitator`, `_resonator`) each dedupe an identical `ap_cosmogenesis` match
+   against their own `potential`-derived gate — confirmed no duplicate badge. 90 technologies carry
+   at least one weight-derived match total (close to, not identical to, the 87-technology survey
+   figure above — the survey scanned raw conditions with the classifier as a quick estimate before
+   this session's polarity investigation settled the final design; the small gap is expected
+   methodology drift, not a discrepancy to chase). `tech_housing_agrarian_idyll` and `tech_housing_2`
+   both gain a genuinely NEW `ethics_or_civic: civic_agrarian_idyll` badge, from opposite polarities
+   of the same civic-swap-pair condition (see above).
+2. **D-3 priority conflict**: exactly ONE technology, `tech_neuro_quantum_links`, has its primary
+   badge displaced — its `potential`-derived `ethics_or_civic: civic_machine_assimilator` ("Needs
+   Driven Assimilator") moves to secondary, outranked by a weight-derived `ascension_perk`
+   alternative group (`ap_the_flesh_is_weak` / `ap_organo_machine_interfacing` /
+   `ap_organo_machine_interfacing_assimilator`, from a `NOR`-wrapped condition — "offered if the
+   empire holds ANY of these three"). Verified via direct comparison of the merged primary gate
+   against the `potential`-only primary gate across every rendered technology — no other technology
+   is affected.
+
+**Suspected defects investigated (both false alarms, no fix needed — investigated BEFORE
+implementing, per this task's own instruction):**
+- **(a) 72–78 pairs resolving a pure-axis-fact TRUE yet reading `weight-gated`.** Directly inspected
+  the real corpus conditions (`tech_astral_harvesting`, `tech_mine_dark_matter`,
+  `tech_mine_rare_crystals`, `tech_mine_volatile_motes`, `tech_mine_exotic_gases`,
+  `tech_negative_e_s`, `tech_fe_nourishment_2`, `tech_nanite_transmutation`,
+  `tech_weaver_bio_healing_4/5`-adjacent family — 9 distinct technologies, 78 pairs by this
+  session's own count, close to the survey's 72): every one embeds its axis leaf (`is_nomadic`,
+  `country_uses_bio_ships`) inside an `AND` alongside a genuinely UNRESOLVABLE sibling condition
+  (`any_owned_nonprimary_starbase = { is_waystation_starbase = yes, solar_system = { ... } }`, an
+  opaque, un-evaluable scope) — `_combine_and`'s `axis_pure` correctly requires ALL relevant
+  children to be axis-pure, so the mixed AND correctly resolves non-axis-pure and routes to
+  `weight-gated`, never a false LOCKED. The rule is working as designed; these are genuinely mixed
+  conditions, not a bug.
+- **(b) `has_ancrel = no` "never fires" under the ground-fact assumption.** Confirmed: `has_ancrel`
+  is a `GROUND_FACT_BOOL` resolving `True` (DLC always owned), so `has_ancrel = no` always resolves
+  `FALSE` and correctly contributes nothing. Of the 16 real technologies whose weight condition
+  mentions it, 14 (the `tech_archaeo_*` family, `tech_archaeostudies`, `tech_arcane_deciphering`'s
+  sibling techs) resolve cleanly AVAILABLE with this condition contributing nothing, exactly as
+  designed. `tech_archaeo_rampart` shows a real `locked`/`available` split for an UNRELATED reason
+  (its own `potential`, not this weight condition). `tech_arcane_deciphering` is `weight-gated` for
+  all 12 profiles, but the cause is the OTHER branch of its `OR` (`NOT = { has_resource = {
+  type = minor_artifacts, amount > 0 } }`, a genuinely unresolvable resource-amount check) — zero
+  technologies are `weight-gated` purely because of a provably-never-fires `has_ancrel = no`
+  condition. Not a bug.
+
+**Final figures.**
+
+| Metric | Before | After |
+| --- | --- | --- |
+| Gates: DIRECT total | 107 | 274 |
+| Gates: DIRECT by kind | 48 ascension_perk / 14 origin / 24 ethics_or_civic / 21 technology | 106 / 24 / 56 / 88 |
+| Gates: TOTAL (direct+inherited) | 214 | 643 |
+| Gates: TOTAL by kind | 104 / 16 / 61 / 33 | 198 / 69 / 179 / 197 |
+| Gated technologies | 147 | 304 |
+| `weight-gated` entries | 1,636 | 850 |
+| `weight-gated` distinct technologies | 163 | 85 |
+| `available` entries | 7,492 | 8,278 |
+| `locked` / `uncertain` / `config-gated` entries | 1,466 / 482 / 600 | 1,466 / 482 / 600 (unchanged) |
+
+Per-state total: 8,278 + 1,466 + 482 + 600 + 850 = **11,676** (unchanged, as required — the node set
+and per-pair total never move, only which state each pair lands in). D-10's three figures are
+**exactly unchanged**: unconditional uncertainty 31/973, worst profile-dependent 16/973 (1.644%),
+union 53/973 — expected, since `_apply_weight_gate` only ever fires on a `potential`-derived
+AVAILABLE result and never itself produces UNCERTAIN.
+
+The TOTAL gate count's growth (214 → 643, a ~3× increase) is larger than the direct-match count
+alone (107 → 274, a ~2.6× increase) suggests, because the SAME `prerequisite`-chain propagation that
+already existed for `potential`-derived gates (Item 3, prior session) now also propagates these new
+weight-derived direct gates to their descendants — e.g. `giga_tech_amb_supertensiles` gained a new
+direct `technology: tech_starbase_3` gate from its own weight condition (a `NOR` of three
+alternatives, downgraded to a plain "Needs Starhold" since only one alternative is gate-classified),
+which propagates to all four `giga_tech_amb_supertensiles_acot_*` descendants. This is the existing,
+unchanged propagation mechanism doing exactly what it was built to do — not a new cascade bug. The
+largest single gates list after this change is 11 entries (`tech_thought_enforcement`,
+`tech_telepathy`, `giga_tech_shroud_conduit`, and 5 others in the psionics family), not indicative of
+runaway growth.
+
+One existing pinned test's premise needed updating, not silencing:
+`test_base_dataset_gates_match_the_gate_classification_survey`'s subset check ("every DIRECT
+`technology`-kind gate instance is one of the 25 `potential-gate` edges") no longer holds for the
+FULL merged `gates` field, because weight-condition gate extraction is a genuinely SECOND source of
+direct technology-kind gates that was never part of `potential_gate_pairs` to begin with (P-14's
+edge extraction is `potential`-only). Fixed by recomputing the check against `classify_gates`
+directly (bypassing the merged field) so it stays scoped to what it always meant to test.
+
+Full suite after this session: **1,515/1,515 pipeline tests pass** (8 new unit tests added to
+`tests/test_gate_patterns.py` covering `classify_weight_gate_condition`'s polarity-ignoring
+behaviour, the `NOR`-alternative-group shape, and group-id namespacing against `classify_gates`'
+own `#gate-alt` namespace), `tsc --noEmit` clean, `vite build` clean. Playwright (headless, Chromium
+installed via `npx playwright install chromium` since neither Playwright nor a system browser was
+present) against the real dev server: 0 console errors, 0 failed requests, across all three named
+verification cases. `spec/P-03-gates.md` gained a normative section on weight-condition gate
+extraction (the full mechanism backfill it's still missing otherwise remains open, per CLAUDE.md's
+existing flag).

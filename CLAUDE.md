@@ -113,9 +113,13 @@ just because it's named here.
   primary gate). Gates propagate down `prerequisite` chains (not `potential-gate` — see Open
   items), tagged `inherited`/`sourceTechnologyId`. A dangling `alternative` gate (no other visible
   gate badge in its own OR-group, checked per-`groupId` not just whole-list) downgrades to a
-  plain "Needs X". — **`spec/P-03-gates.md` has none of this mechanism documented — flagged, see
-  report.** Full detail and current totals (107 direct / 214 total gate instances):
-  `docs/BUILD-LOG.md`.
+  plain "Needs X". **A zero-factor `weight_modifier` condition (see Research weight below) that
+  classifies to a registered pattern is a SECOND gate source** (`classify_weight_gate_condition`,
+  polarity NOT filtered — unlike `potential`, a condition and its negation name the same fact from
+  opposite sides), deduped by `(kind, refId)` against a `potential`-derived match, merged before
+  D-3 sorting. — **`spec/P-03-gates.md` now documents the weight-condition addition; the REST of
+  the mechanism is still undocumented there — flagged, see report.** Full detail and current
+  totals (274 direct / 643 total gate instances): `docs/BUILD-LOG.md`.
 - **Tiers**: unbounded range (ACOT reaches T9+) — enumerate bands from the data, no fixed upper
   bound anywhere. A node's band is its own declared `tier` field, never adjusted by graph depth,
   with one exception: repeatables band into the terminal Repeatables band regardless of tier.
@@ -153,7 +157,12 @@ just because it's named here.
   regardless). Everything else that fires or can't be resolved (circumstantial state, opaque
   leaves, `always`, an unrestricted perk) downgrades to the fifth `AvailabilityState`,
   `weight-gated` — "not currently offered in the draw," never `locked`, and NOT subject to D-10's
-  uncertainty ceiling. — D-4, D-10's Extension in `spec/decisions.md`.
+  uncertainty ceiling. **Weight-condition gate extraction (a later session)**: a zero-factor
+  condition that classifies to a registered gate pattern (see Gates above) is EXCLUDED from
+  producing `weight-gated` for that condition — it badges the card as a `Gate` instead — but its
+  axis-pure-LOCKED branch is unaffected, still a real `locked` when the gate's own target is
+  axis-unobtainable. `weight-gated` population: 1,636 pairs/163 technologies → 850/85; freed pairs
+  move to `available`. — D-4, D-10's Extension in `spec/decisions.md`.
 - **Research path** (P-12.9, `spec/P-12.9-research-path.md`): `researchPaths[technologyId]` per
   profile, precomputed at build time — never recomputed in the browser. `status` is `"path"`,
   `"config-gated"` (target is one of the 50 `giga_tech_repeatable_*_cap` technologies, own cost

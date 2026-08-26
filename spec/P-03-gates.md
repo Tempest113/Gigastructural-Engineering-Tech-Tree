@@ -49,6 +49,29 @@ ever prove noisy in review — un-narrowing from a silently-dropped occurrence i
 corpus count at implementation time — 70 gate instances across 60 technologies — is recorded here
 as a fact about the corpus, not as the reason for the rule; the rule holds regardless of count.)
 
+**Weight-condition gate extraction (a later session).** Gate classification is not scoped to
+`potential`/`allow` alone: a zero-factor `weight_modifier` condition (D-10's Extension, "Research
+weight") that itself classifies to a registered gate pattern (`pipeline.gate_patterns.
+classify_weight_gate_condition`, run block-by-block over each `modifier` entry whose own `factor`
+is a literal `0`) badges the card the same way a `potential`-derived match does, and does NOT also
+read `weight-gated` for that condition — the `AvailabilityState` and the `Gate` are the same
+underlying fact routed through two different display channels, never both. Polarity is
+deliberately NOT enforced the way `classify_gates` enforces it on `potential` (a negated leaf
+there is dropped, since "must NOT have perk X" is not a positive "Needs X"): a `weight_modifier`
+condition and its own logical negation name the SAME real requirement/exclusion pair from opposite
+sides (a real corpus "swap pair": `tech_housing_2`'s `has_valid_civic = civic_agrarian_idyll`
+zeroes its weight FOR Agrarian Idyll players, while its sibling `tech_housing_agrarian_idyll`
+zeroes ITS weight for everyone else — both badge "Needs Agrarian Idyll", the informative fact a
+player cares about regardless of which technology is naming it or from which side). Deduped by
+`(kind, refId)` against any `potential`-derived match on the same technology, not by kind alone.
+D-3's priority ordering applies unchanged to the merged list — a weight-derived match is not
+second-class and can displace a `potential`-derived match to secondary.
+
+The axis-pure-LOCKED path (D-10's Extension) is untouched by this: whether the gate's own target
+(an ascension perk, most commonly) is itself obtainable at all for an empire type stays a real
+`LOCKED` verdict, evaluated exactly as before — the gate badge is display metadata layered on top
+of that fact, never a replacement for it.
+
 ## Acceptance criteria
 
 - The gate indicator renders inside the node card and remains legible at default zoom.
