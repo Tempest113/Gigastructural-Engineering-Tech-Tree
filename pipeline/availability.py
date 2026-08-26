@@ -327,7 +327,46 @@ GROUND_FACT_BOOL: dict[str, bool] = {
 # stellarite_tech_enable`, real per-playthrough progression state, deliberately left unresolved.
 # Only `acot_phanon_base` is confirmed here -- do NOT extend this to other `is_country_type` values
 # without the same per-value confirmation this project's own methodology requires.
-COUNTRY_TYPE_NEVER_PLAYER = {"acot_phanon_base"}
+#
+# Item 1 (a later session), user-confirmed ground fact: the player empire is always a standard
+# (`is_country_type = default`) country type -- `fallen_empire` and `awakened_fallen_empire` are
+# therefore never the player, same "which country type would a player ever be" character as
+# `acot_phanon_base` above. Surveyed exhaustively (not guessed): across every rendered
+# technology's `potential` AND zero-factor `weight_modifier` condition, walking the SAME AND/OR/
+# NOT/NOR descent `_evaluate_node` itself uses (so a value nested inside an unrecognised scope
+# switch like `any_relation`/`any_country` -- never reachable as a direct leaf by this evaluator
+# regardless -- is correctly excluded from the count), exactly THREE `is_country_type` values are
+# ever directly reachable: `acot_phanon_base` (1 technology, handled above), `fallen_empire` and
+# `awakened_fallen_empire` (the same 9 technologies for both -- `tech_dark_matter_deflector`,
+# `_power_core`, `_propulsion`, and the `tech_weaver_bio_*_6` family's six anti-fire-rate/evasion/
+# anti-evasion/healing/fire-rate/confuser variants -- each a `NOR = { is_country_type =
+# fallen_empire, is_country_type = awakened_fallen_empire }` zero-factor weight condition). No
+# `marauder_*`/`enclave*` value is ever a direct leaf anywhere in the corpus -- both are named only
+# inside CLAUDE.md's own request, not the corpus, so neither is added here.
+#
+# **Sole documented exception, per the user: `is_country_type = blokkat_stripminers` (and its
+# `_ascended_country`/`_blokkwork`/`_defeated` variants) is deliberately NOT added to this set.**
+# A player CAN become that country type mid-playthrough (the Blokkat crisis's conversion mechanic
+# -- requires the crisis to spawn and the player to join it, itself empire-type-restricted), and
+# country-type changes are unstable even in vanilla. Blokkat technologies are not touched by this
+# fix and continue to be handled exactly as before (no `is_country_type = blokkat_stripminers*`
+# leaf is directly reachable by this evaluator today regardless -- confirmed by the same survey --
+# so this is a documented non-extension, not a behaviour change).
+#
+# **Real effect on the 9 `weaver_bio`/`dark_matter` technologies (verified against the built
+# pipeline, not assumed): their AVAILABILITY STATE does not change.** Both leaves resolve a real
+# `FALSE` now (previously `UNKNOWN`); `NOR` over two `FALSE` children is a real `TRUE` (the
+# zero-weight condition provably fires for every player profile, not merely unresolved) --
+# `_apply_weight_gate`'s non-axis-pure TRUE branch (`is_country_type` is a ground fact, not an
+# `AXIS_FACTS` entry, so `axis_pure` stays False) reaches the exact same `WEIGHT_GATED` outcome the
+# old UNKNOWN branch already reached. `description` text for these 9 technologies actually loses
+# specificity (the NOR-of-two-FALSE-children TRUE result carries no single leaf per `_negate`'s own
+# "FALSE inner -> leaf None" rule, where the old UNKNOWN branch happened to carry the first child's
+# raw leaf text) -- `reason` (always the raw condition block text, independent of leaf resolution)
+# is unaffected either way. Reported here rather than silently forced to an "available" outcome: the
+# real value of this fix is that the WEIGHT_GATED verdict for these 9 technologies now rests on a
+# proven fact instead of an accidentally-correct-looking UNKNOWN, not a state change.
+COUNTRY_TYPE_NEVER_PLAYER = {"acot_phanon_base", "fallen_empire", "awakened_fallen_empire"}
 
 # Item 2d companion: `has_global_flag = has_aot_mod` is AoT's own mod-presence flag (distinct
 # shape from `has_acot`, which is a dedicated leaf key) -- same "assume present" reasoning,

@@ -343,11 +343,49 @@ def _weight_gate_condition_blocks(block: Block, trigger_catalog) -> list[Block]:
     rules this evaluator already has apply unchanged. A technology can carry more than one such
     modifier (real corpus: `giga_tech_amb_supertensiles` has two, one config-toggle-gated, one
     real progression-gated) -- all are returned, and `_apply_weight_gate` treats the whole list as
-    a disjunction (ANY one firing zeroes the weight)."""
+    a disjunction (ANY one firing zeroes the weight).
+
+    **A later session's Item 2 (completeness gap):** the loop above only ever iterated
+    `modifier`-keyed sub-items of `weight_modifier` -- a BARE top-level `factor = N` directly on
+    `weight_modifier` itself (no `modifier` wrapper at all, Stellaris's own shorthand for "always
+    apply this factor, no condition") was never scanned, so a technology using that shorthand
+    never reached `_apply_weight_gate` regardless of its value. Real corpus: 222 rendered
+    technologies use this bare shorthand; of those, 24 carry a literal `factor = 0` with NO other
+    real (non-comment) sibling assignment -- an UNCONDITIONAL permanent exclusion from the
+    weighted draw, the same idiom `tech_akx_worm_1`'s `modifier = { factor = 0, always = yes }`
+    already expresses, just spelled without the wrapper and without an explicit `always = yes`
+    leaf. Represented here as an EMPTY synthetic condition Block (no leaves at all) rather than a
+    synthesized `always = yes` leaf: `_combine_and([])` already resolves an empty child list to
+    `_State.EXCLUDED` with `leaf=None`, and `_apply_weight_gate`'s EXCLUDED branch already routes
+    that to `WEIGHT_GATED` with `_weight_gated_description(None)`'s neutral
+    `_WEIGHT_GATE_UNKNOWN_ROUTE` copy ("Not offered through the normal research draw currently.")
+    -- never the `always = yes`-specific `_WEIGHT_GATE_ALWAYS_ROUTE` copy, which POSITIVELY CLAIMS
+    a real route exists. That claim is earned for `tech_akx_worm_1` by the user's own hand
+    confirmation of its event chain; it is NOT earned here (`vendor/stellaris/` has no `events/`,
+    `common/special_projects/`, `common/decisions/` or `common/relics/` at all, so this static
+    pipeline cannot see what actually grants these 24 technologies) -- reusing the neutral copy is
+    a deliberate choice, not an oversight. A bare non-zero `factor` (198 of the 222) is an ordinary
+    weight SCALING, not a gate -- out of scope, exactly like every other non-zero factor already
+    was. Only a genuinely EMPTY bare-factor block (factor's own comment aside -- comments are not
+    `Assignment` nodes and were never counted as a "real" sibling) counts as unconditional; a bare
+    `factor = 0` that DOES carry a real sibling condition (none exist in the current corpus, but
+    the code does not assume that) is intentionally left unhandled by this addition -- Stellaris's
+    bare-shorthand form does not carry conditions at all, so that shape would need its own
+    investigation, not a guess, if it is ever observed."""
     wm = _field(block, "weight_modifier")
     if wm is None or not isinstance(wm.value, Block):
         return []
     out: list[Block] = []
+    bare_factor = _field(wm.value, "factor")
+    if bare_factor is not None:
+        fv = bare_factor.value
+        if isinstance(fv, NumberLiteral) and fv.value == 0:
+            other_assignments = [
+                it for it in wm.value.items
+                if isinstance(it, Assignment) and it.key_name not in ("factor", "modifier")
+            ]
+            if not other_assignments:
+                out.append(Block(items=[], line=wm.value.line, column=wm.value.column))
     for item in wm.value.items:
         if not isinstance(item, Assignment) or item.key_name != "modifier" or not isinstance(item.value, Block):
             continue
