@@ -7125,3 +7125,110 @@ rebuilt `client/dist`: 0 console errors, 0 failed requests; `tech_dark_matter_de
 `tech_nanite_flak_batteries` both show `weight-gated` across all 12 profiles in the live dataset,
 `tech_dyson_sphere` shows its pre-existing `ascension_perk: ap_galactic_wonders` gate badge
 undisturbed alongside its new `weight-gated`/`locked` split.
+
+## Session: weight-gate suppression config, and a copy split by resolution
+
+**Item 3 (verify-first, no defect found).** User-reported: `tech_xeno_linguistics`'s `potential`
+block (`has_paragon_dlc = yes, is_regular_empire = yes, is_gestalt = no, is_homicidal = no`) is on
+the TECHNOLOGY ITSELF (`vendor/stellaris/common/technology/00_soc_tech.txt:6592`), not an
+event/origin — confirmed directly against raw source, `vendor/stellaris/` genuinely has no
+`events/`/`common/on_actions/`/`common/origins/` to check against for the alternative. Direct
+evaluation confirms all 8 gestalt profiles resolve `locked` (`is_regular_empire = yes` fails for
+hive/machine authority, and Kleene AND correctly lets that FALSE dominate the unresolved
+`is_homicidal` sibling); the 4 regular profiles resolve `uncertain` (`is_homicidal` is genuinely
+unmodelled, correctly falling through to UNKNOWN rather than `EXCLUDED`). This matches this
+session's earlier finding (`tech_xeno_linguistics` is one of the 3 technologies where the prior
+session's weight-condition gate extraction has zero VISIBLE effect, since its `potential` was
+never plainly AVAILABLE to begin with — see the "21 gain a NEW `weight-gated` verdict" note
+above). `is_regular_empire` is a registered `AXIS_FACTS` entry; `is_homicidal` is in neither
+`EXCLUDED_KEYS` nor `NOT_GATE_CLASSIFIED_EXCLUDED_KEYS` — an unmodelled leaf resolving UNCERTAIN is
+correct behaviour, not the EXCLUDED-as-vacuously-satisfied defect class. No defect; proceeded to
+Items 1/2.
+
+**Item 1: suppression config.** Real corpus mechanism shapes, derived directly (not guessed) by
+enumerating every leaf inside `BuildContext.weight_gate_conditions` (the already-extracted
+zero-factor condition blocks): `years_passed < 5` (1), `num_owned_planets < 2` (14),
+`any_owned_nonprimary_starbase = { ... }` (3, a scope-block leaf, matched by key alone),
+`num_communications < 1` (5) and `< 2` (1, `tech_galactic_markets`) — one config entry (`< 2`)
+covers both, since a stricter corpus threshold is still at least as trivial —
+`any_planet_within_border = { ... }` (5, matched by key alone, deliberately distinct from the
+retained `any_owned_planet`/`has_deposit` leaves that can appear as AND/OR siblings in the SAME
+condition), and `has_country_flag` ending in `_found` (8: `sr_dark_matter_found`,
+`rare_crystals_found`, `volatile_motes_found`, `negative_mass_found`, `exotic_gases_found`,
+`sr_living_metal_found`, `giga_sr_amb_megaconstruction_found`, plus one already covered by the
+threshold count above) — confirmed the suffix pattern does NOT accidentally catch
+`has_market_access` (31 occurrences, a completely different mechanism) or `found_presapients` (a
+literal-but-unrelated "found" substring). 37 total leaf instances, `config/
+weight_gate_suppressions.txt`, `pipeline/weight_gate_suppressions.py`.
+
+**The identity-element trap, caught before shipping.** An early design treated a suppressed leaf
+exactly like `EXCLUDED_KEYS` (drop it, let the rest of the AND/OR/NOT/NOR structure decide) — this
+is UNSOUND here. Real corpus case: `tech_mine_rare_crystals`'s nomadic-branch modifier is `AND
+(is_nomadic = yes, NOT { has_country_flag = rare_crystals_found })`. Dropping the flag leaf as an
+identity element leaves `is_nomadic = yes` as the AND's sole relevant child — a real `AXIS_FACTS`
+leaf — which the evaluator then (correctly, by its own existing rules) reports as a definite,
+`axis_pure` TRUE, producing a false `locked` verdict for every nomadic profile, purely because the
+identity element let an unrelated axis fact "decide" a condition it was never meant to decide
+alone. Traced and confirmed by hand before this design shipped (`_combine_and`'s exact filtering
+behaviour, not a hypothetical). Fixed by resolving a suppressed leaf to a FIXED CONSTANT instead
+(`resolves_to` in the config: `false` for a "hasn't happened yet" threshold, `true` for a positive
+existence/flag check) — standard Kleene boolean composition then handles every nesting shape
+correctly with no special-casing: for the SAME `tech_mine_rare_crystals` case, `has_country_flag`
+resolves to a constant `true` (presume found), `NOT(true) = false`, `AND(is_nomadic=yes, false) =
+false` — the whole modifier correctly contributes nothing, exactly the "stays AVAILABLE" outcome
+Item 1 asked for, with no false LOCKED. Verified against the non-nomadic sibling modifier too
+(`is_nomadic = no AND NOT { any_owned_planet{...}, any_planet_within_border{...} }`): suppressing
+only `any_planet_within_border` and resolving it `true` leaves the retained, unmodelled
+`any_owned_planet` leaf as the sole UNKNOWN contributor — the technology correctly stays
+`weight-gated` (via the retained real gate), not incorrectly forced to AVAILABLE. See
+`docs/DEFECTS.md`'s "EXCLUDED-as-vacuously-satisfied" section and `spec/decisions.md`'s D-4
+Extension for the full writeup.
+
+**Figures, verified directly against the real corpus (`pipeline.dataset_emit.build_context`, full
+12-profile evaluation, before vs. after suppression):**
+
+| State | Before | After |
+| --- | ---: | ---: |
+| available | 8,038 | 8,228 |
+| locked | 1,466 | 1,466 |
+| uncertain | 482 | 482 |
+| config-gated | 600 | 600 |
+| weight-gated | 1,090 | 900 |
+| **Total** | **11,676** | **11,676** |
+
+`weight-gated`: 1,090/106 technologies → 900/89 technologies (−190 pairs / −17 technologies).
+`available` rises by exactly 190 (the entire net movement) — reconciles exactly with the 190
+pairs suppression moves out of `weight-gated`; `locked`/`uncertain`/`config-gated` untouched to
+the pair, confirming suppression never reaches those buckets (by construction: `_apply_weight_gate`
+only ever runs when the `potential`-derived result is already AVAILABLE). D-10's three figures,
+confirmed unchanged (suppression never produces UNCERTAIN — `_apply_weight_gate` only ever
+consumes an already-AVAILABLE `potential` result): unconditional uncertainty 31/973, worst
+profile-dependent 16/973 (`hive_mind`/biological/non-nomadic, 0.016444), union
+(`uncertainTechnologies`) 53.
+
+**Item 2: copy split, resolution breakdown of the 900 remaining `weight-gated` pairs:** 120
+resolve definitely TRUE (before suppression: 120 — suppression's 190 removed pairs were entirely
+ex-UNKNOWN, 0 ex-TRUE), 516 UNKNOWN (before: 706 — the full −190 delta), 240 unconditional
+bare-`factor=0` (unaffected, no condition to resolve), 24 `always=yes` (unaffected). Two new
+copy strings for the TRUE/UNKNOWN split (`pipeline.availability._WEIGHT_GATE_TRUE_ROUTE`/
+`_WEIGHT_GATE_UNRESOLVED_ROUTE`); the unconditional and `always=yes` strings are untouched
+verbatim. Presentation-only — no `AvailabilityState` change, confirmed by the per-state table
+above (the `weight-gated` row total obviously changes from suppression, but nothing crosses
+between states as a result of the copy split itself).
+
+**Suppression visibility**: `pipeline.dataset_emit.build_diagnostics`'s new
+`weightGateSuppressions` array reports each config entry's real corpus `matchCount` (37 total
+across the six entries, individually: `num_owned_planets` 14, `has_country_flag` 8,
+`num_communications` 6, `any_planet_within_border` 5, `any_owned_nonprimary_starbase` 3,
+`years_passed` 1) — a future entry matching zero is visible there as a stale rule, never a silent
+no-op.
+
+Verification: full pytest suite (1,520 passed after fixing one existing test's hand-built
+diagnostics document, `tests/test_availability_corpus.py::test_d10_diagnostics_section_is_schema_valid`,
+missing the new required `weightGateSuppressions` schema field — not a regression, the schema
+gained a new required property this session), a dedicated `tests/test_weight_gate_suppressions.py`
+(config-loader errors: missing arrow, missing justification, invalid bool, unrecognised shape,
+duplicate leaf key; matcher correctness: stricter/looser numeric thresholds, suffix matching
+including the two negative cases above, bare-key matching through nested scope content, AND/NOT/NOR
+descent), `tsc --noEmit` clean, `vite build` clean, headless Playwright verification against the
+rebuilt `client/dist` (0 console errors, 0 failed requests).

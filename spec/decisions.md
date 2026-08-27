@@ -419,6 +419,55 @@ acquisition route this static pipeline cannot verify for these 24 the way it cou
 `tech_akx_worm_1`). `docs/BUILD-LOG.md` has the full technology-by-technology split against
 `pipeline.dataset_emit.ADD_RESEARCH_OPTION_PERK_GRANTS` and the before/after per-state population.
 
+### Extension — reviewed suppression of trivially-satisfied conditions, and a copy split (Item 1/Item 2, a later session)
+
+**Item 1: suppression.** Some zero-factor `weight_modifier` conditions are technically real but
+practically meaningless — satisfied within minutes of any ordinary playthrough, so surfacing them
+as `weight-gated` is noise, not information. Whether a condition is trivially satisfied is GAME
+KNOWLEDGE, not derivable from the corpus, so this is a reviewed, checked-in config file
+(`config/weight_gate_suppressions.txt`, loaded by `pipeline.weight_gate_suppressions`), following
+the same pattern as `config/icon_overrides.txt`/`config/lock_reason_overrides.txt`: every entry
+requires a `#` justification, curated at the MECHANISM level (a leaf key plus its comparison
+shape), never per technology. Six entries, each reviewed and approved by the user: `years_passed`/
+`num_owned_planets`/`num_communications` below a small threshold (reached within minutes of any
+game), `any_owned_nonprimary_starbase` (trivially satisfied while expanding at all),
+`any_planet_within_border` deposit checks and `has_country_flag` `_found`-suffix resource-
+discovery flags (every empire can obtain every strategic resource eventually; rarity is
+playthrough luck, not an empire-type fact, and "can this empire type get it" is the question this
+tool answers). Conditions explicitly retained as real gates: `any_owned_planet` deposit checks,
+`has_deposit`, `any_owned_megastructure`, `has_global_flag` Blokkat-defeated,
+`num_cosmic_storms_encountered`, `num_ascension_perk_slots`, `has_policy_flag`,
+`has_seen_any_bypass`, `has_trait_in_council`, `has_modifier`.
+
+A suppressed leaf resolves to a FIXED constant (the config's own `resolves_to`), never the
+`EXCLUDED`/"vacuously satisfied" identity element `pipeline.availability.EXCLUDED_KEYS` leaves
+use — that treatment is unsound here: a real corpus shape AND-combines a suppressed leaf alongside
+a genuine axis fact (`is_nomadic = yes AND NOT { has_country_flag = X_found }`), and the identity
+element would silently let the axis fact alone drive a false `locked` verdict (`docs/DEFECTS.md`'s
+"EXCLUDED-as-vacuously-satisfied" class, recurring one nesting level deeper than its first fix).
+Resolving to a real constant instead composes correctly through the same Kleene AND/OR/NOT/NOR
+evaluator regardless of nesting depth. A suppressed condition therefore correctly evaluates FALSE
+(or, combined with real sibling content, whatever that content alone would produce) rather than
+being dropped as an unresolved identity element — the technology stays AVAILABLE for that
+`weight_modifier` entry, exactly as if it never carried the condition. Real corpus: 37 leaf
+instances matched (`num_owned_planets` 14, `has_country_flag` 8, `num_communications` 6,
+`any_planet_within_border` 5, `any_owned_nonprimary_starbase` 3, `years_passed` 1), moving
+`weight-gated` 1,090/106 → 900/89 pairs/technologies (−190 pairs, all from the UNKNOWN bucket,
+all move to `available`). A config entry matching nothing in the corpus is a `build_diagnostics`
+warning (`weightGateSuppressions[].matchCount == 0`), never a silent no-op.
+
+**Item 2: copy split.** `weight-gated`'s description previously used one string regardless of
+resolution, over-claiming for the majority (measured pre-split: of the 900 remaining pairs, 120
+resolve definitely TRUE, 516 UNKNOWN — the modifier condition MIGHT fire, not confirmed). Now two
+texts for the one state: a definite TRUE resolution states the modifier IS firing ("This depends
+on your empire's circumstances rather than its type"); an UNKNOWN/EXCLUDED resolution gets softer
+phrasing ("MAY not be offered ... depending on your empire's circumstances"). The unconditional
+bare-`factor=0` case (240 pairs, no condition at all) and the two `always=yes` cases (24 pairs)
+keep their original, unsplit wording — there is no resolution to split a copy variant over, and no
+speculation about the real acquisition route either way. Presentation-only: no sixth
+`AvailabilityState`, no change to which pairs are `weight-gated`. Full before/after figures:
+`docs/BUILD-LOG.md`.
+
 ## D-11 — Rendering stack
 
 PixiJS over a hand-rolled WebGL renderer. Hand-rolling a 2D renderer that meets the P-10

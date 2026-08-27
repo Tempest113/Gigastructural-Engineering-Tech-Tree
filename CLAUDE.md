@@ -162,7 +162,18 @@ just because it's named here.
   producing `weight-gated` for that condition — it badges the card as a `Gate` instead — but its
   axis-pure-LOCKED branch is unaffected, still a real `locked` when the gate's own target is
   axis-unobtainable. `weight-gated` population: 1,636 pairs/163 technologies → 850/85; freed pairs
-  move to `available`. — D-4, D-10's Extension in `spec/decisions.md`.
+  move to `available`. **Suppression (Item 1, a later session)**: six reviewed, mechanism-level
+  entries in `config/weight_gate_suppressions.txt` resolve a trivially-satisfied leaf (`years_
+  passed`/`num_owned_planets`/`num_communications` below a small threshold; `any_owned_nonprimary_
+  starbase`, `any_planet_within_border`, and `has_country_flag` `_found`-suffix resource-discovery
+  flags) to a fixed constant — never the `EXCLUDED` identity element, which is unsound once such a
+  leaf sits AND-combined with a real axis fact (`docs/DEFECTS.md`'s "EXCLUDED-as-vacuously-
+  satisfied" class). `weight-gated`: 1,090/106 → 900/89 (−190 pairs, all ex-UNKNOWN, all move to
+  `available`). **Copy split (Item 2)**: `weight-gated`'s description now varies by resolution —
+  a condition resolving definitely TRUE states the modifier IS firing; UNKNOWN gets softer "MAY
+  not be offered" phrasing; the unconditional bare-`factor=0` case keeps its original neutral
+  wording. Of the 900 remaining pairs: 120 TRUE, 516 UNKNOWN, 240 unconditional, 24 `always=yes`.
+  — D-4, D-10's Extension in `spec/decisions.md`.
 - **Research path** (P-12.9, `spec/P-12.9-research-path.md`): `researchPaths[technologyId]` per
   profile, precomputed at build time — never recomputed in the browser. `status` is `"path"`,
   `"config-gated"` (target is one of the 50 `giga_tech_repeatable_*_cap` technologies, own cost
@@ -190,7 +201,10 @@ just because it's named here.
   lock_reason_overrides.txt` (P-13's lock-reason override table — used when a locked technology's
   reason string can't be derived automatically from its trigger; `pipeline/availability.py`'s
   `needs_lock_reason_override`/`build_missing_lock_reason_overrides` warn when an override is
-  missing; seeded empty — the real corpus currently has no case that needs one), mod metadata.
+  missing; seeded empty — the real corpus currently has no case that needs one),
+  `config/weight_gate_suppressions.txt` (Item 1 — mechanism-level, reviewed suppression of
+  trivially-satisfied zero-factor `weight_modifier` conditions; see "Research weight" below), mod
+  metadata.
 - The build fails rather than emitting a partial dataset. Fail on parse errors, graph cycles,
   dangling references, missing localisation for displayed strings, missing icons, schema
   violations, dead repository links.
