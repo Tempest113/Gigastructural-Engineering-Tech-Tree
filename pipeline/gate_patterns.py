@@ -52,22 +52,48 @@ relevant to a player-empire profile. Recorded here so a future session doesn't m
 missing AI branch for an oversight.
 
 Zero negated (`NOT`/`NOR`-wrapped) occurrences of any of these four keys exist under any rendered
-technology's `potential` block today (confirmed by survey) -- a negated match is silently
-excluded rather than emitted wrong-polarity, matching `pipeline.edges`'s identical treatment of a
-negated `has_technology` (P-14's "inverting it silently would produce a wrong graph"), but this
-is a default for a case that does not currently occur, not a guess.
+technology's `potential` block today (confirmed by survey) -- historically (before polarity was
+expressible at all) a negated match was silently excluded rather than emitted wrong-polarity,
+matching `pipeline.edges`'s identical treatment of a negated `has_technology` (P-14's "inverting
+it silently would produce a wrong graph"), but that was a default for a case that did not occur
+for these four, not a guess -- and it no longer applies, see "Negative gates" below.
 
 **A later session's additions (`is_wilderness_empire`, origin/ethics/civic gates) DO have real
 negated occurrences, and a real polarity bug shipped before it was caught.** `_leaf_negated`
-(below) tracks THREE independent negation channels -- `NOT`/`NOR` wrapping (the only one this
-paragraph's "zero negated occurrences" scoped itself to), the `!=` operator, and a literal
-boolean-false VALUE (`is_wilderness_empire = no`, Clausewitz's other way to write a negative
-condition with no wrapper at all). The bug: only the first channel was ever checked. 31 real
-technologies (`tech_habitat_1`/`_2`, `tech_gene_banks`, ...) write `is_wilderness_empire = no`
-("needs a NON-wilderness empire") and were rendered as a positive "Needs Wilderness" gate --
-exactly backwards, user-reported. Fixed by `_leaf_negated`; see that function's own docstring for
-the full corpus scoping (the value-level channel is safe to check unscoped across every
-`GATE_LEAF_KEYS` member -- `= no` occurs ONLY on `is_wilderness_empire` in the real corpus today).
+(below) tracks THREE independent negation channels -- `NOT`/`NOR` wrapping, the `!=` operator, and
+a literal boolean-false VALUE (`is_wilderness_empire = no`, Clausewitz's other way to write a
+negative condition with no wrapper at all). The first shipped bug: only the wrapper channel was
+ever checked, so the VALUE channel's negation was invisible -- 31 real technologies
+(`tech_habitat_1`/`_2`, `tech_gene_banks`, ...) write `is_wilderness_empire = no` ("needs a
+NON-wilderness empire") and were rendered as a positive "Needs Wilderness" gate -- exactly
+backwards, user-reported. Fixed by `_leaf_negated` computing the true 3-channel XOR; see that
+function's own docstring for the full corpus scoping (the value-level channel is safe to check
+unscoped across every `GATE_LEAF_KEYS` member -- `= no` occurs ONLY on `is_wilderness_empire` in
+the real corpus today).
+
+**Negative gates (Item: origins-are-gates follow-up, a later session).** The fix above corrected
+*which* leaves count as negated; it still discarded every negated match (`classify_gates`'s old
+`filter_negated=True` default) rather than displaying it, on the theory that "must NOT have perk
+X" isn't a positive "Needs X" gate -- true, but incomplete: it's a DIFFERENT gate ("Unavailable to
+X"), not a non-gate. The 31 `is_wilderness_empire = no` technologies were surveyed and confirmed
+real (a wilderness player genuinely can never research `tech_habitat_1`) but rendered as plainly
+`available`, no badge at all -- the exact bug this addition fixes. `GateMatch.negated` (below) now
+carries the leaf's true polarity through unfiltered; `_classify_leaves_in_block` keeps every match
+regardless of polarity, and `pipeline.dataset_emit._build_gates` renders "Needs X" or "Unavailable
+to X" accordingly. This also RETIRES `classify_weight_gate_condition`'s old `filter_negated=False`
+carve-out (below) as a separate concept -- see that function's own docstring for why polarity-aware
+display subsumes it rather than needing to coexist with it.
+
+**D-3 priority is a KIND-only ordering, unaffected by polarity, unchanged by this addition.**
+`order_gates` sorts on `GateMatch.kind` alone (see that function) -- a negative gate of a
+higher-priority kind still outranks a positive gate of a lower-priority kind, exactly as a positive
+one would have. This was already true of the code (`order_gates` never looked at anything but
+`.kind`); stated explicitly here now that polarity exists to compete on, since the prompt that
+introduced it asked the question directly rather than leaving it to be re-derived. The reasoning:
+D-3's kind ranking measures WHAT TYPE of empire-defining fact a gate names (perk choice > origin >
+ethics-or-civic > prerequisite technology) -- a wilderness-origin EXCLUSION is exactly as much an
+"origin fact" as a wilderness-origin REQUIREMENT, and deserves the same priority band, not a
+demotion for being phrased as a negative.
 """
 
 from __future__ import annotations
@@ -214,6 +240,14 @@ class GateMatch:
     kind: str  # GateKind ("ascension_perk" | "origin" | "ethics_or_civic" | "technology")
     ref_id: str  # perk id, origin/ethic/civic id, or technology key this gate names
     source_leaf: str  # the raw trigger key matched, e.g. "has_galactic_wonders"
+    # Negative gates (a later session): True iff `_leaf_negated`'s 3-channel XOR (NOT/NOR wrapper,
+    # `!=` operator, literal `= no` value) found this leaf's EFFECTIVE condition to be "must NOT
+    # have/be X" rather than "must have/be X" -- e.g. `is_wilderness_empire = no` is a real,
+    # negated `origin` match, `negated=True`. Never filtered out (unlike before this addition):
+    # `pipeline.dataset_emit._build_gates` renders "Unavailable to X" instead of "Needs X" when
+    # this is True. Does not participate in `order_gates`' D-3 sort -- see module docstring's
+    # "D-3 priority is a KIND-only ordering" note.
+    negated: bool = False
     # Item 4 ("path to zero uncertain" follow-up): True iff this leaf sits inside an `OR` --
     # i.e. is one of SEVERAL independent ways to satisfy `potential`, not the sole/AND-required
     # condition. The survey that preceded this fix found `tech_torpedoes_1` displaying "Needs
@@ -327,54 +361,74 @@ def _scoped_gate_leaves(
 
 
 def _classify_leaves_in_block(
-    technology_key: str, root: Block, group_label: str, filter_negated: bool = True,
+    technology_key: str, root: Block, group_label: str, invert_polarity: bool = False,
 ) -> list[GateMatch]:
     """Shared dispatch for both `classify_gates` (a technology's own `potential` sub-block) and
     `classify_weight_gate_condition` (a zero-factor `weight_modifier` condition block -- see that
     function's docstring). `group_label` namespaces `GateMatch.group_id` so the two callers never
     collide on the same id for the same technology.
 
-    `filter_negated` (weight-condition gate extraction): `classify_gates` (default, `True`) keeps
-    dropping a negated leaf -- a `potential` block's own polarity already IS the requirement, and
-    "must NOT have perk X" is not a positive "Needs X" gate. `classify_weight_gate_condition`
-    passes `False`: a zero-factor `weight_modifier` condition names the same perk/origin/civic/
-    technology either way a `weight_modifier` names it AT ALL is the informative fact worth
-    badging (real corpus: `tech_lathe_*`'s condition wraps `has_ascension_perk = ap_cosmogenesis`
-    in a `NOT`, `tech_housing_2`'s names `civic_agrarian_idyll` completely unwrapped -- both name
-    the same real requirement/exclusion pair a player cares about, and both badge identically to
-    their own swap-pair sibling, `tech_housing_agrarian_idyll`, which names the same civic from
-    the opposite polarity). Gate badges are already an approximate, best-effort display layer
-    elsewhere (an `alternative`'s "or:" wording, a dangling-alternative downgrade) -- this is a
-    deliberate continuation of that, not a new precision bar."""
+    **Every match is kept regardless of polarity (a later session).** Earlier, `classify_gates`
+    dropped a negated leaf outright (a `potential` block's own polarity was read as "not a
+    requirement" rather than "a different, negative requirement") while `classify_weight_gate_
+    condition` kept both polarities but WITHOUT distinguishing them in the badge -- two different
+    partial workarounds for the same missing concept (see module docstring's "Negative gates"
+    section). Both callers now behave identically: keep every match, tag its true polarity via
+    `GateMatch.negated`, let `pipeline.dataset_emit._build_gates` render "Needs X" or "Unavailable
+    to X" accordingly. This is why the real corpus swap pair `tech_housing_2` (`has_valid_civic =
+    civic_agrarian_idyll`, unwrapped -- "unavailable to Agrarian Idyll") / `tech_housing_agrarian_
+    idyll` (`NOT { has_valid_civic = civic_agrarian_idyll }` -- "needs Agrarian Idyll") both still
+    badge, now with CORRECT, distinct wording instead of an ambiguous shared one -- polarity-aware
+    display doesn't just coexist with that pair, it fixes an imprecision the old polarity-blind
+    badge had for both of them.
+
+    `invert_polarity` (weight-condition gate extraction only, via `classify_weight_gate_condition`
+    below): a `weight_modifier` zero-factor condition describes when the technology's weight
+    becomes ZERO (unavailable), the OPPOSITE question a `potential` block's polarity answers
+    (when the technology IS available). `has_valid_civic = civic_agrarian_idyll` UNWRAPPED in
+    `tech_housing_2`'s weight condition means "weight zero WHEN you have the civic" -- i.e.
+    unavailable TO agrarian-idyll players, a NEGATIVE gate, even though `_leaf_negated` (which only
+    ever reasons about the leaf's own wrapper/operator/value shape, blind to which BLOCK KIND it
+    came from) reports this leaf as un-negated. `tech_housing_agrarian_idyll`'s sibling condition,
+    `NOT { has_valid_civic = civic_agrarian_idyll }`, means "weight zero WITHOUT the civic" -- a
+    POSITIVE requirement, even though `_leaf_negated` reports it negated. Caught empirically before
+    shipping: an early version of this fix inverted `tech_housing_2`/`tech_housing_agrarian_idyll`
+    exactly backwards (a 'Needs Agrarian Idyll' badge on the technology that's actually unavailable
+    to agrarian-idyll players, and vice versa) until traced against this pair directly. `invert_
+    polarity=True` flips the raw `_leaf_negated` result once, here, so `GateMatch.negated` always
+    means the same real-world thing ("this gate excludes X") regardless of which block it came
+    from."""
     matches: list[GateMatch] = []
     for leaf_key, target, negated, alternative, group_index in _scoped_gate_leaves(root, False):
-        if target is None or (filter_negated and negated):
+        if invert_polarity:
+            negated = not negated
+        if target is None:
             continue
         group_id = f"{technology_key}#{group_label}{group_index}" if alternative and group_index is not None else None
         if leaf_key == "has_ascension_perk":
-            matches.append(GateMatch(GATE_KIND_ASCENSION_PERK, target, leaf_key, alternative, group_id))
+            matches.append(GateMatch(GATE_KIND_ASCENSION_PERK, target, leaf_key, negated, alternative, group_id))
         elif leaf_key == "has_technology" or leaf_key in TECHNOLOGY_ALIAS_KEYS:
-            matches.append(GateMatch(GATE_KIND_TECHNOLOGY, target, leaf_key, alternative, group_id))
+            matches.append(GateMatch(GATE_KIND_TECHNOLOGY, target, leaf_key, negated, alternative, group_id))
         elif leaf_key in WRAPPER_TO_PERK:
-            matches.append(GateMatch(GATE_KIND_ASCENSION_PERK, WRAPPER_TO_PERK[leaf_key], leaf_key, alternative, group_id))
+            matches.append(GateMatch(GATE_KIND_ASCENSION_PERK, WRAPPER_TO_PERK[leaf_key], leaf_key, negated, alternative, group_id))
         elif leaf_key in ORIGIN_DIRECT_KEYS:
-            matches.append(GateMatch(GATE_KIND_ORIGIN, target, leaf_key, alternative, group_id))
+            matches.append(GateMatch(GATE_KIND_ORIGIN, target, leaf_key, negated, alternative, group_id))
         elif leaf_key in WRAPPER_TO_ORIGIN:
-            matches.append(GateMatch(GATE_KIND_ORIGIN, WRAPPER_TO_ORIGIN[leaf_key], leaf_key, alternative, group_id))
+            matches.append(GateMatch(GATE_KIND_ORIGIN, WRAPPER_TO_ORIGIN[leaf_key], leaf_key, negated, alternative, group_id))
         elif leaf_key in ETHICS_OR_CIVIC_DIRECT_KEYS:
-            matches.append(GateMatch(GATE_KIND_ETHICS_OR_CIVIC, target, leaf_key, alternative, group_id))
+            matches.append(GateMatch(GATE_KIND_ETHICS_OR_CIVIC, target, leaf_key, negated, alternative, group_id))
         elif leaf_key in WRAPPER_TO_ETHIC:
-            matches.append(GateMatch(GATE_KIND_ETHICS_OR_CIVIC, WRAPPER_TO_ETHIC[leaf_key], leaf_key, alternative, group_id))
+            matches.append(GateMatch(GATE_KIND_ETHICS_OR_CIVIC, WRAPPER_TO_ETHIC[leaf_key], leaf_key, negated, alternative, group_id))
     return matches
 
 
 def classify_gates(technology_key: str, block: Block) -> list[GateMatch]:
     """Every gate-pattern-registry match in `block`'s `potential` sub-block, in declaration
-    order (before `order_gates`' D-3 priority sort). Excludes a negated match (see module
-    docstring) and a bare leaf with no resolvable target name. `technology_key` is used ONLY to
-    compose a stable, globally-unique `GateMatch.group_id` (`f"{technology_key}#gate-alt{index}"`,
-    mirroring `Edge.groupId`'s own `f"{technology_key}#alt{index}"` convention) -- it plays no role
-    in which leaves match."""
+    order (before `order_gates`' D-3 priority sort), positive and negative alike (see module
+    docstring's "Negative gates" section). Excludes only a bare leaf with no resolvable target
+    name. `technology_key` is used ONLY to compose a stable, globally-unique `GateMatch.group_id`
+    (`f"{technology_key}#gate-alt{index}"`, mirroring `Edge.groupId`'s own
+    `f"{technology_key}#alt{index}"` convention) -- it plays no role in which leaves match."""
     potential = _field(block, "potential")
     if potential is None or not isinstance(potential.value, Block):
         return []
@@ -394,9 +448,12 @@ def classify_weight_gate_condition(technology_key: str, condition_block: Block, 
     `weight_modifier` entries (a real corpus shape: `giga_tech_amb_supertensiles` has two), and
     from `classify_gates`' own `#gate-alt` namespace, so two independent OR-groups -- one from
     `potential`, one from a weight condition -- never collide on the same `groupId` even when both
-    belong to the same technology. See `_classify_leaves_in_block`'s `filter_negated` for why this
-    call passes `filter_negated=False`, unlike `classify_gates`."""
-    return _classify_leaves_in_block(technology_key, condition_block, f"weight-gate{index}-alt", filter_negated=False)
+    belong to the same technology.
+
+    `invert_polarity=True` -- see `_classify_leaves_in_block`'s own docstring for why a weight
+    condition's polarity means the opposite of what the same leaf shape would mean inside
+    `potential`."""
+    return _classify_leaves_in_block(technology_key, condition_block, f"weight-gate{index}-alt", invert_polarity=True)
 
 
 def order_gates(matches: list[GateMatch]) -> list[GateMatch]:

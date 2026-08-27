@@ -1021,6 +1021,33 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
             )
         return name
 
+    def _gate_label_prefix(negated: bool, alternative: bool) -> str:
+        """Negative gates (a later session): four combinations of (negated, alternative), each
+        with its own wording. `negated=False` keeps the two pre-existing prefixes verbatim
+        ("Needs X" / "or: X") -- chosen deliberately over the prompt's own suggested "Requires: X"
+        so existing positive-gate wording (and every downstream test/screenshot of it) is
+        undisturbed; only the new negative case needed new copy. "Unavailable to X" (no colon,
+        matching "Needs X"'s own no-colon convention) for a negated, unconditional gate -- real
+        corpus: 31 `is_wilderness_empire = no` technologies (`tech_habitat_1`, ...). The
+        alternative+negated combination ("or, unavailable to: X") has zero real corpus occurrences
+        today (checked directly, not assumed) -- provided for completeness/symmetry rather than a
+        confirmed real case, so a future corpus revision that DOES produce one renders sensibly
+        rather than hitting an unhandled branch."""
+        if alternative:
+            return "or, unavailable to:" if negated else "or:"
+        return "Unavailable to" if negated else "Needs"
+
+    def _relabel_as_non_alternative(gate: dict) -> str:
+        """Strips whichever alternative-shaped prefix `_gate_label_prefix` produced (polarity-
+        aware -- the old code hardcoded `"or: "`, silently wrong for a negated alternative) and
+        rebuilds the label with that same polarity's non-alternative prefix. Used by
+        `_downgrade_dangling_alternative` when a lone/dangling OR-member is re-worded as an
+        unconditional gate."""
+        negated = gate["negated"]
+        alt_prefix = _gate_label_prefix(negated, True) + " "
+        name = gate["label"][len(alt_prefix):] if gate["label"].startswith(alt_prefix) else gate["label"]
+        return f"{_gate_label_prefix(negated, False)} {name}"
+
     def _downgrade_dangling_alternative(gates: list[dict]) -> list[dict]:
         """Item 7a (later session): the user reported Birch World showing a single gate reading
         "or: Vast Expanses" -- an alternative with no sibling to be alternative to. The OR-context
@@ -1056,9 +1083,7 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
         gates are excluded from this check too, same reasoning as above."""
         if len(gates) == 1 and gates[0]["alternative"] and gates[0]["appliesToEmpireTypes"] is None:
             sole = gates[0]
-            label = sole["label"]
-            if label.startswith("or: "):
-                label = "Needs " + label[len("or: "):]
+            label = _relabel_as_non_alternative(sole)
             return [{**sole, "alternative": False, "groupId": None, "label": label}]
 
         group_sizes: dict[str, int] = {}
@@ -1069,9 +1094,7 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
         result = []
         for g in gates:
             if g["groupId"] is not None and group_sizes[g["groupId"]] == 1 and g["appliesToEmpireTypes"] is None:
-                label = g["label"]
-                if label.startswith("or: "):
-                    label = "Needs " + label[len("or: "):]
+                label = _relabel_as_non_alternative(g)
                 result.append({**g, "alternative": False, "groupId": None, "label": label})
             else:
                 result.append(g)
@@ -1123,8 +1146,10 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
             # Item 4 ("path to zero uncertain" follow-up): an alternative (OR-context) gate is
             # never worded as an unconditional requirement -- "or: X" instead of "Needs X",
             # matching the real semantics (tech_torpedoes_1's "Riddle Escort" is one of four
-            # independent ways to satisfy potential, not a mandatory prerequisite).
-            label_prefix = "or:" if match.alternative else "Needs"
+            # independent ways to satisfy potential, not a mandatory prerequisite). Negative gates
+            # (a later session): `match.negated` selects "Unavailable to X" instead of "Needs X" --
+            # see `_gate_label_prefix`'s own docstring for the full (negated, alternative) matrix.
+            label_prefix = _gate_label_prefix(match.negated, match.alternative)
             if match.kind == "ascension_perk":
                 # Same graceful-degradation convention `_default_icon_ref` already establishes
                 # for a technology's own icon -- never observed to trigger for a real gate target
@@ -1137,6 +1162,7 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
                     "refId": match.ref_id,
                     "icon": icon,
                     "label": f"{label_prefix} {_perk_gate_label(match.ref_id)}",
+                    "negated": match.negated,
                     "alternative": match.alternative,
                     "groupId": match.group_id,
                     "appliesToEmpireTypes": None,
@@ -1159,6 +1185,7 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
                     "refId": match.ref_id,
                     "icon": None,
                     "label": f"{label_prefix} {_trait_gate_label(match.ref_id)}",
+                    "negated": match.negated,
                     "alternative": match.alternative,
                     "groupId": match.group_id,
                     "appliesToEmpireTypes": None,
@@ -1192,6 +1219,7 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
                     "kind": "technology",
                     "refId": match.ref_id,
                     "icon": icon,
+                    "negated": match.negated,
                     "alternative": match.alternative,
                     "groupId": match.group_id,
                     "appliesToEmpireTypes": applies_to,
@@ -1208,6 +1236,7 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
                 "refId": granting_perk,
                 "icon": icon,
                 "label": f"Needs {_perk_gate_label(granting_perk)}",
+                "negated": False,
                 "alternative": False,
                 "groupId": None,
                 "appliesToEmpireTypes": None,
