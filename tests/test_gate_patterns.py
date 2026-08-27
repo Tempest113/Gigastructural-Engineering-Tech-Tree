@@ -85,9 +85,14 @@ def test_has_technology_inside_and_nested_in_or_is_still_alternative():
 def test_has_technology_inside_nor_is_still_alternative():
     block = _block("{ potential = { NOR = { has_technology = tech_a is_nomadic = yes } } }")
     matches = classify_gates("tech_x", block)
-    # NOR negates -- has_technology becomes a negated match, excluded entirely (module docstring),
-    # so this asserts zero matches rather than an alternative one.
-    assert matches == []
+    # NOR negates -- has_technology becomes a negated match (a later session: negative gates are
+    # kept, not excluded -- see module docstring's "Negative gates" section). `is_nomadic` isn't a
+    # registered gate leaf, so it never becomes a second match.
+    assert len(matches) == 1
+    assert matches[0].kind == GATE_KIND_TECHNOLOGY
+    assert matches[0].ref_id == "tech_a"
+    assert matches[0].negated is True
+    assert matches[0].alternative is True
 
 
 def test_has_origin_produces_an_origin_gate():
@@ -197,12 +202,15 @@ def test_descends_into_and_or_wrappers():
     }
 
 
-def test_negated_gate_leaf_is_excluded():
-    """Zero real negated occurrences of any of the four registered keys exist under `potential`
-    today (gate-classification survey) -- this proves the exclusion actually works, for the case
-    that doesn't currently occur, rather than leaving it untested."""
+def test_negated_gate_leaf_becomes_a_negative_gate():
+    """A later session (negative gates): a negated leaf is no longer dropped -- it becomes a
+    GateMatch with negated=True, rendered as "Unavailable to X" rather than silently vanishing."""
     block = _block("{ potential = { NOT = { has_ascension_perk = ap_vast_expanses } } }")
-    assert classify_gates("tech_x", block) == []
+    matches = classify_gates("tech_x", block)
+    assert len(matches) == 1
+    assert matches[0].kind == GATE_KIND_ASCENSION_PERK
+    assert matches[0].ref_id == "ap_vast_expanses"
+    assert matches[0].negated is True
 
 
 def test_multiple_targets_of_the_same_mechanism_all_produce_gates():
@@ -286,11 +294,17 @@ def test_wrapper_to_perk_has_exactly_the_two_confirmed_wrappers():
 # ---------------------------------------------------------------------------
 
 
-def test_wrapper_key_with_literal_no_value_produces_no_gate():
+def test_wrapper_key_with_literal_no_value_produces_a_negative_gate():
     # `is_wilderness_empire = no` means "needs a NON-wilderness empire" -- no NOT/NOR wrapper at
-    # all, yet the leaf is negated. Real corpus: tech_habitat_1/tech_habitat_2/tech_gene_banks.
+    # all, yet the leaf is negated. Real corpus: 31 technologies, tech_habitat_1/tech_habitat_2/
+    # tech_gene_banks among them (a later session: rendered as "Unavailable to Wilderness Origin",
+    # not dropped).
     block = _block("{ potential = { is_wilderness_empire = no } }")
-    assert classify_gates("tech_x", block) == []
+    matches = classify_gates("tech_x", block)
+    assert len(matches) == 1
+    assert matches[0].kind == GATE_KIND_ORIGIN
+    assert matches[0].ref_id == "origin_wilderness"
+    assert matches[0].negated is True
 
 
 def test_wrapper_key_with_literal_yes_value_still_produces_a_gate():
@@ -301,6 +315,7 @@ def test_wrapper_key_with_literal_yes_value_still_produces_a_gate():
     assert len(matches) == 1
     assert matches[0].kind == GATE_KIND_ORIGIN
     assert matches[0].ref_id == "origin_wilderness"
+    assert matches[0].negated is False
 
 
 def test_double_negation_of_literal_no_value_produces_a_real_gate():
@@ -312,13 +327,15 @@ def test_double_negation_of_literal_no_value_produces_a_real_gate():
     assert len(matches) == 1
     assert matches[0].kind == GATE_KIND_ORIGIN
     assert matches[0].ref_id == "origin_wilderness"
+    assert matches[0].negated is False
 
 
 def test_detector_catches_a_gate_mechanism_that_ignores_value_level_negation():
     """Proves the polarity fix is load-bearing: a naive matcher that only tracks NOT/NOR-wrapper
     negation (the pre-fix behaviour) would wrongly classify `is_wilderness_empire = no` as a
-    gate. Reconstructs that naive behaviour directly (bypassing `_leaf_negated`) to show it
-    disagrees with the real, fixed classifier."""
+    POSITIVE gate. Reconstructs that naive behaviour directly (bypassing `_leaf_negated`) to show
+    it disagrees with the real, fixed classifier -- which still produces a match (a later session:
+    negative gates are kept, not dropped), but the correct, NEGATED one."""
     from pipeline.gate_patterns import _target_name
     from pipeline.clausewitz.nodes import Assignment
 
@@ -327,9 +344,10 @@ def test_detector_catches_a_gate_mechanism_that_ignores_value_level_negation():
     leaf = potential.value.items[0]
     assert isinstance(leaf, Assignment)
     naive_negated = False  # the pre-fix logic: no NOT/NOR ancestor -> never negated
-    naive_would_gate = _target_name(leaf.value) is not None and not naive_negated
-    assert naive_would_gate is True  # the bug, reconstructed
-    assert classify_gates("tech_x", block) == []  # the real, fixed behaviour disagrees
+    naive_would_gate_positive = _target_name(leaf.value) is not None and not naive_negated
+    assert naive_would_gate_positive is True  # the bug, reconstructed
+    [real_match] = classify_gates("tech_x", block)
+    assert real_match.negated is True  # the real, fixed behaviour disagrees on polarity
 
 
 # ---------------------------------------------------------------------------

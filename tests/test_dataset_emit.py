@@ -163,26 +163,57 @@ def test_base_dataset_gates_match_the_gate_classification_survey(ctx, base_datas
     ethics_or_civic + 88 technology) over 165 directly-gated technologies. TOTAL (direct +
     inherited) 643 gate instances (198 ascension_perk + 69 origin + 179 ethics_or_civic + 197
     technology) over 304 gated technologies, 195 of which carry more than one gate instance. See
-    `docs/BUILD-LOG.md`'s "weight-condition gate extraction" session entry for the full accounting."""
+    `docs/BUILD-LOG.md`'s "weight-condition gate extraction" session entry for the full accounting.
+
+    **Negative gates (a later session, "origins-are-gates" follow-up) moves both figures again.**
+    `classify_gates` no longer drops a negated `potential` leaf (previously: a `NOT`/value-negated
+    match like `is_wilderness_empire = no` vanished entirely, no badge at all) -- it now keeps every
+    match with its true polarity (`GateMatch.negated`), rendered "Unavailable to X" instead of
+    "Needs X". This is the direct fix for the 31 `is_wilderness_empire = no` technologies
+    (`tech_habitat_1`/`_2`/`_3`, `tech_engineering_1`/`_2`/`_3`, ...) that previously showed no
+    origin gate at all despite being genuinely unresearchable by a wilderness empire -- but it is
+    NOT scoped to origin: every one of the four gate kinds can be negative, and the real corpus has
+    substantial negated `origin`/`ethics_or_civic` populations once negated leaves are no longer
+    silently dropped (zero negated `ascension_perk`/`technology` DIRECT-from-`potential` matches
+    today, unchanged from the already-established pre-existing fact this module's own docstring
+    records).
+
+    **A second, load-bearing fix accompanies this: weight-gate-derived polarity is INVERTED
+    relative to `potential`-derived polarity, `classify_weight_gate_condition`'s new
+    `invert_polarity=True`.** A `weight_modifier` zero-factor condition describes when the
+    technology's weight becomes ZERO (unavailable) -- the opposite question `potential` answers
+    (when it IS available) -- so a leaf's own raw wrapper/value shape means the OPPOSITE gate
+    polarity there. Caught directly against the real corpus swap pair this module already tracked
+    polarity-blind: `tech_housing_2`'s weight condition is `has_valid_civic = civic_agrarian_idyll`
+    UNWRAPPED (weight zero WHEN you have the civic -- a NEGATIVE gate, "Unavailable to Agrarian
+    Idyll") while `tech_housing_agrarian_idyll`'s is `NOT { has_valid_civic = civic_agrarian_idyll }`
+    (weight zero WITHOUT it -- a POSITIVE "Needs Agrarian Idyll") -- an early version of this fix,
+    without the inversion, badged this pair exactly backwards.
+
+    Real corpus, NOW: TOTAL 724 gate instances (198 ascension_perk + 126 origin + 203
+    ethics_or_civic + 197 technology) over 346 gated technologies, 196 of which carry more than one
+    gate instance. DIRECT 333 gate instances (106 ascension_perk + 60 origin + 79 ethics_or_civic +
+    88 technology) over 206 directly-gated technologies. See `docs/BUILD-LOG.md`'s "negative gates"
+    session entry for the full accounting and the polarity breakdown by kind."""
     from collections import Counter
 
     doc, _node_bytes, _edge_bytes = base_dataset
     gated = [t for t in doc["technologies"] if t["gates"]]
     all_gates = [g for t in doc["technologies"] for g in t["gates"]]
-    assert len(all_gates) == 643
+    assert len(all_gates) == 724
     assert dict(Counter(g["kind"] for g in all_gates)) == {
-        "ascension_perk": 198, "origin": 69, "ethics_or_civic": 179, "technology": 197,
+        "ascension_perk": 198, "origin": 126, "ethics_or_civic": 203, "technology": 197,
     }
-    assert len(gated) == 304
-    assert sum(1 for t in gated if len(t["gates"]) > 1) == 195
+    assert len(gated) == 346
+    assert sum(1 for t in gated if len(t["gates"]) > 1) == 196
 
     direct_gates = [g for t in doc["technologies"] for g in t["gates"] if not g["inherited"]]
     directly_gated = [t for t in doc["technologies"] if any(not g["inherited"] for g in t["gates"])]
-    assert len(direct_gates) == 274
+    assert len(direct_gates) == 333
     assert dict(Counter(g["kind"] for g in direct_gates)) == {
-        "ascension_perk": 106, "origin": 24, "ethics_or_civic": 56, "technology": 88,
+        "ascension_perk": 106, "origin": 60, "ethics_or_civic": 79, "technology": 88,
     }
-    assert len(directly_gated) == 165
+    assert len(directly_gated) == 206
 
     # `giga_tech_arkship_neutronium_harvester` stays empty (Item 5 excludes its own direct
     # dual-encoded gate, and it inherits no weight-derived gate from an ancestor). All FOUR
@@ -277,6 +308,70 @@ def test_base_dataset_gates_match_the_gate_classification_survey(ctx, base_datas
         assert g["icon"]["width"] > 1  # not the degenerate 1x1 placeholder
 
 
+def test_negative_gate_renders_as_exclusion_not_a_missing_badge(base_dataset):
+    """Negative gates (a later session, origins-are-gates follow-up): the user-reported bug this
+    whole addition fixes. `tech_habitat_1`'s real `potential` is `{ is_wilderness_empire = no,
+    is_nomadic = no }` -- a wilderness player can NEVER research it, but pre-fix `classify_gates`
+    silently dropped every negated leaf, so the card showed NO gate at all (plainly `available`-
+    looking, no visual signal it's off-limits to wilderness). Proven capable of failing against the
+    pre-fix code: reverting `pipeline.gate_patterns._classify_leaves_in_block` to filter out a
+    negated match (the old `filter_negated=True` behaviour) makes `gates == []` here, this
+    assertion then fails on the empty list.
+
+    `tech_wilderness_node`'s real `potential` is `is_wilderness_empire = yes` -- wilderness-
+    exclusive content, the POSITIVE counterpart, included here so the same test proves both
+    directions render distinctly rather than only checking the new one in isolation."""
+    doc, _node_bytes, _edge_bytes = base_dataset
+    by_id = {t["id"]: t for t in doc["technologies"]}
+
+    habitat = by_id["tech_habitat_1"]
+    assert len(habitat["gates"]) == 1
+    gate = habitat["gates"][0]
+    assert gate["kind"] == "origin"
+    assert gate["refId"] == "origin_wilderness"
+    assert gate["negated"] is True
+    assert gate["label"] == "Unavailable to Wilderness"
+
+    wilderness_node = by_id["tech_wilderness_node"]
+    assert len(wilderness_node["gates"]) == 1
+    positive_gate = wilderness_node["gates"][0]
+    assert positive_gate["kind"] == "origin"
+    assert positive_gate["refId"] == "origin_wilderness"
+    assert positive_gate["negated"] is False
+    assert positive_gate["label"] == "Needs Wilderness"
+
+
+def test_weight_gate_polarity_is_inverted_relative_to_potential(base_dataset):
+    """Negative gates (a later session): the subtle half of the fix. `tech_housing_2`'s zero-
+    factor weight condition is `has_valid_civic = civic_agrarian_idyll` UNWRAPPED -- weight goes to
+    zero WHEN you have the civic, i.e. this technology is unavailable TO agrarian-idyll players, a
+    NEGATIVE gate -- even though the leaf itself carries no NOT/NOR wrapper and no literal `= no`
+    value (the shape that means POSITIVE inside a `potential` block). Its swap-pair sibling,
+    `tech_housing_agrarian_idyll`, wraps the identical leaf in `NOT`, meaning the opposite: weight
+    zero WITHOUT the civic, a POSITIVE "Needs" requirement. Both must still badge (the deliberate
+    swap-pair coexistence this session's task described), now with correct, OPPOSITE wording.
+
+    Proven capable of failing against a plausible near-fix: passing weight-gate-derived matches
+    through `pipeline.gate_patterns._classify_leaves_in_block` WITHOUT `invert_polarity=True` (the
+    single-block, `potential`-only-correct formula) badges this exact pair backwards -- confirmed
+    by hand while building this fix, before `invert_polarity` was added, against this same
+    assertion pair."""
+    doc, _node_bytes, _edge_bytes = base_dataset
+    by_id = {t["id"]: t for t in doc["technologies"]}
+
+    housing_2 = by_id["tech_housing_2"]
+    civic_gate = next(g for g in housing_2["gates"] if g["refId"] == "civic_agrarian_idyll")
+    assert civic_gate["negated"] is True
+    assert civic_gate["label"] == "Unavailable to Agrarian Idyll"
+
+    housing_agrarian_idyll = by_id["tech_housing_agrarian_idyll"]
+    assert len(housing_agrarian_idyll["gates"]) == 1
+    sibling_gate = housing_agrarian_idyll["gates"][0]
+    assert sibling_gate["refId"] == "civic_agrarian_idyll"
+    assert sibling_gate["negated"] is False
+    assert sibling_gate["label"] == "Needs Agrarian Idyll"
+
+
 def test_country_type_ground_fact_and_bare_zero_factor_real_corpus_effect(ctx, base_dataset):
     """Items 1 and 2 (a later session), against the REAL corpus (not the synthetic unit tests in
     `tests/test_availability.py` / this file's own `_weight_gate_condition_blocks` test above).
@@ -348,16 +443,28 @@ def test_dangling_alternative_downgrade_applies_per_group_not_just_whole_list(ba
     INHERITED group from tech_genome_mapping (Rogue Servitor / Genesis Architects). Before this
     fix, the whole-list check never fired (3 total gates, not 1), so the card showed a dangling
     "or: Driven Assimilator" primary badge and the popup rendered a "Need one of:" cluster around
-    a single, non-choice entry. Both wrong for the same reason Birch World was wrong."""
+    a single, non-choice entry. Both wrong for the same reason Birch World was wrong.
+
+    **Negative gates (a later session) add a 4th gate to this same technology**: `tech_cloning`'s
+    own `potential` also carries `is_wilderness_empire = no` (one of the real corpus's 31) --
+    previously silently dropped (module docstring's old "negated match is excluded" behaviour),
+    now a real `origin` gate, "Unavailable to Wilderness". `origin` outranks `ethics_or_civic` in
+    D-3's kind priority, so it becomes `gates[0]` -- the dangling-downgrade primary-badge assertion
+    below moves from the civic gate to this one; the downgrade logic itself (a group of exactly one
+    member re-worded from "or:" to unconditional) is unaffected, still exercised by the civic gate
+    one position later in the list."""
     doc, _node_bytes, _edge_bytes = base_dataset
     cloning = next(t for t in doc["technologies"] if t["id"] == "tech_cloning")
-    assert len(cloning["gates"]) == 3
+    assert len(cloning["gates"]) == 4
+    wilderness_gate = next(g for g in cloning["gates"] if g["refId"] == "origin_wilderness")
+    assert wilderness_gate["negated"] is True
+    assert wilderness_gate["label"] == "Unavailable to Wilderness"
+    # origin outranks ethics_or_civic (D-3) -- the negative origin gate is the primary badge.
+    assert cloning["gates"][0]["refId"] == "origin_wilderness"
     driven_assimilator = next(g for g in cloning["gates"] if g["refId"] == "civic_machine_assimilator")
     assert driven_assimilator["alternative"] is False
     assert driven_assimilator["groupId"] is None
     assert driven_assimilator["label"] == "Needs Driven Assimilator"
-    # The card renders gates[0] as the primary badge -- must be the downgraded entry, not "or:".
-    assert cloning["gates"][0]["refId"] == "civic_machine_assimilator"
     # The genuine 2-member inherited group is untouched -- a real choice, correctly still "or:".
     genome_group = [g for g in cloning["gates"] if g["groupId"] == "tech_genome_mapping#gate-alt0"]
     assert len(genome_group) == 2
