@@ -765,29 +765,85 @@ def evaluate_trigger_block(block: Block | None, profile: dict) -> AvailabilityRe
     return AvailabilityResult(UNCERTAIN, reason, description, category)
 
 
+# Item 2 (a later session): the unconditional bare-`factor = 0`-with-no-siblings case (see
+# `pipeline.dataset_emit._weight_gate_condition_blocks`'s own docstring -- represented as a
+# synthetic EMPTY Block) keeps this exact wording unchanged -- there is no condition to describe,
+# and no speculation about how the technology IS actually obtained.
 _WEIGHT_GATE_UNKNOWN_ROUTE = "Not offered through the normal research draw currently."
 _WEIGHT_GATE_ALWAYS_ROUTE = "This technology is obtained outside the normal research draw, not through it."
+# Item 2's copy split (a later session): one state (WEIGHT_GATED), two texts, depending on how the
+# zero-factor condition actually resolved for THIS profile -- measured before this split: of 850
+# WEIGHT_GATED pairs, only 72 resolved definitely TRUE (the modifier firing is a proven fact), 778
+# were UNKNOWN (the evaluator cannot tell either way). The pre-split copy asserted the modifier IS
+# firing regardless, over-claiming for the large UNKNOWN majority.
+_WEIGHT_GATE_TRUE_ROUTE = (
+    "Not currently offered in the research draw. This depends on your empire's circumstances "
+    "rather than its type — the condition is shown below."
+)
+_WEIGHT_GATE_UNRESOLVED_ROUTE = (
+    "May not be offered in the research draw, depending on your empire's circumstances — the "
+    "condition is shown below."
+)
 
 
-def _weight_gated_description(leaf: Assignment | None) -> str:
+def _weight_gated_description(leaf: Assignment | None, *, has_condition: bool, resolved_true: bool) -> str:
     """Per-instance condition text for a WEIGHT_GATED result (the "CONDITION TEXT" naming
-    decision): the two real `always = yes` cases get dedicated phrasing ("obtained outside the
-    normal draw"), since static analysis can positively confirm the draw itself is permanently
-    excluded even though it can't confirm the REAL route (event/give_technology/special project/
-    archaeology/relic -- see `_apply_weight_gate`'s own docstring). Everything else routes through
-    `describe_condition` (raw-text fallback included), and a condition with no single named leaf
-    (EXCLUDED-dominated, or an AND/OR combining more than one relevant branch) gets the neutral
-    "not offered" phrasing -- never a guess at which unmodelled mechanism actually grants it."""
+    decision). `has_condition=False` (the unconditional bare-factor case, no leaf at all) always
+    keeps the original neutral wording, regardless of `resolved_true` -- there is nothing to split
+    a copy variant over. Otherwise: the two real `always = yes` cases get dedicated phrasing
+    ("obtained outside the normal draw"), since static analysis can positively confirm the draw
+    itself is permanently excluded even though it can't confirm the REAL route (event/
+    give_technology/special project/archaeology/relic -- see `_apply_weight_gate`'s own
+    docstring); everything else splits on `resolved_true` (Item 2): a definite TRUE resolution
+    gets the "this depends on your empire's circumstances" phrasing (the modifier IS firing), an
+    UNKNOWN/EXCLUDED resolution gets the softer "MAY not be offered" phrasing (the evaluator only
+    knows the modifier MIGHT fire) -- never a guess at which unmodelled mechanism actually grants
+    the technology in either case."""
+    if not has_condition:
+        return _WEIGHT_GATE_UNKNOWN_ROUTE
     if leaf is not None and leaf.key_name == "always" and _yesno(leaf.value) is True:
         return _WEIGHT_GATE_ALWAYS_ROUTE
-    if leaf is not None:
-        return describe_condition(leaf)
-    return _WEIGHT_GATE_UNKNOWN_ROUTE
+    return _WEIGHT_GATE_TRUE_ROUTE if resolved_true else _WEIGHT_GATE_UNRESOLVED_ROUTE
+
+
+def _evaluate_node_weight_gate(item, profile: dict, suppressed_leaf_targets: dict[int, bool]) -> _Eval:
+    """Mirrors `_evaluate_node`'s AND/OR/NOT/NOR descent exactly, but for a plain leaf
+    `Assignment`, first checks `suppressed_leaf_targets` (built by `pipeline.
+    weight_gate_suppressions.apply_suppressions`, keyed by `id(assignment)`) before falling
+    through to the ordinary `_evaluate_leaf`. Deliberately a SEPARATE function from `_evaluate_
+    node` rather than a parameter threaded through it: `evaluate_trigger_block`'s `potential`
+    evaluation must never consult a weight-gate-only config (see `pipeline.weight_gate_
+    suppressions`'s own module docstring for why the two concerns stay decoupled). A suppressed
+    leaf resolves to its configured constant via the same `_bool_eval` every other ground fact
+    uses, `axis_pure=False` always -- a suppressed leaf is presumed game-state, never a real
+    empire-TYPE distinction, so it can never by itself promote a result to LOCKED."""
+    if isinstance(item, (Comment, ConditionalBlock)):
+        return _Eval(_State.EXCLUDED, None)
+    assert isinstance(item, Assignment)
+    key_upper = item.key_name.upper()
+    if key_upper in BOOLEAN_WRAPPERS and isinstance(item.value, Block):
+        children = [
+            _evaluate_node_weight_gate(sub, profile, suppressed_leaf_targets)
+            for sub in item.value.items if isinstance(sub, Assignment)
+        ]
+        if key_upper == "AND":
+            return _combine_and(children)
+        if key_upper == "OR":
+            return _combine_or(children)
+        if key_upper == "NOT":
+            return _negate(_combine_and(children), item)
+        if key_upper == "NOR":
+            return _negate(_combine_or(children), item)
+    target = suppressed_leaf_targets.get(id(item))
+    if target is not None:
+        return _bool_eval(target, item.operator == "!=", item, axis_pure=False)
+    return _evaluate_leaf(item, profile)
 
 
 def _apply_weight_gate(
     result: AvailabilityResult, weight_gate_blocks: list[Block], profile: dict,
     gate_expressible: list[bool] | None = None,
+    suppressed_leaf_targets: dict[int, bool] | None = None,
 ) -> AvailabilityResult:
     """A later session's Item 2b: a `weight_modifier` entry with a literal `factor = 0` is
     Stellaris's own idiom for "this technology cannot currently be drawn as a research option at
@@ -851,17 +907,33 @@ def _apply_weight_gate(
     (e.g. an ascension perk) is obtainable at all for an empire type is a genuine fact this
     evaluator must keep surfacing as a real LOCKED, per CLAUDE.md's "Ascension perks are gates,
     not profile facts -- with a correction" -- a gate badge is display metadata layered on top of
-    that fact, never a replacement for it."""
+    that fact, never a replacement for it.
+
+    **Suppression (Item 1, a later session):** `suppressed_leaf_targets`, when given, is
+    `pipeline.weight_gate_suppressions.apply_suppressions`'s `id(Assignment) -> resolved bool` map
+    (`pipeline.dataset_emit.BuildContext.weight_gate_suppressed_leaf_targets`) -- leaf evaluation
+    inside this function routes through `_evaluate_node_weight_gate` instead of the shared
+    `_evaluate_node` specifically so a suppressed leaf can resolve to its configured constant
+    (never the EXCLUDED identity element -- see that module's own docstring for why). A block
+    whose zero-factor condition resolves FALSE purely because of a suppressed leaf's constant
+    contributes nothing (same as any other FALSE block below): the technology stays AVAILABLE for
+    this weight_modifier entry, exactly as if it never carried this condition."""
     if result.state != AVAILABLE or not weight_gate_blocks:
         return result
     if gate_expressible is None:
         gate_expressible = [False] * len(weight_gate_blocks)
+    if suppressed_leaf_targets is None:
+        suppressed_leaf_targets = {}
 
     weight_gated_pick: AvailabilityResult | None = None
     for cond_block, is_gate in zip(weight_gate_blocks, gate_expressible):
-        children = [_evaluate_node(item, profile) for item in cond_block.items if isinstance(item, Assignment)]
+        children = [
+            _evaluate_node_weight_gate(item, profile, suppressed_leaf_targets)
+            for item in cond_block.items if isinstance(item, Assignment)
+        ]
         ev = _combine_and(children)
         reason = " ".join(_leaf_text(item) for item in cond_block.items if isinstance(item, Assignment)) or None
+        has_condition = bool(cond_block.items)
 
         if ev.state == _State.TRUE:
             if ev.axis_pure:
@@ -877,14 +949,16 @@ def _apply_weight_gate(
             if is_gate:
                 continue
             if weight_gated_pick is None:
-                weight_gated_pick = AvailabilityResult(WEIGHT_GATED, reason, _weight_gated_description(ev.leaf))
+                description = _weight_gated_description(ev.leaf, has_condition=has_condition, resolved_true=True)
+                weight_gated_pick = AvailabilityResult(WEIGHT_GATED, reason, description)
             continue
 
         if ev.state in (_State.EXCLUDED, _State.UNKNOWN):
             if is_gate:
                 continue
             if weight_gated_pick is None:
-                weight_gated_pick = AvailabilityResult(WEIGHT_GATED, reason, _weight_gated_description(ev.leaf))
+                description = _weight_gated_description(ev.leaf, has_condition=has_condition, resolved_true=False)
+                weight_gated_pick = AvailabilityResult(WEIGHT_GATED, reason, description)
             continue
 
         # ev.state == _State.FALSE: the zero-weight condition does not currently hold for this
@@ -899,6 +973,7 @@ def _apply_weight_gate(
 def evaluate_technology_for_profiles(
     block: Block | None, profiles: list[dict], weight_gate_blocks: list[Block] | None = None,
     weight_gate_expressible: list[bool] | None = None,
+    weight_gate_suppressed_leaf_targets: dict[int, bool] | None = None,
 ) -> dict[int, AvailabilityResult]:
     """Convenience: evaluate one technology's `potential` block against every profile in
     `profiles` (expected to be `pipeline.dataset_schema.empire_profile.all_profiles_in_canonical_order()`),
@@ -910,6 +985,10 @@ def evaluate_technology_for_profiles(
     `weight_gate_expressible` (weight-condition gate extraction, a later session) is passed
     straight through to `_apply_weight_gate` -- see that function's own docstring.
 
+    `weight_gate_suppressed_leaf_targets` (Item 1, a later session) is passed straight through to
+    `_apply_weight_gate` too -- see that function's own "Suppression" section and `pipeline.
+    weight_gate_suppressions`'s module docstring.
+
     Decision 5's tripwire (a later session): when `profiles` is the FULL canonical 12-profile set,
     it must be impossible for a weight gate to turn every one of them LOCKED -- a condition that
     locks all 12 draws no empire-type distinction at all and belongs in WEIGHT_GATED, not LOCKED
@@ -920,7 +999,10 @@ def evaluate_technology_for_profiles(
     results = {i: evaluate_trigger_block(block, profile) for i, profile in enumerate(profiles)}
     if weight_gate_blocks:
         gated = {
-            i: _apply_weight_gate(results[i], weight_gate_blocks, profile, weight_gate_expressible)
+            i: _apply_weight_gate(
+                results[i], weight_gate_blocks, profile, weight_gate_expressible,
+                weight_gate_suppressed_leaf_targets,
+            )
             for i, profile in enumerate(profiles)
         }
         if len(profiles) == 12:

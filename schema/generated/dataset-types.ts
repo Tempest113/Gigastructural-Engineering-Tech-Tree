@@ -403,6 +403,13 @@ export interface Diagnostics {
     technologyId: TechnologyId;
     contentDiffersFromOverwrite: boolean;
   })[];
+  /** Item 1 (a later session): one entry per `config/weight_gate_suppressions.txt` rule, so a suppressed zero-factor `weight_modifier` condition can never become a silent filter. `matchCount` is how many leaf INSTANCES that rule matched across the whole corpus (a technology can contribute more than one, and a rule matching zero is a stale entry -- its target technology was likely removed or renamed by a corpus refresh, never a normal steady state to ignore). */
+  weightGateSuppressions: ({
+    leafKey: string;
+    matchCount: number;
+    resolvesTo: boolean;
+    justification: string;
+  })[];
   /** P-15/spec/P-15-overwrites.md. Two distinct sections -- different causes, different repairs, never collapsed into one list. See pipeline/overwrites.py's build_overwrite_report. */
   overwriteReport: {
     /** A technology key redefined outright by a later source. The diff baseline is the immediately-preceding definition in load order, whatever its source -- NOT always vanilla; most of the corpus's overwrites have no vanilla baseline at all (see spec/P-15-overwrites.md). */

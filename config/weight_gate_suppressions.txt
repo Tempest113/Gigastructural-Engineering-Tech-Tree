@@ -1,0 +1,72 @@
+# Weight-gate suppression config (Item 1, a later session) -- hand-maintained, checked in,
+# loaded by pipeline/weight_gate_suppressions.py, consumed by pipeline/availability.py's
+# `_apply_weight_gate` (via pipeline/dataset_emit.py's BuildContext).
+#
+# Zero technology data is hand-authored (CLAUDE.md / spec/P-10-performance-automation.md); this
+# file is configuration, not technology data, in the same category as empire profiles, gate
+# patterns, lock-reason overrides and icon overrides -- all hand-maintained because they either
+# encode an editorial decision or paper over a distinction static analysis cannot make on its own.
+#
+# WHY THIS FILE EXISTS: a `weight_modifier` zero-factor condition (see CLAUDE.md's "Research
+# weight" section) that resolves definitely TRUE, or cannot be resolved, currently surfaces as
+# `weight-gated` -- "not currently offered in the research draw." Some of these conditions are
+# technically real but practically meaningless: they describe circumstances any ordinary
+# playthrough satisfies within minutes, so reporting them is noise, not information. Whether a
+# condition is trivially satisfied is GAME KNOWLEDGE, not something derivable from the corpus --
+# every entry below was reviewed and approved by the user, who supplied the reasoning recorded in
+# its justification comment.
+#
+# HOW SUPPRESSION WORKS: a suppressed leaf does not vanish from the boolean tree -- it resolves to
+# a FIXED constant (`resolves_to` below), exactly as a `GROUND_FACT_BOOL`/`AXIS_FACTS` entry
+# already does in `pipeline/availability.py`, standard Kleene AND/OR/NOT/NOR propagation from
+# there. This is deliberately NOT the EXCLUDED/"vacuously satisfied" identity element
+# `EXCLUDED_KEYS` leaves use: that treatment is only sound for a leaf sitting ALONE as its
+# enclosing condition's entire content -- a suppressed leaf boolean-ANDed alongside a genuine axis
+# fact (a real corpus shape: `is_nomadic = yes AND NOT { has_country_flag = X_found }`) would let
+# the identity element silently promote the axis fact to a false LOCKED verdict if merely dropped
+# (see docs/DEFECTS.md's "EXCLUDED-as-vacuously-satisfied" write-up for the general failure
+# class). Resolving to a real constant composes correctly through the SAME evaluator regardless of
+# nesting depth or sibling structure, so this file never needs to special-case a technology's own
+# boolean shape.
+#
+# `resolves_to`:
+#   - `false` for a "hasn't happened yet" numeric threshold (`years_passed`, `num_owned_planets`,
+#     `num_communications`, all `<`-shaped in the corpus): presumes the threshold has already been
+#     crossed by the time this matters.
+#   - `true` for a positive existence/flag check (`any_owned_nonprimary_starbase`,
+#     `any_planet_within_border`, `has_country_flag` resource-found flags): presumes the thing
+#     checked for is already true.
+#
+# Format: one entry per line,
+#
+#   <leaf key>[ <shape>] -> <true|false>  # <justification>
+#
+# `<shape>` is one of:
+#   - omitted: matches the leaf by KEY ALONE, regardless of its value/structure (used for a
+#     scope-block leaf like `any_owned_nonprimary_starbase = { ... }`, whose "comparison" is its
+#     own nested scope, or `any_planet_within_border = { ... }` likewise).
+#   - `< N` (or `<= N`): matches a numeric-comparison leaf whose OWN operator is `<`/`<=` and whose
+#     value is <= N -- N is an upper bound, not an exact-match requirement, so a corpus occurrence
+#     with a STRICTER (smaller) threshold than N still matches (still at least as trivial).
+#   - `~ SUFFIX`: matches a leaf whose value (a flag/identifier name) ends with SUFFIX.
+#
+# Entries are keyed at the MECHANISM level (leaf key + comparison shape), never per technology --
+# every occurrence of a registered mechanism is covered once, matching CLAUDE.md's Gates curation
+# discipline. Blank lines and lines starting with `#` (after stripping leading whitespace) are
+# comments/header and are skipped; every other non-blank line MUST carry a trailing `#`
+# justification -- a line without one is a config error (fails loudly), never a silent skip. An
+# entry that matches nothing in the current corpus is a build-time WARNING (never silently ignored
+# and never a hard failure) -- see `pipeline.dataset_emit.build_diagnostics`'s suppression section
+# -- so a stale entry (corpus refresh removed/renamed its target technology) is always visible.
+
+years_passed < 5 -> false  # user: reached within minutes of game start at any speed -- not a real gate on anything
+
+num_owned_planets < 2 -> false  # user: every empire passes this almost immediately
+
+any_owned_nonprimary_starbase -> true  # user: likewise -- trivially satisfied within minutes of expanding at all
+
+num_communications < 2 -> false  # user: first contact is effectively guaranteed early -- covers both the `< 1` and `< 2` thresholds the corpus actually uses (a stricter threshold is still trivially crossed)
+
+any_planet_within_border -> true  # user: strategic-resource-deposit checks gating harvesting technologies on having encountered the resource -- every empire can obtain all of them; rarity (living metal especially) varies by playthrough luck, not by empire type, and "can this empire type get it" is the question this tool answers
+
+has_country_flag ~ _found -> true  # user: the flag counterpart of the same strategic-resource-discovery mechanism, same reasoning -- matched by the `_found` suffix the corpus's resource-discovery flags all share (sr_dark_matter_found, rare_crystals_found, volatile_motes_found, negative_mass_found, exotic_gases_found, sr_living_metal_found, giga_sr_amb_megaconstruction_found); does NOT match an unrelated flag that merely contains "found" elsewhere in its name (e.g. `found_presapients`) or a same-key, different-meaning flag (e.g. `has_market_access`)

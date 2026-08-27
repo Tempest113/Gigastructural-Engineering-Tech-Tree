@@ -51,6 +51,7 @@ from __future__ import annotations
 
 import datetime
 import re
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -113,6 +114,11 @@ from .scripted_triggers import expand_scripted_triggers, load_scripted_trigger_c
 from .technology_swaps import TechnologySwap, collect_swaps
 from .trigger_text import ReasonCategory, describe_condition, describe_trigger_block
 from .variables import build_variable_table
+from .weight_gate_suppressions import (
+    WeightGateSuppression,
+    apply_suppressions,
+    load_suppressions as load_weight_gate_suppressions,
+)
 
 SCHEMA_VERSION = "1.0.0"
 
@@ -719,6 +725,18 @@ class BuildContext:
     # (one entry per technology key, possibly empty) -- consumed by `_build_gates` to badge the
     # card.
     weight_gate_gate_matches: dict[str, list[GateMatch]]
+    # Item 1 (a later session): `pipeline.weight_gate_suppressions.apply_suppressions`'s
+    # `id(Assignment) -> resolved bool` map, one per technology key, threaded straight into every
+    # `evaluate_technology_for_profiles` call site alongside `weight_gate_conditions` -- see that
+    # module's own docstring and `pipeline.availability._apply_weight_gate`'s "Suppression"
+    # section.
+    weight_gate_suppressed_leaf_targets: dict[str, dict[int, bool]]
+    # Diagnostics-only: how many leaf INSTANCES each suppression entry (keyed by its `leaf_key`)
+    # matched across the whole corpus -- `build_diagnostics` reports this so suppression can never
+    # become a silent filter, and flags any entry with a zero count (a stale rule matching nothing
+    # in the current corpus).
+    weight_gate_suppressions: list[WeightGateSuppression]
+    weight_gate_suppression_hit_counts: Counter[str]
 
 
 def _sources_present(vendor_root: Path) -> list[str]:
@@ -768,6 +786,21 @@ def build_context(vendor_root: Path) -> BuildContext:
         weight_gate_conditions[key] = raw_blocks
         weight_gate_expressible_mask[key] = mask
         weight_gate_gate_matches[key] = matches_for_key
+
+    # Item 1 (a later session): suppress the reviewed, mechanism-level-trivial zero-factor
+    # conditions in `config/weight_gate_suppressions.txt` -- see that file and `pipeline.
+    # weight_gate_suppressions`'s own docstring. Computed once per technology here, over the same
+    # `weight_gate_conditions[key]` blocks just built, so every `evaluate_technology_for_profiles`
+    # call site (12x per technology, or 1x for a single-profile caller) reuses the identical
+    # `id(Assignment) -> bool` map rather than re-matching the config on every call.
+    weight_gate_suppressions_loaded = load_weight_gate_suppressions()
+    weight_gate_suppressed_leaf_targets: dict[str, dict[int, bool]] = {}
+    weight_gate_suppression_hit_counts: Counter[str] = Counter()
+    for key, raw_blocks in weight_gate_conditions.items():
+        targets, hits = apply_suppressions(raw_blocks, weight_gate_suppressions_loaded)
+        weight_gate_suppressed_leaf_targets[key] = targets
+        for rule, _leaf in hits:
+            weight_gate_suppression_hit_counts[rule.leaf_key] += 1
 
     # Item 2 (later session): registers every ascension perk's own winning `potential` block so
     # `has_ascension_perk` leaves can resolve a real LOCKED result when the referenced perk is
@@ -841,6 +874,9 @@ def build_context(vendor_root: Path) -> BuildContext:
         expanded_potentials=expanded_potentials, resolved_names={},
         weight_gate_conditions=weight_gate_conditions, weight_gate_expressible_mask=weight_gate_expressible_mask,
         weight_gate_gate_matches=weight_gate_gate_matches,
+        weight_gate_suppressed_leaf_targets=weight_gate_suppressed_leaf_targets,
+        weight_gate_suppressions=weight_gate_suppressions_loaded,
+        weight_gate_suppression_hit_counts=weight_gate_suppression_hit_counts,
     )
     name_overrides = load_name_overrides()
     ctx.resolved_names = {key: _resolve_technology_name(key, ctx, name_overrides) for key in rendered_keys}
@@ -1273,7 +1309,7 @@ def build_base_dataset(ctx: BuildContext) -> tuple[dict, bytes, bytes]:
 
         availability_results = evaluate_technology_for_profiles(
             ctx.expanded_potentials.get(key), ctx.profiles, ctx.weight_gate_conditions.get(key),
-            ctx.weight_gate_expressible_mask.get(key),
+            ctx.weight_gate_expressible_mask.get(key), ctx.weight_gate_suppressed_leaf_targets.get(key),
         )
         matrix = [availability_results[i].state for i in range(len(ctx.profiles))]
 
@@ -1637,7 +1673,7 @@ def _compute_profile_facts(
 
         result = evaluate_technology_for_profiles(
             ctx.expanded_potentials.get(key), [profile], ctx.weight_gate_conditions.get(key),
-            ctx.weight_gate_expressible_mask.get(key),
+            ctx.weight_gate_expressible_mask.get(key), ctx.weight_gate_suppressed_leaf_targets.get(key),
         )[0]
         reason, _needs_warning = resolve_lock_reason(key, result, lock_reason_overrides)
         availability_json[key] = {
@@ -1872,6 +1908,7 @@ def build_diagnostics(ctx: BuildContext) -> dict:
     for key, potential in sorted(technologies_for_survey.items()):
         results = evaluate_technology_for_profiles(
             potential, ctx.profiles, ctx.weight_gate_conditions.get(key), ctx.weight_gate_expressible_mask.get(key),
+            ctx.weight_gate_suppressed_leaf_targets.get(key),
         )
         uncertain_indices = [i for i, r in results.items() if r.state == UNCERTAIN]
         if not uncertain_indices:
@@ -1905,7 +1942,7 @@ def build_diagnostics(ctx: BuildContext) -> dict:
         for profile in ctx.profiles:
             result = evaluate_technology_for_profiles(
                 ctx.expanded_potentials.get(key), [profile], ctx.weight_gate_conditions.get(key),
-                ctx.weight_gate_expressible_mask.get(key),
+                ctx.weight_gate_expressible_mask.get(key), ctx.weight_gate_suppressed_leaf_targets.get(key),
             )[0]
             if result.state == LOCKED:
                 _reason, needs_warning = resolve_lock_reason(key, result, lock_reason_overrides)
@@ -1933,10 +1970,21 @@ def build_diagnostics(ctx: BuildContext) -> dict:
             {"technologyId": key, "profile": profile} for key in unresolvable
         )
 
+    weight_gate_suppressions_diagnostics = [
+        {
+            "leafKey": rule.leaf_key,
+            "matchCount": ctx.weight_gate_suppression_hit_counts.get(rule.leaf_key, 0),
+            "resolvesTo": rule.resolves_to,
+            "justification": rule.justification,
+        }
+        for rule in ctx.weight_gate_suppressions
+    ]
+
     return {
         "schemaVersion": SCHEMA_VERSION,
         **d10_section,
         "uncertainTechnologies": uncertain_technologies,
+        "weightGateSuppressions": weight_gate_suppressions_diagnostics,
         "missingInlineScriptParameterCount": {"current": 0, "previous": 0},
         "tierPromotions": [],
         "swapsRenderingOnInheritedIcon": [

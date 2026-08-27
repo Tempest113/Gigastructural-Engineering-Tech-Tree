@@ -169,6 +169,22 @@
       }
     },
 
+    "weightGateSuppressions": {
+      "type": "array",
+      "description": "Item 1 (a later session): one entry per `config/weight_gate_suppressions.txt` rule, so a suppressed zero-factor `weight_modifier` condition can never become a silent filter. `matchCount` is how many leaf INSTANCES that rule matched across the whole corpus (a technology can contribute more than one, and a rule matching zero is a stale entry -- its target technology was likely removed or renamed by a corpus refresh, never a normal steady state to ignore).",
+      "items": {
+        "type": "object",
+        "properties": {
+          "leafKey": { "type": "string" },
+          "matchCount": { "type": "integer", "minimum": 0 },
+          "resolvesTo": { "type": "boolean" },
+          "justification": { "type": "string" }
+        },
+        "required": ["leafKey", "matchCount", "resolvesTo", "justification"],
+        "additionalProperties": false
+      }
+    },
+
     "overwriteReport": {
       "type": "object",
       "description": "P-15/spec/P-15-overwrites.md. Two distinct sections -- different causes, different repairs, never collapsed into one list. See pipeline/overwrites.py's build_overwrite_report.",
@@ -233,7 +249,7 @@
     "missingInlineScriptParameterCount", "tierPromotions", "swapsRenderingOnInheritedIcon",
     "unrecognisedGatePatterns", "missingLockReasonOverrides", "unresolvedTriggers",
     "unresolvedModDependencies", "unresolvableResearchPaths", "overwriteReport", "vendorSourcesLoaded",
-    "placeholderTechnologiesAbsent", "vanillaTechnologiesRevertedFromAcotOverwrite"
+    "placeholderTechnologiesAbsent", "vanillaTechnologiesRevertedFromAcotOverwrite", "weightGateSuppressions"
   ],
   "additionalProperties": false
 }
