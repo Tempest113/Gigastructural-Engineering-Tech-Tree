@@ -7232,3 +7232,120 @@ duplicate leaf key; matcher correctness: stricter/looser numeric thresholds, suf
 including the two negative cases above, bare-key matching through nested scope content, AND/NOT/NOR
 descent), `tsc --noEmit` clean, `vite build` clean, headless Playwright verification against the
 rebuilt `client/dist` (0 console errors, 0 failed requests).
+
+## Session: origins are gates (D-19, rejects the 19-profile design), negative gates
+
+**Decision recorded first, before any code**: `spec/decisions.md`'s new D-19 rejects the
+wilderness/frameworld-as-a-4th-axis design the prior survey session measured in detail (19 valid
+profiles, a validity predicate, ~+2.5% base-dataset gzip). Rejected on REASONING, not cost — every
+cost figure that survey measured was small. The reasoning: the three real axes are empire-wide
+identity, true for every one of the 973 technologies; an origin is one of ~40 mutually-exclusive
+PLAYER CHOICES affecting a bounded set (wilderness/frameworld are merely the largest two, 78
+technologies combined). Exactly D-6's existing rule for ascension perks, restated for a different
+gate kind. Consequence: profile model stays at 12, `pipeline/dataset_schema/empire_profile.py`
+untouched, no schema `minItems`/`maxItems` change, no D-10 rescoping.
+
+**The work: negative gates.** `pipeline.gate_patterns.GateMatch` gains `negated: bool`.
+`classify_gates` no longer drops a negated `potential` leaf (the old `filter_negated=True`
+behaviour) — it keeps every match with its true polarity, and `pipeline.dataset_emit._build_gates`
+renders "Unavailable to X" instead of "Needs X" when negated (chosen over the prompt's own
+suggested "Requires: X" for the positive case specifically to leave existing positive-gate wording
+undisturbed — only the new negative case needed new copy). Fixes the reported bug directly: 31
+technologies (`tech_habitat_1`/`_2`/`_3`, `tech_engineering_1`/`_2`/`_3`, ...) carry
+`is_wilderness_empire = no` and previously showed NO gate at all, plainly `available`-looking to a
+wilderness player who can never research them.
+
+**Polarity is derived from the condition's own structure only** (`_leaf_negated`'s existing
+3-channel XOR: `NOT`/`NOR` wrapper, `!=` operator, literal `= no` value) — no per-technology list,
+curation stays at the mechanism level.
+
+**The subtle part, worked through and gotten wrong once before shipping**: does polarity-aware
+`classify_gates` coexist with `classify_weight_gate_condition`'s deliberate polarity-blindness (the
+`tech_housing_2`/`tech_housing_agrarian_idyll` swap pair, both badging `civic_agrarian_idyll`
+identically regardless of which side names it)? Answer: they don't need to coexist as two
+mechanisms — polarity-aware display SUBSUMES and IMPROVES the swap-pair handling. `tech_housing_2`'s
+weight condition is `has_valid_civic = civic_agrarian_idyll` UNWRAPPED (weight zero WHEN you have
+the civic — genuinely a NEGATIVE gate, "unavailable to Agrarian Idyll"); `tech_housing_agrarian_
+idyll`'s is `NOT { has_valid_civic = civic_agrarian_idyll }` (weight zero WITHOUT it — POSITIVE,
+"needs Agrarian Idyll"). Both still badge, now correctly distinct instead of ambiguously identical.
+`filter_negated` is retired from both callers entirely.
+
+**The bug caught mid-implementation**: a `weight_modifier` zero-factor condition's polarity is
+INVERTED relative to `potential`'s, because the condition describes when weight goes to ZERO
+(unavailable), not when the technology IS available — the opposite question. A first pass reused
+`_leaf_negated`'s raw result unchanged for weight-derived matches and badged the housing pair
+EXACTLY BACKWARDS (`tech_housing_2` — the one unavailable to Agrarian Idyll — showing "Needs
+Agrarian Idyll"; its sibling showing "Unavailable to"). Caught by testing against this pair
+directly, not assumed correct. Fixed: `classify_weight_gate_condition` calls the shared classifier
+with `invert_polarity=True`, flipping the raw leaf polarity once so `GateMatch.negated` always
+means the same real-world fact regardless of source block.
+
+**D-3 priority is unaffected by polarity, stated explicitly (the prompt asked the question
+directly).** `order_gates` sorts on `.kind` alone, already true of the code before this session —
+a negative gate of a higher-priority kind still outranks a positive gate of a lower-priority kind.
+A wilderness-origin EXCLUSION is exactly as much an "origin fact" as a wilderness-origin
+REQUIREMENT and deserves the same priority band.
+
+**Figures, verified directly against the real corpus** (`pipeline.dataset_emit.build_base_dataset`,
+full build, not a partial re-classification):
+
+| | Before | After |
+| --- | ---: | ---: |
+| TOTAL gate instances | 643 | 724 |
+| — ascension_perk | 198 | 198 |
+| — origin | 69 | 126 |
+| — ethics_or_civic | 179 | 203 |
+| — technology | 197 | 197 |
+| Gated technologies | 304 | 346 |
+| Multi-gate technologies | 195 | 196 |
+| DIRECT gate instances | 274 | 333 |
+| — ascension_perk | 106 | 106 |
+| — origin | 24 | 60 |
+| — ethics_or_civic | 56 | 79 |
+| — technology | 88 | 88 |
+| Directly-gated technologies | 165 | 206 |
+
+By kind and polarity, TOTAL population after: `ascension_perk` 198 positive / 0 negative,
+`technology` 197 positive / 0 negative (both already-established zero-negated facts for direct
+`potential` matches, unchanged; apparently every real weight-derived condition for these two kinds
+follows the "zero until you have it" idiom, positive after inversion, none the reverse — measured,
+not assumed), `origin` 58 positive / 68 negative, `ethics_or_civic` 95 positive / 108 negative.
+`ascension_perk`/`technology` gain zero new instances (their `potential`-derived population was
+already fully polarity-covered — corpus confirmed zero negated occurrences of either before this
+session); the entire 81-instance TOTAL growth (643 → 724) is `origin` (+57) and `ethics_or_civic`
+(+24) — negated leaves of exactly the two kinds this session's own survey (wilderness/frameworld,
+and civic/ethic exclusions like the housing pair) predicted would carry real negative content.
+
+**Coverage confirmed exactly as the survey established, no new derivation needed**: 11
+wilderness-exclusive (positive `origin`), 8 frameworld-exclusive (positive `origin`), 31
+`is_wilderness_empire = no` (negative `origin`) — `tech_cloning` among them, gaining a 4th gate
+(`origin_wilderness`, negated, now `gates[0]` since `origin` outranks `ethics_or_civic`). The 7
+ascension-perk cascade (`ap_become_the_crisis`, `ap_cosmogenesis`, `ap_galactic_hyperthermia`,
+`ap_world_shaper`, `ap_voidborn`, `ap_hive_worlds`, `ap_xeno_compatibility`) needs nothing new —
+confirmed explicitly: these already badge via the existing `ascension_perk` gate mechanism
+(D-6's correction resolves their own `is_wilderness_empire` fact through `has_ascension_perk`
+axis-purity, unrelated to whether `origin` itself carries polarity), and gate classification never
+reaches inside a perk's own `potential` to begin with — a technology gated on one of these 7 perks
+shows its ordinary "Needs <perk>" badge, unchanged.
+
+**Availability is untouched, confirmed directly, not assumed from "gates are display-only
+by design"**: per-state population across the 12 profiles is exactly 11,676 (unchanged: `available`
+8,228, `locked` 1,466, `uncertain` 482, `config-gated` 600, `weight-gated` 900). D-10's three
+figures: unconditional 31/973, worst profile-dependent 16/973 (1.6444%), union 53 — all unchanged.
+Node set unaffected (973 rendered technologies, `pipeline.gate_patterns` never touches
+`pipeline.rendering_scope`).
+
+**Recorded, not fixed** (out of this session's scope per the task's own fence): `docs/DEFECTS.md`'s
+new "Single-level scripted-trigger expansion" entry — 5 technologies' frameworld dependency via
+`giga_can_use_habitables` → `is_giga_one_planet_origin` → `giga_has_frameworld_origin` is invisible
+to gate classification today, since `expand_scripted_triggers` only substitutes one level deep.
+
+Verification: full pytest suite, two pinned-count tests deliberately updated (`test_base_dataset_
+gates_match_the_gate_classification_survey`, `test_dangling_alternative_downgrade_applies_per_
+group_not_just_whole_list` — `tech_cloning` gained a 4th gate), two new named regression tests
+(`test_negative_gate_renders_as_exclusion_not_a_missing_badge`, proving `tech_habitat_1`/`tech_
+wilderness_node` render opposite polarities correctly and capable of failing against the pre-fix
+filter-negated behaviour; `test_weight_gate_polarity_is_inverted_relative_to_potential`, proving
+the housing pair badges correctly and capable of failing against the pre-inversion bug caught mid-
+session), `tsc --noEmit` clean, `vite build` clean, headless Playwright screenshots of a positive
+origin gate, a negative one, and the housing pair.

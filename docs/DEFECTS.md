@@ -147,3 +147,36 @@ wrapper, and giving `_State.EXCLUDED` its own branch that can only ever route to
 12 profiles), not left as an emergent property of the `axis_pure` bucket routing that a future
 change could silently reintroduce. Full write-up of the fix and the corpus figures:
 `spec/decisions.md`'s D-10 Extension, `docs/BUILD-LOG.md`.
+
+## Single-level scripted-trigger expansion: a name nested inside an already-expanded trigger's own body is never expanded further
+
+**Open, not fixed — recorded here from the wilderness/frameworld survey's evidence, not acted on.**
+`pipeline.scripted_triggers.expand_scripted_triggers` substitutes a scripted-trigger CALL
+(`trigger_name = yes`) with that trigger's own real body, recursively descending through
+`AND`/`OR`/`NOT`/`NOR` wrappers as it goes — but if the substituted body itself contains ANOTHER
+scripted-trigger call, that inner call is left as a bare, unexpanded leaf name, not expanded a
+second time. Confirmed real, not theoretical: 5 rendered technologies (`giga_tech_disco_moon`,
+`giga_tech_alderson_disk`, `giga_tech_interstellar_habitat`, `giga_tech_ringworld_buildings`,
+`giga_tech_ringworld_upgrade`) reference `giga_can_use_habitables` in their own `potential`, which
+expands one level to `NOR = { is_wilderness_empire = yes, is_giga_one_planet_origin = yes,
+is_nomadic = yes }` — but `is_giga_one_planet_origin` is itself a scripted trigger
+(`OR = { has_country_flag = giga_one_planet_origin, giga_has_frameworld_origin = yes }`,
+`ehof_triggers.txt:10`) that never gets expanded in turn. The practical effect: these 5
+technologies' real dependency on the frameworld origin (via `is_giga_one_planet_origin`'s own
+`giga_has_frameworld_origin` branch) is invisible to `pipeline.gate_patterns`/`pipeline.
+availability` today — neither badges nor locks/unlocks on frameworld for these 5, even though the
+raw trigger chain genuinely says frameworld is one of the ways `giga_can_use_habitables` can be
+FALSE (excluding the technology). `is_giga_one_planet_origin` is already a documented, deliberate
+`NOT_GATE_CLASSIFIED_EXCLUDED_KEYS`/`EXCLUDED_KEYS` member for a DIFFERENT reason (compound, no
+single clean `refId` — see `pipeline.gate_patterns`' own docstring), so this isn't a missing
+registration; it's that the leaf never becomes visible as a leaf named `is_giga_one_planet_origin`
+(or its own inner `giga_has_frameworld_origin`) at all inside `giga_can_use_habitables`-referencing
+technologies' expanded blocks, for either module to register against.
+
+**Not fixed in the session that found it** — the origins-are-gates/negative-gates work
+(`spec/decisions.md`'s D-19, this file's neighbouring sections) deliberately left it alone: fixing
+it means either making `expand_scripted_triggers` genuinely recursive (a real behaviour change
+with its own corpus-wide blast radius, since ANY multiply-nested trigger chain would newly expand,
+not just this one) or a narrower, hand-curated deeper-expansion step scoped to just this chain —
+neither was in scope for a session about gate polarity. Full survey evidence: the wilderness/
+frameworld survey session, `docs/BUILD-LOG.md`.

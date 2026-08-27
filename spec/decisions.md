@@ -1276,3 +1276,45 @@ closure and 977-node total, and the 3-link off-tree-prerequisite pin), plus ever
 across `tests/test_dataset_emit.py`, `tests/test_layout_corpus.py`, `tests/test_crisis_faction_corpus.py`,
 `tests/test_availability_corpus.py`, `tests/icons/test_icon_corpus.py` and `tests/test_build_dataset.py`
 re-verified against the real 977-node/984-edge closure.
+
+## D-19 — Origins are gates, not profile axes (rejects the 19-profile design)
+
+**Origins stay off the profile model entirely.** A wilderness/frameworld-as-fourth-axis design
+was surveyed in detail (`docs/BUILD-LOG.md`'s wilderness/frameworld survey session: 19 valid
+profiles under a corrected 3-valued origin dimension, a validity predicate layered over the
+existing cartesian `EmpireProfileIndex`, real payload/schema/client-consumption costs all
+measured) and is **rejected on reasoning, not on cost** — every cost figure that survey measured
+(gzip delta, overlay count, schema changes) was small and would not by itself have blocked the
+design.
+
+**The reasoning**: the empire model's three axes (`authority`, `shipset`, `nomadic`) are
+properties that cut across the ENTIRE tree and constitute top-level empire IDENTITY — every one of
+the 973 rendered technologies has a real, meaningful availability answer for every combination of
+the three. An origin is one of roughly 40 mutually-exclusive PLAYER CHOICES, each affecting a
+bounded, small set of technologies — wilderness and frameworld are notable only for being the
+largest two (78 technologies combined, out of 973), not for being a different KIND of thing than
+`origin_life_seeded` (2 technologies) or `origin_shroud_forged` (2). Treating origins as an axis
+would, if taken to its logical conclusion, imply a ~40-valued dimension; stopping at "the two
+largest" is an arbitrary line with no principled place to stop, and revisits itself every time a
+corpus refresh changes which origin is third-largest.
+
+**This is the exact rule D-6 already applies to ascension perks**, restated for a different gate
+kind rather than re-derived: WHICH perk (WHICH origin) a player takes is always a free choice made
+once per playthrough, displayed as a GATE ("what you'd need") — never assumed as a fact about the
+empire's TYPE the way `authority`/`shipset`/`nomadic` genuinely are. D-6's own correction (a perk
+whose own `potential` carries a genuine AXIS restriction is a real LOCKED fact for an axis-excluded
+profile, not merely a gate) already covers the one place origins interact with the three real
+axes: `is_wilderness_empire` sitting inside 7 ascension perks' own `potential` blocks (`ap_become_
+the_crisis`, `ap_cosmogenesis`, `ap_galactic_hyperthermia`, `ap_world_shaper`, `ap_voidborn`,
+`ap_hive_worlds`, `ap_xeno_compatibility`) already resolves correctly today, unrelated to whether
+origins get their own axis — see the "Negative gates" work this decision accompanies.
+
+**Consequence, stated explicitly so a future session doesn't reopen this without new information**:
+the profile model stays at exactly 12 profiles. No fourth axis, no validity predicate over the
+cartesian index, no `schema/*.json` `minItems`/`maxItems` change, no D-10 rescoping to 19 rows,
+`pipeline/dataset_schema/empire_profile.py` untouched. What wilderness/frameworld (and every other
+origin) get instead: real, polarity-aware GATE badges on the technologies they affect (see this
+session's own "Negative gates" addition, `spec/P-03-gates.md`) — "what you'd need" or "what locks
+you out", displayed on the ~107 technologies (see docs/BUILD-LOG.md's figures) that actually carry
+one, never a 40-valued dimension multiplying every per-profile array in the dataset for the other
+933 technologies an origin never touches.

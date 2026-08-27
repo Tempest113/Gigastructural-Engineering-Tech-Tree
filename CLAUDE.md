@@ -69,7 +69,10 @@ just because it's named here.
 
 - **Empire model**: three independent axes (gestalt/authority: regular/hive/machine; shipset:
   mechanical/biological; nomadic: yes/no) = 12 profiles, composed at build time, never a flat
-  enumeration. Origins are not an axis. — D-6, `spec/P-01-empire-types.md`. **D-6's staleness is
+  enumeration. Origins are not an axis — a 19-profile design (wilderness/frameworld as a 3-valued
+  4th axis) was surveyed in detail and REJECTED on reasoning (a player choice affecting a bounded
+  technology set is a gate, the same rule D-6 already applies to ascension perks), not on cost —
+  see D-19, `spec/decisions.md`. — D-6, `spec/P-01-empire-types.md`. **D-6's staleness is
   now fixed** (a later session): `spec/decisions.md`'s own D-6 entry previously still stated the
   pre-correction "ascension perks are gates, not profile facts" rule with no axis-lock exception;
   it now states the correction below directly, so this flag no longer applies.
@@ -110,16 +113,23 @@ just because it's named here.
   layered on P-14's universal `potential-gate` edge extraction — curation is at the MECHANISM
   level (once a pattern is registered, every occurrence badges), never per-technology. D-3
   priority order: ascension perk > origin > ethics-or-civic > technology (index 0 is the card's
-  primary gate). Gates propagate down `prerequisite` chains (not `potential-gate` — see Open
-  items), tagged `inherited`/`sourceTechnologyId`. A dangling `alternative` gate (no other visible
-  gate badge in its own OR-group, checked per-`groupId` not just whole-list) downgrades to a
-  plain "Needs X". **A zero-factor `weight_modifier` condition (see Research weight below) that
-  classifies to a registered pattern is a SECOND gate source** (`classify_weight_gate_condition`,
-  polarity NOT filtered — unlike `potential`, a condition and its negation name the same fact from
-  opposite sides), deduped by `(kind, refId)` against a `potential`-derived match, merged before
-  D-3 sorting. — **`spec/P-03-gates.md` now documents the weight-condition addition; the REST of
-  the mechanism is still undocumented there — flagged, see report.** Full detail and current
-  totals (274 direct / 643 total gate instances): `docs/BUILD-LOG.md`.
+  primary gate), a KIND-only sort unaffected by polarity. Gates propagate down `prerequisite`
+  chains (not `potential-gate` — see Open items), tagged `inherited`/`sourceTechnologyId`. A
+  dangling `alternative` gate (no other visible gate badge in its own OR-group, checked per-
+  `groupId` not just whole-list) downgrades to a plain "Needs X"/"Unavailable to X". **A
+  zero-factor `weight_modifier` condition (see Research weight below) that classifies to a
+  registered pattern is a SECOND gate source** (`classify_weight_gate_condition`), deduped by
+  `(kind, refId)` against a `potential`-derived match, merged before D-3 sorting. **Negative gates
+  (a later session)**: `GateMatch.negated`, derived from the condition's own structure (`NOT`/
+  `NOR` wrapper, `!=`, or a literal `= no` value), renders "Unavailable to X" instead of "Needs X"
+  — every kind can be negative, not just origin. A weight-condition match's polarity is INVERTED
+  relative to `potential` (`invert_polarity=True`): the condition names when weight goes to ZERO,
+  the opposite question `potential` answers, confirmed against the real `tech_housing_2`/
+  `tech_housing_agrarian_idyll` swap pair (both badge, now with correct opposite wording instead
+  of an ambiguous shared one). — **`spec/P-03-gates.md` now documents polarity and the
+  weight-condition addition; the REST of the mechanism is still undocumented there — flagged, see
+  report.** Full detail and current totals (333 direct / 724 total gate instances):
+  `docs/BUILD-LOG.md`.
 - **Tiers**: unbounded range (ACOT reaches T9+) — enumerate bands from the data, no fixed upper
   bound anywhere. A node's band is its own declared `tier` field, never adjusted by graph depth,
   with one exception: repeatables band into the terminal Repeatables band regardless of tier.
@@ -277,10 +287,6 @@ runs in CI (D-15: vanilla is a permanent CI blocker). No pipeline-test CI workfl
 Full reasoning/figures for every item below: `docs/BUILD-LOG.md`. Remove an item entirely when
 resolved — never leave a struck-through placeholder.
 
-- **Wilderness/Frameworld as toggles over the 12 profiles**: surveyed, not implemented — real
-  decision needed. Recommendation given (implement): scale is real (54/8 technologies), payload
-  cost is negligible (+4.8 KB gzip), `EmpireProfileIndex` extends cleanly to a 3-state axis,
-  neither has a vendored icon.
 - **Middle-click isolation (P-7)** is fully specced and entirely unbuilt.
 - **No pipeline-test CI workflow exists** — `pytest` runs manually/locally only.
 - **`tools/collect_vanilla.py`'s GitHub-fetch-and-pin automation for Gigastructures** is still

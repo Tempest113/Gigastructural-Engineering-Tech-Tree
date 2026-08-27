@@ -3,6 +3,9 @@
 **Requirement.** Every technology gated behind a non-prerequisite unlock condition MUST display
 a visually prominent gate indicator on its node, rendering the associated icon alongside the
 gate's localised name — for example the Cosmogenesis perk icon paired with "Needs Cosmogenesis".
+A gate MUST also express EXCLUSION, not just requirement, when the underlying condition is
+negative — e.g. `is_wilderness_empire = no` badges "Unavailable to Wilderness", never a silently
+missing gate (see "Negative gates" below).
 
 Gates include, at minimum: Cosmogenesis, Galactic Wonders and Gigastructural Constructs
 ascension perks, and a technology-gates-technology example, corrected below.
@@ -55,17 +58,32 @@ weight") that itself classifies to a registered gate pattern (`pipeline.gate_pat
 classify_weight_gate_condition`, run block-by-block over each `modifier` entry whose own `factor`
 is a literal `0`) badges the card the same way a `potential`-derived match does, and does NOT also
 read `weight-gated` for that condition — the `AvailabilityState` and the `Gate` are the same
-underlying fact routed through two different display channels, never both. Polarity is
-deliberately NOT enforced the way `classify_gates` enforces it on `potential` (a negated leaf
-there is dropped, since "must NOT have perk X" is not a positive "Needs X"): a `weight_modifier`
-condition and its own logical negation name the SAME real requirement/exclusion pair from opposite
-sides (a real corpus "swap pair": `tech_housing_2`'s `has_valid_civic = civic_agrarian_idyll`
-zeroes its weight FOR Agrarian Idyll players, while its sibling `tech_housing_agrarian_idyll`
-zeroes ITS weight for everyone else — both badge "Needs Agrarian Idyll", the informative fact a
-player cares about regardless of which technology is naming it or from which side). Deduped by
+underlying fact routed through two different display channels, never both. Deduped by
 `(kind, refId)` against any `potential`-derived match on the same technology, not by kind alone.
 D-3's priority ordering applies unchanged to the merged list — a weight-derived match is not
 second-class and can displace a `potential`-derived match to secondary.
+
+**Negative gates (a later session, "origins-are-gates" follow-up).** A gate can express either
+requirement ("Needs X") or exclusion ("Unavailable to X") — `GateMatch.negated` (`pipeline.
+gate_patterns`), derived from the condition's own structure (a `NOT`/`NOR` wrapper, a `!=`
+operator, or a literal boolean-false value like `is_wilderness_empire = no`), never a per-
+technology list; curation stays at the mechanism level exactly as the rest of this document
+requires. Every registered kind can be negative, not only `origin`. `order_gates`' D-3 priority is
+a KIND-only sort, unaffected by polarity — a negative gate of a higher-priority kind still
+outranks a positive gate of a lower-priority kind.
+
+A `weight_modifier` zero-factor condition's polarity means the OPPOSITE of what the identical leaf
+shape would mean inside `potential`, because the condition describes when the technology's weight
+becomes ZERO (unavailable), not when it IS available — `classify_weight_gate_condition` inverts
+the raw leaf polarity once (`invert_polarity=True`) so `GateMatch.negated` always means the same
+real-world fact ("this gate excludes X") regardless of which block produced it. The real corpus
+"swap pair" this inversion was built against: `tech_housing_2`'s weight condition is
+`has_valid_civic = civic_agrarian_idyll` UNWRAPPED (weight zero WHEN you have the civic — a
+NEGATIVE gate, "Unavailable to Agrarian Idyll"), while its sibling `tech_housing_agrarian_idyll`'s
+is `NOT { has_valid_civic = civic_agrarian_idyll }` (weight zero WITHOUT it — a POSITIVE "Needs
+Agrarian Idyll"). Both still badge, now with correct, distinct wording instead of an ambiguous
+shared one — polarity-aware display subsumes the older "both badge identically regardless of
+polarity" treatment rather than needing to coexist with it as a separate mechanism.
 
 The axis-pure-LOCKED path (D-10's Extension) is untouched by this: whether the gate's own target
 (an ascension perk, most commonly) is itself obtainable at all for an empire type stays a real
