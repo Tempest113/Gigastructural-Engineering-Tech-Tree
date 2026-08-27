@@ -442,6 +442,7 @@ def test_d10_diagnostics_section_is_schema_valid(expanded_rendered_potentials):
         "vendorSourcesLoaded": ["Vanilla", "Gigastructural Engineering", "ACOT", "AoT"],
         "placeholderTechnologiesAbsent": [],
         "vanillaTechnologiesRevertedFromAcotOverwrite": [],
+        "weightGateSuppressions": [],
     }
     validate_diagnostics(document)  # raises on any schema violation
 
