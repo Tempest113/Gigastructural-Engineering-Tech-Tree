@@ -180,3 +180,56 @@ with its own corpus-wide blast radius, since ANY multiply-nested trigger chain w
 not just this one) or a narrower, hand-curated deeper-expansion step scoped to just this chain —
 neither was in scope for a session about gate polarity. Full survey evidence: the wilderness/
 frameworld survey session, `docs/BUILD-LOG.md`.
+
+## Unread fields: a schema field with no standing check that anything actually reads it
+
+`client/` had zero tests for most of this project's life. A survey found six schema fields
+(`DetailPayload.weight`, `.variants`, `.source`, `.repositoryLink`, `.repeatableCostProgression`,
+`.overwriteDiff`) that were extracted, schema-validated, and shipped in every build — and never
+read by any client code, including two (`.weight`/D-4, `.repositoryLink`/D-5) that back LOCKED
+DECISIONS this project had already recorded as done. Nothing was wrong with any of these fields;
+the pipeline computed and validated them correctly. The gap was structural: `schema/` and
+`pipeline/` both treat "emit + schema-validate" as proof a field is finished, and nothing checked
+the other half of the contract (does a consumer exist). A field can be perfectly correct and still
+be dead weight nobody sees.
+
+**Standing check**: `tools/check_field_consumption.py`, wired into CI
+(`.github/workflows/client-tests.yml`). Walks `schema/generated/dataset-types.ts` for the full
+field list (never the other direction — walking the client and checking the schema only proves
+referenced fields are real, not that every field is referenced), greps `client/src/` for each
+field name, and requires every unmatched field to carry a reviewed entry in
+`config/consumed_field_annotations.txt` (`displayed` / `key-only` / `not-needed`, the last always
+naming the follow-up). The check's own first run found MORE unconsumed fields than the six the
+survey named by hand — `BaseDataset.metadata` (P-10's "data as of" marker), `.categories` (P-4's
+filter list), `.adjacency`, and schema-version validation on 4 of 5 artefacts among them — which is
+itself evidence for why a standing, exhaustive check beats a one-off manual survey: a survey stops
+when it feels thorough; a check that enumerates every field structurally can't stop early.
+
+## Polarity mutation harness: a green suite that never actually exercised the fix it was protecting
+
+Two polarity inversions shipped in two consecutive sessions, each with an otherwise-green test
+suite: the wilderness/frameworld leaf-miscount (see this file's own scripted-trigger section
+above, a different mechanism) and, separately, `classify_weight_gate_condition` badging the
+`tech_housing_2`/`tech_housing_agrarian_idyll` civic-swap pair backwards before `invert_polarity`
+was added (`pipeline/gate_patterns.py`). Both are instances of this file's own "green-suite"
+lesson (above), specifically in the shape where a regression test exists, asserts a real fact, and
+passes — but was never checked to actually FAIL if the fix it's protecting were reverted, so a
+regression that reintroduces the bug in a slightly different form can slip past it unnoticed.
+
+A subtler trap surfaced while automating this: an early version of the housing-pair regression
+test asserted only `unwrapped.negated != wrapped.negated` ("the pair badges oppositely"). That
+assertion is satisfied by BOTH the correct classifier and its exact polarity-inverted opposite —
+an inverted classifier still produces two mutually-opposite values, just both flipped from
+reality. "Opposite of each other" is not the same claim as "each one is individually correct";
+only pinning the absolute expected value for each side catches the inversion.
+
+**Standing check**: `tests/test_gate_patterns_polarity_mutations.py`, following
+`tests/clausewitz/test_roundtrip_detects_mutations.py`'s established pattern — monkeypatch away
+the specific fix (`invert_polarity=True`) and assert the regression test THEN FAILS, proving the
+suite has teeth rather than merely being green. Supporting coverage:
+`tests/test_gate_patterns.py`'s `test_negating_the_source_condition_flips_negated_at_every_wrapper_
+depth` (a parametrised depth-1/2/3 AND/OR/NOT/NOR table, generalising the one hand-picked case
+`test_double_negation_of_literal_no_value_produces_a_real_gate` checked) and
+`KNOWN_OPPOSITE_POLARITY_WEIGHT_CONDITION_PAIRS` (a registered, extensible table of confirmed
+real-corpus swap pairs, asserted against their PINNED absolute `negated` values, not just checked
+for mutual inequality).

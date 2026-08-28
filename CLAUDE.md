@@ -213,8 +213,10 @@ just because it's named here.
   `needs_lock_reason_override`/`build_missing_lock_reason_overrides` warn when an override is
   missing; seeded empty — the real corpus currently has no case that needs one),
   `config/weight_gate_suppressions.txt` (Item 1 — mechanism-level, reviewed suppression of
-  trivially-satisfied zero-factor `weight_modifier` conditions; see "Research weight" below), mod
-  metadata.
+  trivially-satisfied zero-factor `weight_modifier` conditions; see "Research weight" below),
+  `config/consumed_field_annotations.txt` (per-field `displayed`/`key-only`/`not-needed`
+  justification for a field unreferenced in `client/src/`; stale entries fail
+  `tools/check_field_consumption.py` — see `docs/DEFECTS.md`'s "Unread fields"), mod metadata.
 - The build fails rather than emitting a partial dataset. Fail on parse errors, graph cycles,
   dangling references, missing localisation for displayed strings, missing icons, schema
   violations, dead repository links.
@@ -261,6 +263,12 @@ just because it's named here.
   currently drawn" question); reusing it there silently laundered an unresolvable condition into a
   false definite LOCKED. Full account: `docs/DEFECTS.md`'s "EXCLUDED-as-vacuously-satisfied"
   section.
+- **Every schema field is consumed by client code or reviewedly annotated** (`tools/
+  check_field_consumption.py`, CI-wired) — its absence let six real fields ship unread. **A
+  polarity-bearing regression test must be proven capable of failing** via a monkeypatch mutation
+  harness (`tests/test_gate_patterns_polarity_mutations.py`, following `test_roundtrip_detects_
+  mutations.py`) — two polarity inversions shipped past an otherwise-green suite. `docs/DEFECTS.md`'s
+  "Unread fields" / "Polarity mutation harness" sections.
 
 ## Commands
 
@@ -274,13 +282,18 @@ just because it's named here.
     npm run dev                         # Vite dev server
     npm run typecheck                   # tsc --noEmit
     npm run build                       # tsc --noEmit && vite build -> client/dist/ (needs client/public/dataset/ built first)
+    npm run test                        # Vitest, CI-wired
+    npm run test:e2e                    # headless Playwright vs. the full dataset, local only
+    python tools/build_client_fixture_dataset.py  # regen client/tests/fixtures/dataset/ (needs vendor/)
+    python tools/check_field_consumption.py       # field-consumption invariant, CI-wired
 
     bash tools/deploy_local.sh          # D-15: build dataset + client, publish dist.zip as a GitHub Release (needs `gh` auth'd, vendor/ populated)
 
 CI: `.github/workflows/typecheck.yml` (`tsc --noEmit` on every `client/**`/dataset-types.ts
-change). `.github/workflows/deploy.yml` is `workflow_dispatch`-only — downloads a pre-built
-`dist.zip` from a GitHub Release and deploys it; builds nothing. `tools/build_dataset.py` never
-runs in CI (D-15: vanilla is a permanent CI blocker). No pipeline-test CI workflow exists yet.
+change). `.github/workflows/client-tests.yml` runs Vitest + the field-consumption check (both
+vendor-independent). `.github/workflows/deploy.yml` is `workflow_dispatch`-only — downloads a
+pre-built `dist.zip` from a GitHub Release and deploys it; builds nothing. `tools/build_dataset.py`
+never runs in CI (D-15), nor `npm run test:e2e` (real dataset) or `pytest`.
 
 ## Open items
 
