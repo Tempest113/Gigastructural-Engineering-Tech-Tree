@@ -7457,3 +7457,119 @@ future recognition.
 Verification: full pytest (1541 passed — the pre-existing repo-hygiene test's one failure during
 this session was the new untracked files, resolved by committing), `tsc --noEmit` clean, `vite
 build` clean, `npm run test` (40/40), `python tools/check_field_consumption.py` (0 unaccounted).
+
+## Session: cleanly-gated narrowing of weight-condition gate badges (a later session)
+
+**Defect (user-reported, confirmed by a player with deep mod knowledge).**
+`tech_terrestrial_sculpting`'s popup showed two badges — "Needs Wilderness" and "Unavailable to
+Devouring Swarm" — inherited onto ~18 downstream technologies including the one localised
+"Large-Scale Bioatmospheric Modification". Both are false as displayed: a regular empire does not
+need the Wilderness origin for this technology, and a non-lithoid Devouring Swarm is not excluded.
+
+**Root cause (recorded in `docs/DEFECTS.md`, "weight-gate compound-wrapper dissolution").**
+`classify_gates` runs on a technology's RAW, unexpanded `potential`; an opaque compound scripted
+trigger stays one unrecognised leaf and produces no gate. `classify_weight_gate_condition` runs
+on the scripted-trigger-**expanded** condition block (`_apply_weight_gate` needs expanded leaves
+to evaluate). Expansion dissolves `is_lithoid_devouring_swarm = yes` into
+`AND(owner_species = { is_lithoid = yes }, has_valid_civic = civic_hive_devouring_swarm,
+NOT { has_origin = origin_wilderness })`, and the leaf scanner then emitted one badge per
+gate-classifiable conjunct — each reading as an independently sufficient claim when the real
+exclusion (a lithoid, non-wilderness Devouring Swarm — the "Terravore") needs the whole
+conjunction.
+
+**Investigation.**
+- Conditions producing >1 `GateMatch` from a single block: 26 `potential`-derived (26 techs),
+  43 weight-gate-derived (43 techs).
+- Of the weight-gate multi-match: 42 pure disjunctions (all matches under `OR`/`NOR`, each leaf
+  independently zeroes the weight — decomposition sound), 1 pure conjunction
+  (`tech_terrestrial_sculpting`). The `alternative`/`groupId` mechanism already handles the OR
+  groups and is sufficient for them.
+- `potential` multi-match: 12 disjunction, 10 conjunction, 4 mixed — every conjunction is a hard
+  `potential` gate whose conjuncts are each independently necessary and individually true for all
+  12 profiles ("Needs Frameworld" + "Needs Starhold" etc.), so no `potential` label is false and
+  `classify_gates` is left untouched.
+- Extending the AND-level analysis to single-match weight blocks finds the same shape (a gate
+  leaf AND-combined with an opaque conjunct or a gate-free `OR`/`NOR`): 25 blocks over 24
+  technologies. The 16 `tech_fe_*_1` (`NOT{ap_cosmogenesis} AND calc_true_if{…}`),
+  `tech_psionic_theory` ×2, `tech_terrestrial_sculpting`, and 6 `tech_lathe_*` whose lone leaf
+  was already deduped against a `potential` match (no visible badge changed for those).
+- DLC conjuncts on 10 `potential` multi-match technologies (`has_machine_age_dlc`,
+  `has_shroud_dlc`) narrow the *set* but no individual label is false for any profile; DLC as a
+  displayed concept is a pre-existing accepted boundary, out of scope.
+
+**Fix.** `pipeline.gate_patterns.weight_gate_condition_is_cleanly_gated(block)` — over
+`_and_level_conditions` (descend `AND`/`NOT` only, never `OR`/`NOR`), a weight condition is
+cleanly gated iff there is exactly ONE AND-level condition and it carries a gate leaf: a lone
+gate leaf, or a lone `OR`/`NOR` group of them. `pipeline.dataset_emit.build_context` consults it
+for BOTH `weight_gate_gate_matches` (the badge) and `weight_gate_expressible_mask` (the
+`_apply_weight_gate` suppression) — a block that fails it emits no badge AND is not suppressed,
+so it falls through to `weight-gated` with descriptive condition text, honest that the technology
+is restricted rather than silently `available`. No composed multi-leaf label is built: no corpus
+weight condition is a fully-phraseable AND-conjunction of ≥2 gate leaves (the one ≥2 case carries
+the opaque `owner_species` conjunct), and a future such case also returns False (a conservative
+no-badge) pending a real instance to design the wording against. `classify_gates` (the
+`potential` path) and D-3 kind ordering are untouched.
+
+**Figures, before → after.**
+- Gate instances, TOTAL: 724 → 640 (−84; 0 added). By kind: ascension_perk 198 → 182, origin
+  126 → 108, ethics_or_civic 203 → 153, technology 197 → 197. Gated technologies 346 → 332;
+  multi-gate 196 → 162. 14 technologies drop to zero gates (`tech_terrestrial_sculpting` + 13
+  inheritors carrying only the inherited Wilderness/Devouring-Swarm pair).
+- Gate instances, DIRECT: 333 → 313 (−20). By kind: ascension_perk 106 → 90 (16 `tech_fe_*_1`
+  lose "Needs Cosmogenesis"), origin 60 → 59 (`tech_terrestrial_sculpting` "Needs Wilderness",
+  origin-pos), ethics_or_civic 79 → 76 (`tech_terrestrial_sculpting` "Unavailable to Devouring
+  Swarm" + `tech_psionic_theory` "or, unavailable to: Materialist"/"Fanatic Materialist", all
+  e/c-neg), technology 88 → 88. Directly-gated technologies 206 → 205.
+- Polarity: all −84 total is positive ascension_perk (−16), positive origin (−18), negative
+  ethics_or_civic (−50). Negative origin (68) and positive ethics_or_civic (95) are unchanged —
+  the `tech_housing_2`/`tech_housing_agrarian_idyll` opposite-polarity pair still badges.
+- Availability: 250 `(technology, profile)` pairs move `available` → `weight-gated`, zero into or
+  out of `locked`/`uncertain`/`config-gated`. Per-technology: `tech_terrestrial_sculpting` 6
+  (the nomadic=no profiles; nomadic=yes stays `locked` on its own `potential`); each of 6
+  `tech_lathe_*` and `tech_psionic_theory` 12; the 16 `tech_fe_*_1` mostly 12 (fewer where a
+  profile was already `locked`/`uncertain`: clinic 8, entertainment 4, market 4; assembly 0).
+- Per-state populations (sum 11,676, unchanged): `available` 8228 → 7978, `weight-gated`
+  900 → 1150, `locked` 1466, `uncertain` 482, `config-gated` 600.
+- D-10's three figures unchanged: unconditional uncertainty 31/973, worst profile-dependent
+  16/973, uncertain-technologies 53.
+- Node set unchanged (973 rendered, 977 edges).
+
+**`weight-gated` replacement copy for the 16 `tech_fe_*_1`.** The `AvailabilityResult.reason`
+prose is comprehensible: *"May not be offered in the research draw, depending on your empire's
+circumstances — the condition is shown below."* The specific condition it points at is
+`detail.weight.modifiers[].conditionText`; for `tech_terrestrial_sculpting` and
+`tech_psionic_theory` that is populated (a raw Clausewitz dump, e.g.
+`modifier = { factor = 0 is_lithoid_devouring_swarm = yes }`). For the 16 `tech_fe_*_1` it is
+**empty** — a pre-existing `.weight`-emitter bug, out of scope for this session — so those
+popups currently show the prose but not the raw condition. The real condition (from source,
+verbatim, all 16 identical bar the crisis-level constant) is:
+
+    modifier = {
+        factor = 0
+        NOT = { has_ascension_perk = ap_cosmogenesis }
+        calc_true_if = {
+            amount >= 4
+            has_technology = tech_fe_affluence_1
+            ... (all 16 tech_fe_*_1 keys) ...
+        }
+    }
+
+i.e. weight zero for an empire lacking the Cosmogenesis perk that has already researched ≥4 of
+the 16 Fallen-Empire tier-1 technologies — a crisis-progression gate. Three verbatim `reason`
+strings (identical across the family, so one shown per representative): `tech_fe_lab_1`,
+`tech_fe_administration_1`, `tech_fe_singularity_1` all →
+*"May not be offered in the research draw, depending on your empire's circumstances — the
+condition is shown below."*
+
+**Follow-up (recorded, not done):** register the compound wrappers as named gate mechanisms
+(`is_lithoid_devouring_swarm` → "Terravore"), classifying the weight condition from the RAW
+pre-expansion block like `classify_gates` — needs its own corpus survey. See `docs/DEFECTS.md`.
+
+**Verification:** full pytest, `npm run test` (Vitest), `tsc --noEmit`, `vite build`, the
+committed Playwright e2e check. New: `tests/test_gate_patterns.py` unit tests for
+`weight_gate_condition_is_cleanly_gated`; `tests/test_dataset_emit.py`
+`test_terrestrial_sculpting_never_shows_a_bare_wilderness_or_devouring_swarm_gate`,
+`test_large_scale_bioatmospheric_modification_never_shows_bare_wilderness_or_devouring_swarm_gate`
+(resolves the inheritor by localised name, skips if absent), and
+`test_cleanly_gated_guard_is_load_bearing` (monkeypatches the predicate to always-pass and
+asserts the bare badges return — proven capable of failing pre-fix).

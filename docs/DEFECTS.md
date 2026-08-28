@@ -233,3 +233,46 @@ depth` (a parametrised depth-1/2/3 AND/OR/NOT/NOR table, generalising the one ha
 `KNOWN_OPPOSITE_POLARITY_WEIGHT_CONDITION_PAIRS` (a registered, extensible table of confirmed
 real-corpus swap pairs, asserted against their PINNED absolute `negated` values, not just checked
 for mutual inequality).
+
+## Weight-gate compound-wrapper dissolution: an opaque scripted trigger expanded into leaves that individually mean nothing
+
+`pipeline.gate_patterns.classify_gates` runs on a technology's RAW, unexpanded `potential` block
+by design — an opaque compound scripted trigger (`is_lithoid_devouring_swarm`,
+`is_void_dweller_empire`, …) stays a single unrecognised leaf and produces no gate, which is
+correct: the wrapper names one composite fact, not a bag of independent ones.
+`classify_weight_gate_condition` diverged. It runs on the scripted-trigger-**expanded** condition
+block (`pipeline.dataset_emit._weight_gate_condition_blocks` calls `expand_scripted_triggers`
+before classification, because `_apply_weight_gate` needs expanded leaves to evaluate). Expansion
+dissolves `is_lithoid_devouring_swarm = yes` into `AND(owner_species = { is_lithoid = yes },
+has_valid_civic = civic_hive_devouring_swarm, NOT { has_origin = origin_wilderness })`, and the
+leaf scanner then walked the `AND` and emitted one `GateMatch` per gate-classifiable conjunct —
+a bare "Needs Wilderness" + "Unavailable to Devouring Swarm" on `tech_terrestrial_sculpting` and,
+by prerequisite propagation, on ~18 downstream technologies including the one localised
+"Large-Scale Bioatmospheric Modification". Both labels are false for almost every empire profile:
+the real exclusion needs the whole conjunction (a lithoid, non-wilderness Devouring Swarm — the
+"Terravore"), never any single conjunct. User-reported, confirmed by a player with deep mod
+knowledge.
+
+Same shape, milder, on 16 `tech_fe_*_1` (`NOT{ap_cosmogenesis} AND calc_true_if{…}` →
+"Needs Cosmogenesis", false while the crisis-progression `calc_true_if` conjunct does not hold)
+and `tech_psionic_theory` (a materialist OR-group AND-constrained by a gate-free council-trait
+`NOR`).
+
+**Stop-gap fix (this session):** `pipeline.gate_patterns.weight_gate_condition_is_cleanly_gated`
+— a weight condition contributes badges, and stays suppressed from `_apply_weight_gate`, only
+when it is structurally safe to decompose leaf-by-leaf: exactly one AND-level condition
+(descending `AND`/`NOT` only) that carries a gate leaf — a lone gate leaf, or a lone `OR`/`NOR`
+group of them. Anything AND-combined with another real condition emits no badge and falls through
+to `weight-gated` with descriptive condition text (honest that the technology is restricted;
+`weight-gated` is outside D-10's accounting). Conservative: a fully-phraseable AND-conjunction of
+≥2 gate leaves (none exist in the corpus today) also emits nothing rather than a composed label.
+
+**Proposed real fix (needs its own corpus survey, NOT done here):** register the compound
+wrappers themselves as named gate mechanisms, the way `WRAPPER_TO_ORIGIN` /
+`WRAPPER_TO_PERK` already do for 1:1 wrappers — the wrapper's own name is the honest label
+(`is_lithoid_devouring_swarm` → "Terravore"). That requires classifying the weight condition
+from the RAW (pre-expansion) block like `classify_gates` does, a survey of which compound
+wrappers appear in zero-factor weight conditions and whether each has a single clean display
+target and localisation, and a decision on the handful (`is_void_dweller_empire`,
+`is_spiritualist`, …) that are genuine `OR` compounds with no single clean `refId` (already
+listed in `NOT_GATE_CLASSIFIED_EXCLUDED_KEYS` for the `potential` path).

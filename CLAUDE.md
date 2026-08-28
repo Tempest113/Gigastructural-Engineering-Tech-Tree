@@ -128,8 +128,19 @@ just because it's named here.
   `tech_housing_agrarian_idyll` swap pair (both badge, now with correct opposite wording instead
   of an ambiguous shared one). — **`spec/P-03-gates.md` now documents polarity and the
   weight-condition addition; the REST of the mechanism is still undocumented there — flagged, see
-  report.** Full detail and current totals (333 direct / 724 total gate instances):
-  `docs/BUILD-LOG.md`.
+  report.** **Cleanly-gated narrowing (a later session, user-reported):** a zero-factor
+  `weight_modifier` condition contributes a badge (and stays suppressed from `_apply_weight_gate`)
+  only when structurally safe to decompose leaf-by-leaf —
+  `pipeline.gate_patterns.weight_gate_condition_is_cleanly_gated`: one AND-level condition
+  carrying a gate leaf (a lone gate leaf, or a lone `OR`/`NOR` group of them). An AND-conjunction
+  that dissolves a compound scripted trigger into individually-false leaves
+  (`tech_terrestrial_sculpting`'s `is_lithoid_devouring_swarm` → bare "Needs Wilderness" +
+  "Unavailable to Devouring Swarm") emits nothing and falls through to `weight-gated` instead —
+  250 `(tech, profile)` pairs move `available`→`weight-gated`, D-10 and the node set unchanged.
+  Root cause (`classify_weight_gate_condition` runs on the scripted-trigger-EXPANDED block while
+  `classify_gates` runs on the RAW one) and the proposed real fix (register the wrappers as named
+  gates): `docs/DEFECTS.md`'s "weight-gate compound-wrapper dissolution". Full detail and current
+  totals (313 direct / 640 total gate instances): `docs/BUILD-LOG.md`.
 - **Tiers**: unbounded range (ACOT reaches T9+) — enumerate bands from the data, no fixed upper
   bound anywhere. A node's band is its own declared `tier` field, never adjusted by graph depth,
   with one exception: repeatables band into the terminal Repeatables band regardless of tier.
