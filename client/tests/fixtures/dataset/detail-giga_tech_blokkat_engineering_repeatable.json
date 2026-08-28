@@ -1,0 +1,68 @@
+{
+  "description": "Studying how the Blokkats engineer their ships and materials is a difficult task to undertake remotely, but will provide valuable intel on their vessels and will likely help our science teams in designing new and innovating materials.",
+  "offTreePrerequisiteNames": [],
+  "overwriteDiff": null,
+  "repeatableCostProgression": [
+    320000.0,
+    640000.0,
+    960000.0,
+    1280000.0,
+    1600000.0,
+    1920000.0,
+    2240000.0,
+    2560000.0,
+    2880000.0,
+    3200000.0,
+    3520000.0,
+    3840000.0,
+    4160000.0,
+    4480000.0,
+    4800000.0,
+    5120000.0,
+    5440000.0,
+    5760000.0,
+    6080000.0,
+    6400000.0,
+    6720000.0,
+    7040000.0,
+    7360000.0,
+    7680000.0,
+    8000000.0,
+    8320000.0,
+    8640000.0,
+    8960000.0,
+    9280000.0,
+    9600000.0,
+    9920000.0,
+    10240000.0,
+    10560000.0,
+    10880000.0,
+    11200000.0,
+    11520000.0,
+    11840000.0,
+    12160000.0,
+    12480000.0,
+    12800000.0
+  ],
+  "repositoryLink": {
+    "kind": "gigastructures-permalink",
+    "lineRange": {
+      "endLine": 138,
+      "file": "giga_13_blokkat.txt",
+      "startLine": 138
+    },
+    "url": "https://github.com/Pouchkinn-s-Gigastructures/Gigastructures/blob/0f1f2b024f43249dc7dfe132fe7c0e4201398ef5/giga_13_blokkat.txt#L138"
+  },
+  "schemaVersion": "1.0.0",
+  "source": {
+    "definedBy": "Gigastructural Engineering",
+    "label": "Gigastructural Engineering",
+    "overwrites": null
+  },
+  "technologyId": "giga_tech_blokkat_engineering_repeatable",
+  "variants": [],
+  "weight": {
+    "base": 40.0,
+    "modifiers": []
+  }
+}

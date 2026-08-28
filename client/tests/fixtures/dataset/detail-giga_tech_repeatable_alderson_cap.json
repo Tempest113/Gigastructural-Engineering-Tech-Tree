@@ -1,0 +1,27 @@
+{
+  "description": "Advanced construction and maintenance protocols to allow construction and management of additional Alderson Disks within our empire's borders.",
+  "offTreePrerequisiteNames": [],
+  "overwriteDiff": null,
+  "repeatableCostProgression": [],
+  "repositoryLink": {
+    "kind": "gigastructures-permalink",
+    "lineRange": {
+      "endLine": 123,
+      "file": "giga_07_repeatables_megastructures.txt",
+      "startLine": 123
+    },
+    "url": "https://github.com/Pouchkinn-s-Gigastructures/Gigastructures/blob/0f1f2b024f43249dc7dfe132fe7c0e4201398ef5/giga_07_repeatables_megastructures.txt#L123"
+  },
+  "schemaVersion": "1.0.0",
+  "source": {
+    "definedBy": "Gigastructural Engineering",
+    "label": "Gigastructural Engineering",
+    "overwrites": null
+  },
+  "technologyId": "giga_tech_repeatable_alderson_cap",
+  "variants": [],
+  "weight": {
+    "base": 10.0,
+    "modifiers": []
+  }
+}

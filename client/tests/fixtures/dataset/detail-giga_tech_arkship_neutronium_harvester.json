@@ -1,0 +1,27 @@
+{
+  "description": "By providing our Arkships with the means to harvest stellar remnants such as Neutron Stars, we can guarantee a reliable source of valuable alloys for aeons to come.",
+  "offTreePrerequisiteNames": [],
+  "overwriteDiff": null,
+  "repeatableCostProgression": null,
+  "repositoryLink": {
+    "kind": "gigastructures-permalink",
+    "lineRange": {
+      "endLine": 2,
+      "file": "giga_19_nomad.txt",
+      "startLine": 2
+    },
+    "url": "https://github.com/Pouchkinn-s-Gigastructures/Gigastructures/blob/0f1f2b024f43249dc7dfe132fe7c0e4201398ef5/giga_19_nomad.txt#L2"
+  },
+  "schemaVersion": "1.0.0",
+  "source": {
+    "definedBy": "Gigastructural Engineering",
+    "label": "Gigastructural Engineering",
+    "overwrites": null
+  },
+  "technologyId": "giga_tech_arkship_neutronium_harvester",
+  "variants": [],
+  "weight": {
+    "base": 16.0,
+    "modifiers": []
+  }
+}

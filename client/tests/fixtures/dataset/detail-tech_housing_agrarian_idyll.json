@@ -1,0 +1,28 @@
+{
+  "description": "Through the establishment of weather-controlled rural communes, we can support a larger population without disrupting our agrarian way of life.",
+  "offTreePrerequisiteNames": [],
+  "overwriteDiff": null,
+  "repeatableCostProgression": null,
+  "repositoryLink": {
+    "kind": "stellaris-wiki",
+    "lineRange": null,
+    "url": "https://stellaris.paradoxwikis.com/housing_agrarian_idyll"
+  },
+  "schemaVersion": "1.0.0",
+  "source": {
+    "definedBy": "Vanilla",
+    "label": "Vanilla",
+    "overwrites": null
+  },
+  "technologyId": "tech_housing_agrarian_idyll",
+  "variants": [],
+  "weight": {
+    "base": 65.0,
+    "modifiers": [
+      {
+        "conditionText": "modifier = { factor = 0 NOT = { has_valid_civic = civic_agrarian_idyll } }",
+        "factor": 1.5
+      }
+    ]
+  }
+}

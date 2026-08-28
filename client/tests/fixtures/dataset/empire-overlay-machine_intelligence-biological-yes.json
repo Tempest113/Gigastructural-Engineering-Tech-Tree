@@ -1,0 +1,3969 @@
+{
+  "activeEdgeIds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56
+  ],
+  "availability": {
+    "giga_tech_aeternite_armor": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    },
+    "giga_tech_alderson_disk": {
+      "configGatedSubject": null,
+      "reason": "Requires the ap_gigastructural_constructs ascension perk",
+      "state": "locked"
+    },
+    "giga_tech_amb_living_metal_infusion": {
+      "configGatedSubject": null,
+      "reason": "has_global_flag = @giga_amb_flag",
+      "state": "uncertain"
+    },
+    "giga_tech_amb_supertensiles": {
+      "configGatedSubject": null,
+      "reason": "has_global_flag = @giga_amb_flag",
+      "state": "uncertain"
+    },
+    "giga_tech_arkship_neutronium_harvester": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    },
+    "giga_tech_asteroid_artillery": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    },
+    "giga_tech_asteroid_artillery_health_upgrade": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    },
+    "giga_tech_blokkat_armor_study": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    },
+    "giga_tech_blokkat_engineering_repeatable": {
+      "configGatedSubject": null,
+      "reason": "Not currently offered in the research draw. This depends on your empire's circumstances rather than its type \u2014 the condition is shown below.",
+      "state": "weight-gated"
+    },
+    "giga_tech_disco_moon": {
+      "configGatedSubject": null,
+      "reason": "none of: is_wilderness_empire = yes; is_giga_one_planet_origin = yes; Nomadic empires",
+      "state": "locked"
+    },
+    "giga_tech_equatorial_shipyard": {
+      "configGatedSubject": null,
+      "reason": "Not: nomadic empires",
+      "state": "locked"
+    },
+    "giga_tech_interstellar_habitat": {
+      "configGatedSubject": null,
+      "reason": "none of: is_wilderness_empire = yes; is_giga_one_planet_origin = yes; Nomadic empires",
+      "state": "locked"
+    },
+    "giga_tech_maginot_firepower_1": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    },
+    "giga_tech_maginot_world": {
+      "configGatedSubject": null,
+      "reason": "NOT = { OR = { has_ascension_perk = ap_galactic_wonders has_ascension_perk = ap_galactic_wonders_utopia has_ascension_perk = ap_galactic_wonders_megacorp has_ascension_perk = ap_galactic_wonders_utopia_and_megacorp } }",
+      "state": "locked"
+    },
+    "giga_tech_orbital_arcologies": {
+      "configGatedSubject": null,
+      "reason": "Not: nomadic empires",
+      "state": "locked"
+    },
+    "giga_tech_penrose_sphere_1": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    },
+    "giga_tech_planetary_drive_yard": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    },
+    "giga_tech_psychic_hypersiphon": {
+      "configGatedSubject": null,
+      "reason": "has_tradition = tr_psionics_finish",
+      "state": "uncertain"
+    },
+    "giga_tech_repeatable_alderson_cap": {
+      "configGatedSubject": "Alderson Disk",
+      "reason": "Unresolved internal flag: alderson_capped_r",
+      "state": "config-gated"
+    },
+    "giga_tech_repeatable_maginot_cap": {
+      "configGatedSubject": "Maginot World",
+      "reason": "Unresolved internal flag: maginot_capped_r",
+      "state": "config-gated"
+    },
+    "giga_tech_repeatable_reduced_mega_building_time": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    },
+    "giga_tech_ringworld_buildings": {
+      "configGatedSubject": null,
+      "reason": "none of: is_wilderness_empire = yes; is_giga_one_planet_origin = yes; Nomadic empires",
+      "state": "locked"
+    },
+    "giga_tech_substellar_compressor": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    },
+    "giga_tech_war_moon_1": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    },
+    "giga_tech_yggdrasil_orchid": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    },
+    "tech_arkship_tier_3": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    },
+    "tech_battleships": {
+      "configGatedSubject": null,
+      "reason": "Not: empires with a biological shipset",
+      "state": "locked"
+    },
+    "tech_dyson_sphere": {
+      "configGatedSubject": null,
+      "reason": "Not: nomadic empires",
+      "state": "locked"
+    },
+    "tech_ehof_phase_03": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    },
+    "tech_frameworld_defensive_station_5": {
+      "configGatedSubject": null,
+      "reason": "Not offered through the normal research draw currently.",
+      "state": "weight-gated"
+    },
+    "tech_frameworld_repeatable_outpost_output": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    },
+    "tech_gateway_construction": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    },
+    "tech_habitat_1": {
+      "configGatedSubject": null,
+      "reason": "Not: nomadic empires",
+      "state": "locked"
+    },
+    "tech_habitat_2": {
+      "configGatedSubject": null,
+      "reason": "Not: nomadic empires",
+      "state": "locked"
+    },
+    "tech_housing_1": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    },
+    "tech_housing_2": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    },
+    "tech_housing_agrarian_idyll": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    },
+    "tech_interstellar_assembly": {
+      "configGatedSubject": null,
+      "reason": "Not: nomadic empires",
+      "state": "locked"
+    },
+    "tech_matter_decompressor": {
+      "configGatedSubject": null,
+      "reason": "Not: nomadic empires",
+      "state": "locked"
+    },
+    "tech_mega_art": {
+      "configGatedSubject": null,
+      "reason": "Not: nomadic empires",
+      "state": "locked"
+    },
+    "tech_mega_engineering": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    },
+    "tech_mega_shipyard": {
+      "configGatedSubject": null,
+      "reason": "Not: nomadic empires",
+      "state": "locked"
+    },
+    "tech_mine_living_metal": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    },
+    "tech_quantum_catapult": {
+      "configGatedSubject": null,
+      "reason": "Unresolved internal flag: has_quantum_catapult_insight",
+      "state": "uncertain"
+    },
+    "tech_ring_world": {
+      "configGatedSubject": null,
+      "reason": "Not offered through the normal research draw currently.",
+      "state": "weight-gated"
+    },
+    "tech_science_nexus": {
+      "configGatedSubject": null,
+      "reason": "Not: nomadic empires",
+      "state": "locked"
+    },
+    "tech_sentry_array": {
+      "configGatedSubject": null,
+      "reason": "Not: nomadic empires",
+      "state": "locked"
+    },
+    "tech_sm_megastructure": {
+      "configGatedSubject": null,
+      "reason": "Requires the ap_galactic_wonders ascension perk",
+      "state": "locked"
+    },
+    "tech_starbase_3": {
+      "configGatedSubject": null,
+      "reason": "Not: nomadic empires",
+      "state": "locked"
+    },
+    "tech_starbase_5": {
+      "configGatedSubject": null,
+      "reason": "Not: nomadic empires",
+      "state": "locked"
+    },
+    "tech_stingers": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    },
+    "tech_strategic_coordination": {
+      "configGatedSubject": null,
+      "reason": "Not: nomadic empires",
+      "state": "locked"
+    },
+    "tech_zero_point_power": {
+      "configGatedSubject": null,
+      "reason": null,
+      "state": "available"
+    }
+  },
+  "profile": {
+    "authority": "machine_intelligence",
+    "nomadic": "yes",
+    "shipset": "biological"
+  },
+  "researchPaths": {
+    "giga_tech_aeternite_armor": {
+      "configGatedTarget": null,
+      "estimateReasons": [],
+      "status": "path",
+      "steps": [],
+      "totalCost": 64000.0,
+      "totalCostIsEstimate": false
+    },
+    "giga_tech_alderson_disk": {
+      "status": "unavailable"
+    },
+    "giga_tech_amb_living_metal_infusion": {
+      "configGatedTarget": null,
+      "estimateReasons": [
+        "uncertain-availability"
+      ],
+      "status": "path",
+      "steps": [
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 674,
+            "y": 842
+          },
+          "name": "Zero-G Engineering",
+          "stepCost": 0.0,
+          "technologyId": "tech_space_construction",
+          "tier": 0
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 226,
+            "y": 226
+          },
+          "name": "Improved Living Metal",
+          "stepCost": 16000.0,
+          "technologyId": "tech_mine_living_metal",
+          "tier": 5
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "uncertain",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 331,
+            "y": 2
+          },
+          "name": "Applied Supertensiles",
+          "stepCost": 4000.0,
+          "technologyId": "giga_tech_amb_supertensiles",
+          "tier": 1
+        }
+      ],
+      "totalCost": 36000.0,
+      "totalCostIsEstimate": true
+    },
+    "giga_tech_amb_supertensiles": {
+      "configGatedTarget": null,
+      "estimateReasons": [
+        "uncertain-availability"
+      ],
+      "status": "path",
+      "steps": [],
+      "totalCost": 4000.0,
+      "totalCostIsEstimate": true
+    },
+    "giga_tech_arkship_neutronium_harvester": {
+      "configGatedTarget": null,
+      "estimateReasons": [],
+      "status": "path",
+      "steps": [
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 114,
+            "y": 1010
+          },
+          "name": "Fission Metabolism",
+          "stepCost": 0.0,
+          "technologyId": "tech_fission_power",
+          "tier": 0
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 338,
+            "y": 1010
+          },
+          "name": "Fusion Metabolism",
+          "stepCost": 1250.0,
+          "technologyId": "tech_fusion_power",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 506,
+            "y": 954
+          },
+          "name": "Cold Fusion Metabolism",
+          "stepCost": 2500.0,
+          "technologyId": "tech_cold_fusion_power",
+          "tier": 2
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 898
+          },
+          "name": "Antimatter Metabolism",
+          "stepCost": 5000.0,
+          "technologyId": "tech_antimatter_power",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 1178
+          },
+          "name": "Zero Point Metabolism",
+          "stepCost": 10000.0,
+          "technologyId": "tech_zero_point_power",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 394,
+            "y": 170
+          },
+          "name": "Maulers",
+          "stepCost": 500.0,
+          "technologyId": "tech_maulers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_construction#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 562,
+            "y": 1234
+          },
+          "name": "Weavers",
+          "stepCost": 1000.0,
+          "technologyId": "tech_weavers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 786
+          },
+          "name": "Arkship Construction",
+          "stepCost": 4000.0,
+          "technologyId": "tech_arkship_construction",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_tier_2#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 1962
+          },
+          "name": "Harbingers",
+          "stepCost": 4000.0,
+          "technologyId": "tech_harbingers",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 114,
+            "y": 842
+          },
+          "name": "Arkship Engineering",
+          "stepCost": 5000.0,
+          "technologyId": "tech_arkship_tier_2",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_tier_3#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 114,
+            "y": 954
+          },
+          "name": "Stingers",
+          "stepCost": 8000.0,
+          "technologyId": "tech_stingers",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_mega_engineering#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 842
+          },
+          "name": "Arkship Mastery",
+          "stepCost": 10000.0,
+          "technologyId": "tech_arkship_tier_3",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 786,
+            "y": 170
+          },
+          "name": "Mega-Engineering",
+          "stepCost": 24000.0,
+          "technologyId": "tech_mega_engineering",
+          "tier": 5
+        }
+      ],
+      "totalCost": 115250.0,
+      "totalCostIsEstimate": false
+    },
+    "giga_tech_asteroid_artillery": {
+      "blockedBy": {
+        "name": "Star Fortress",
+        "reason": "Not: nomadic empires",
+        "technologyId": "tech_starbase_4"
+      },
+      "status": "blocked"
+    },
+    "giga_tech_asteroid_artillery_health_upgrade": {
+      "blockedBy": {
+        "name": "Star Fortress",
+        "reason": "Not: nomadic empires",
+        "technologyId": "tech_starbase_4"
+      },
+      "status": "blocked"
+    },
+    "giga_tech_blokkat_armor_study": {
+      "configGatedTarget": null,
+      "estimateReasons": [],
+      "status": "path",
+      "steps": [],
+      "totalCost": 256000.0,
+      "totalCostIsEstimate": false
+    },
+    "giga_tech_blokkat_engineering_repeatable": {
+      "configGatedTarget": null,
+      "estimateReasons": [
+        "weight-gated-step"
+      ],
+      "status": "path",
+      "steps": [
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 58
+          },
+          "name": "Blokkat Engineering Study",
+          "stepCost": 256000.0,
+          "technologyId": "giga_tech_blokkat_armor_study",
+          "tier": 5
+        }
+      ],
+      "totalCost": 576000.0,
+      "totalCostIsEstimate": true
+    },
+    "giga_tech_disco_moon": {
+      "status": "unavailable"
+    },
+    "giga_tech_equatorial_shipyard": {
+      "status": "unavailable"
+    },
+    "giga_tech_interstellar_habitat": {
+      "status": "unavailable"
+    },
+    "giga_tech_maginot_firepower_1": {
+      "blockedBy": {
+        "name": "Ultimate Strongpoint Defense Theory",
+        "reason": "NOT = { OR = { has_ascension_perk = ap_galactic_wonders has_ascension_perk = ap_galactic_wonders_utopia has_ascension_perk = ap_galactic_wonders_megacorp has_ascension_perk = ap_galactic_wonders_utopia_and_megacorp } }",
+        "technologyId": "giga_tech_maginot_world"
+      },
+      "status": "blocked"
+    },
+    "giga_tech_maginot_world": {
+      "status": "unavailable"
+    },
+    "giga_tech_orbital_arcologies": {
+      "status": "unavailable"
+    },
+    "giga_tech_penrose_sphere_1": {
+      "configGatedTarget": null,
+      "estimateReasons": [],
+      "status": "path",
+      "steps": [
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 394,
+            "y": 730
+          },
+          "name": "Gravitic Sensors",
+          "stepCost": 2000.0,
+          "technologyId": "tech_sensors_2",
+          "tier": 2
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 450,
+            "y": 730
+          },
+          "name": "Subspace Sensors",
+          "stepCost": 4000.0,
+          "technologyId": "tech_sensors_3",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 394,
+            "y": 170
+          },
+          "name": "Maulers",
+          "stepCost": 500.0,
+          "technologyId": "tech_maulers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_construction#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 562,
+            "y": 1234
+          },
+          "name": "Weavers",
+          "stepCost": 1000.0,
+          "technologyId": "tech_weavers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "giga_tech_macro_scale_weather_manipulation#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 1962
+          },
+          "name": "Harbingers",
+          "stepCost": 4000.0,
+          "technologyId": "tech_harbingers",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 506,
+            "y": 282
+          },
+          "name": "Macro-Atmospheric Weather Manipulation",
+          "stepCost": 5000.0,
+          "technologyId": "giga_tech_macro_scale_weather_manipulation",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 114,
+            "y": 1010
+          },
+          "name": "Fission Metabolism",
+          "stepCost": 0.0,
+          "technologyId": "tech_fission_power",
+          "tier": 0
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 338,
+            "y": 1010
+          },
+          "name": "Fusion Metabolism",
+          "stepCost": 1250.0,
+          "technologyId": "tech_fusion_power",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 506,
+            "y": 954
+          },
+          "name": "Cold Fusion Metabolism",
+          "stepCost": 2500.0,
+          "technologyId": "tech_cold_fusion_power",
+          "tier": 2
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 898
+          },
+          "name": "Antimatter Metabolism",
+          "stepCost": 5000.0,
+          "technologyId": "tech_antimatter_power",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 1178
+          },
+          "name": "Zero Point Metabolism",
+          "stepCost": 10000.0,
+          "technologyId": "tech_zero_point_power",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 786
+          },
+          "name": "Arkship Construction",
+          "stepCost": 4000.0,
+          "technologyId": "tech_arkship_construction",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 114,
+            "y": 842
+          },
+          "name": "Arkship Engineering",
+          "stepCost": 5000.0,
+          "technologyId": "tech_arkship_tier_2",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_tier_3#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 114,
+            "y": 954
+          },
+          "name": "Stingers",
+          "stepCost": 8000.0,
+          "technologyId": "tech_stingers",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_mega_engineering#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 842
+          },
+          "name": "Arkship Mastery",
+          "stepCost": 10000.0,
+          "technologyId": "tech_arkship_tier_3",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 786,
+            "y": 170
+          },
+          "name": "Mega-Engineering",
+          "stepCost": 24000.0,
+          "technologyId": "tech_mega_engineering",
+          "tier": 5
+        }
+      ],
+      "totalCost": 92250.0,
+      "totalCostIsEstimate": false
+    },
+    "giga_tech_planetary_drive_yard": {
+      "configGatedTarget": null,
+      "estimateReasons": [],
+      "status": "path",
+      "steps": [
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 114,
+            "y": 1010
+          },
+          "name": "Fission Metabolism",
+          "stepCost": 0.0,
+          "technologyId": "tech_fission_power",
+          "tier": 0
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 338,
+            "y": 1010
+          },
+          "name": "Fusion Metabolism",
+          "stepCost": 1250.0,
+          "technologyId": "tech_fusion_power",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 506,
+            "y": 954
+          },
+          "name": "Cold Fusion Metabolism",
+          "stepCost": 2500.0,
+          "technologyId": "tech_cold_fusion_power",
+          "tier": 2
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 898
+          },
+          "name": "Antimatter Metabolism",
+          "stepCost": 5000.0,
+          "technologyId": "tech_antimatter_power",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 1178
+          },
+          "name": "Zero Point Metabolism",
+          "stepCost": 10000.0,
+          "technologyId": "tech_zero_point_power",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 394,
+            "y": 170
+          },
+          "name": "Maulers",
+          "stepCost": 500.0,
+          "technologyId": "tech_maulers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_construction#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 562,
+            "y": 1234
+          },
+          "name": "Weavers",
+          "stepCost": 1000.0,
+          "technologyId": "tech_weavers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 786
+          },
+          "name": "Arkship Construction",
+          "stepCost": 4000.0,
+          "technologyId": "tech_arkship_construction",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_tier_2#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 1962
+          },
+          "name": "Harbingers",
+          "stepCost": 4000.0,
+          "technologyId": "tech_harbingers",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 114,
+            "y": 842
+          },
+          "name": "Arkship Engineering",
+          "stepCost": 5000.0,
+          "technologyId": "tech_arkship_tier_2",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_tier_3#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 114,
+            "y": 954
+          },
+          "name": "Stingers",
+          "stepCost": 8000.0,
+          "technologyId": "tech_stingers",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_mega_engineering#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 842
+          },
+          "name": "Arkship Mastery",
+          "stepCost": 10000.0,
+          "technologyId": "tech_arkship_tier_3",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 786,
+            "y": 170
+          },
+          "name": "Mega-Engineering",
+          "stepCost": 24000.0,
+          "technologyId": "tech_mega_engineering",
+          "tier": 5
+        }
+      ],
+      "totalCost": 87250.0,
+      "totalCostIsEstimate": false
+    },
+    "giga_tech_psychic_hypersiphon": {
+      "configGatedTarget": null,
+      "estimateReasons": [
+        "uncertain-availability"
+      ],
+      "status": "path",
+      "steps": [
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 114,
+            "y": 1010
+          },
+          "name": "Fission Metabolism",
+          "stepCost": 0.0,
+          "technologyId": "tech_fission_power",
+          "tier": 0
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 338,
+            "y": 1010
+          },
+          "name": "Fusion Metabolism",
+          "stepCost": 1250.0,
+          "technologyId": "tech_fusion_power",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 506,
+            "y": 954
+          },
+          "name": "Cold Fusion Metabolism",
+          "stepCost": 2500.0,
+          "technologyId": "tech_cold_fusion_power",
+          "tier": 2
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 898
+          },
+          "name": "Antimatter Metabolism",
+          "stepCost": 5000.0,
+          "technologyId": "tech_antimatter_power",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 1178
+          },
+          "name": "Zero Point Metabolism",
+          "stepCost": 10000.0,
+          "technologyId": "tech_zero_point_power",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 394,
+            "y": 170
+          },
+          "name": "Maulers",
+          "stepCost": 500.0,
+          "technologyId": "tech_maulers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_construction#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 562,
+            "y": 1234
+          },
+          "name": "Weavers",
+          "stepCost": 1000.0,
+          "technologyId": "tech_weavers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 786
+          },
+          "name": "Arkship Construction",
+          "stepCost": 4000.0,
+          "technologyId": "tech_arkship_construction",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_tier_2#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 1962
+          },
+          "name": "Harbingers",
+          "stepCost": 4000.0,
+          "technologyId": "tech_harbingers",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 114,
+            "y": 842
+          },
+          "name": "Arkship Engineering",
+          "stepCost": 5000.0,
+          "technologyId": "tech_arkship_tier_2",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_tier_3#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 114,
+            "y": 954
+          },
+          "name": "Stingers",
+          "stepCost": 8000.0,
+          "technologyId": "tech_stingers",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_mega_engineering#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 842
+          },
+          "name": "Arkship Mastery",
+          "stepCost": 10000.0,
+          "technologyId": "tech_arkship_tier_3",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 786,
+            "y": 170
+          },
+          "name": "Mega-Engineering",
+          "stepCost": 24000.0,
+          "technologyId": "tech_mega_engineering",
+          "tier": 5
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 338,
+            "y": 506
+          },
+          "name": "Psionic Theory",
+          "stepCost": 4000.0,
+          "technologyId": "tech_psionic_theory",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 282,
+            "y": 1010
+          },
+          "name": "Telepathy",
+          "stepCost": 6000.0,
+          "technologyId": "tech_telepathy",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 394,
+            "y": 730
+          },
+          "name": "Gravitic Sensors",
+          "stepCost": 2000.0,
+          "technologyId": "tech_sensors_2",
+          "tier": 2
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 450,
+            "y": 730
+          },
+          "name": "Subspace Sensors",
+          "stepCost": 4000.0,
+          "technologyId": "tech_sensors_3",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 338,
+            "y": 226
+          },
+          "name": "Zro Distillation",
+          "stepCost": 5000.0,
+          "technologyId": "tech_mine_zro",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "uncertain",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 58,
+            "y": 394
+          },
+          "name": "Direct Shroud Connections",
+          "stepCost": 12000.0,
+          "technologyId": "giga_tech_shroud_conduit",
+          "tier": 4
+        }
+      ],
+      "totalCost": 132250.0,
+      "totalCostIsEstimate": true
+    },
+    "giga_tech_repeatable_alderson_cap": {
+      "blockedBy": {
+        "name": "The Alderson Disk",
+        "reason": "Requires the ap_gigastructural_constructs ascension perk",
+        "technologyId": "giga_tech_alderson_disk"
+      },
+      "status": "blocked"
+    },
+    "giga_tech_repeatable_maginot_cap": {
+      "blockedBy": {
+        "name": "Ultimate Strongpoint Defense Theory",
+        "reason": "NOT = { OR = { has_ascension_perk = ap_galactic_wonders has_ascension_perk = ap_galactic_wonders_utopia has_ascension_perk = ap_galactic_wonders_megacorp has_ascension_perk = ap_galactic_wonders_utopia_and_megacorp } }",
+        "technologyId": "giga_tech_maginot_world"
+      },
+      "status": "blocked"
+    },
+    "giga_tech_repeatable_reduced_mega_building_time": {
+      "configGatedTarget": null,
+      "estimateReasons": [],
+      "status": "path",
+      "steps": [
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 114,
+            "y": 1010
+          },
+          "name": "Fission Metabolism",
+          "stepCost": 0.0,
+          "technologyId": "tech_fission_power",
+          "tier": 0
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 338,
+            "y": 1010
+          },
+          "name": "Fusion Metabolism",
+          "stepCost": 1250.0,
+          "technologyId": "tech_fusion_power",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 506,
+            "y": 954
+          },
+          "name": "Cold Fusion Metabolism",
+          "stepCost": 2500.0,
+          "technologyId": "tech_cold_fusion_power",
+          "tier": 2
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 898
+          },
+          "name": "Antimatter Metabolism",
+          "stepCost": 5000.0,
+          "technologyId": "tech_antimatter_power",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 1178
+          },
+          "name": "Zero Point Metabolism",
+          "stepCost": 10000.0,
+          "technologyId": "tech_zero_point_power",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 394,
+            "y": 170
+          },
+          "name": "Maulers",
+          "stepCost": 500.0,
+          "technologyId": "tech_maulers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_construction#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 562,
+            "y": 1234
+          },
+          "name": "Weavers",
+          "stepCost": 1000.0,
+          "technologyId": "tech_weavers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 786
+          },
+          "name": "Arkship Construction",
+          "stepCost": 4000.0,
+          "technologyId": "tech_arkship_construction",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_tier_2#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 1962
+          },
+          "name": "Harbingers",
+          "stepCost": 4000.0,
+          "technologyId": "tech_harbingers",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 114,
+            "y": 842
+          },
+          "name": "Arkship Engineering",
+          "stepCost": 5000.0,
+          "technologyId": "tech_arkship_tier_2",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_tier_3#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 114,
+            "y": 954
+          },
+          "name": "Stingers",
+          "stepCost": 8000.0,
+          "technologyId": "tech_stingers",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_mega_engineering#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 842
+          },
+          "name": "Arkship Mastery",
+          "stepCost": 10000.0,
+          "technologyId": "tech_arkship_tier_3",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 786,
+            "y": 170
+          },
+          "name": "Mega-Engineering",
+          "stepCost": 24000.0,
+          "technologyId": "tech_mega_engineering",
+          "tier": 5
+        }
+      ],
+      "totalCost": 175250.0,
+      "totalCostIsEstimate": false
+    },
+    "giga_tech_ringworld_buildings": {
+      "status": "unavailable"
+    },
+    "giga_tech_substellar_compressor": {
+      "configGatedTarget": null,
+      "estimateReasons": [],
+      "status": "path",
+      "steps": [
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 394,
+            "y": 730
+          },
+          "name": "Gravitic Sensors",
+          "stepCost": 2000.0,
+          "technologyId": "tech_sensors_2",
+          "tier": 2
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 450,
+            "y": 730
+          },
+          "name": "Subspace Sensors",
+          "stepCost": 4000.0,
+          "technologyId": "tech_sensors_3",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 394,
+            "y": 170
+          },
+          "name": "Maulers",
+          "stepCost": 500.0,
+          "technologyId": "tech_maulers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_construction#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 562,
+            "y": 1234
+          },
+          "name": "Weavers",
+          "stepCost": 1000.0,
+          "technologyId": "tech_weavers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "giga_tech_macro_scale_weather_manipulation#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 1962
+          },
+          "name": "Harbingers",
+          "stepCost": 4000.0,
+          "technologyId": "tech_harbingers",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 506,
+            "y": 282
+          },
+          "name": "Macro-Atmospheric Weather Manipulation",
+          "stepCost": 5000.0,
+          "technologyId": "giga_tech_macro_scale_weather_manipulation",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 114,
+            "y": 1010
+          },
+          "name": "Fission Metabolism",
+          "stepCost": 0.0,
+          "technologyId": "tech_fission_power",
+          "tier": 0
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 338,
+            "y": 1010
+          },
+          "name": "Fusion Metabolism",
+          "stepCost": 1250.0,
+          "technologyId": "tech_fusion_power",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 506,
+            "y": 954
+          },
+          "name": "Cold Fusion Metabolism",
+          "stepCost": 2500.0,
+          "technologyId": "tech_cold_fusion_power",
+          "tier": 2
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 898
+          },
+          "name": "Antimatter Metabolism",
+          "stepCost": 5000.0,
+          "technologyId": "tech_antimatter_power",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 1178
+          },
+          "name": "Zero Point Metabolism",
+          "stepCost": 10000.0,
+          "technologyId": "tech_zero_point_power",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 674,
+            "y": 842
+          },
+          "name": "Zero-G Engineering",
+          "stepCost": 0.0,
+          "technologyId": "tech_space_construction",
+          "tier": 0
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 226,
+            "y": 1122
+          },
+          "name": "Waystations",
+          "stepCost": 0.0,
+          "technologyId": "tech_waystation_1",
+          "tier": 0
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 282,
+            "y": 1122
+          },
+          "name": "Improved Wayline Logistics",
+          "stepCost": 2500.0,
+          "technologyId": "tech_waystation_2",
+          "tier": 2
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "giga_tech_engineering_test_site#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 338,
+            "y": 1122
+          },
+          "name": "Advanced Wayline Logistics",
+          "stepCost": 5000.0,
+          "technologyId": "tech_waystation_3",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 618,
+            "y": 226
+          },
+          "name": "Colossal Testing Facilities",
+          "stepCost": 5000.0,
+          "technologyId": "giga_tech_engineering_test_site",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 786
+          },
+          "name": "Arkship Construction",
+          "stepCost": 4000.0,
+          "technologyId": "tech_arkship_construction",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 114,
+            "y": 842
+          },
+          "name": "Arkship Engineering",
+          "stepCost": 5000.0,
+          "technologyId": "tech_arkship_tier_2",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_tier_3#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 114,
+            "y": 954
+          },
+          "name": "Stingers",
+          "stepCost": 8000.0,
+          "technologyId": "tech_stingers",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_mega_engineering#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 842
+          },
+          "name": "Arkship Mastery",
+          "stepCost": 10000.0,
+          "technologyId": "tech_arkship_tier_3",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 786,
+            "y": 170
+          },
+          "name": "Mega-Engineering",
+          "stepCost": 24000.0,
+          "technologyId": "tech_mega_engineering",
+          "tier": 5
+        }
+      ],
+      "totalCost": 110750.0,
+      "totalCostIsEstimate": false
+    },
+    "giga_tech_war_moon_1": {
+      "blockedBy": {
+        "name": "Star Fortress",
+        "reason": "Not: nomadic empires",
+        "technologyId": "tech_starbase_4"
+      },
+      "status": "blocked"
+    },
+    "giga_tech_yggdrasil_orchid": {
+      "blockedBy": {
+        "name": "Terrestrial Sculpting",
+        "reason": "Not: nomadic empires",
+        "technologyId": "tech_terrestrial_sculpting"
+      },
+      "status": "blocked"
+    },
+    "tech_arkship_tier_3": {
+      "configGatedTarget": null,
+      "estimateReasons": [],
+      "status": "path",
+      "steps": [
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 394,
+            "y": 170
+          },
+          "name": "Maulers",
+          "stepCost": 500.0,
+          "technologyId": "tech_maulers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_construction#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 562,
+            "y": 1234
+          },
+          "name": "Weavers",
+          "stepCost": 1000.0,
+          "technologyId": "tech_weavers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 786
+          },
+          "name": "Arkship Construction",
+          "stepCost": 4000.0,
+          "technologyId": "tech_arkship_construction",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_tier_2#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 1962
+          },
+          "name": "Harbingers",
+          "stepCost": 4000.0,
+          "technologyId": "tech_harbingers",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 114,
+            "y": 842
+          },
+          "name": "Arkship Engineering",
+          "stepCost": 5000.0,
+          "technologyId": "tech_arkship_tier_2",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_tier_3#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 114,
+            "y": 954
+          },
+          "name": "Stingers",
+          "stepCost": 8000.0,
+          "technologyId": "tech_stingers",
+          "tier": 4
+        }
+      ],
+      "totalCost": 32500.0,
+      "totalCostIsEstimate": false
+    },
+    "tech_battleships": {
+      "status": "unavailable"
+    },
+    "tech_dyson_sphere": {
+      "status": "unavailable"
+    },
+    "tech_ehof_phase_03": {
+      "configGatedTarget": null,
+      "estimateReasons": [
+        "weight-gated-step"
+      ],
+      "status": "path",
+      "steps": [
+        {
+          "alternatives": [],
+          "availabilityState": "weight-gated",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 394,
+            "y": 674
+          },
+          "name": "Abstract Physics Theory",
+          "stepCost": 3000.0,
+          "technologyId": "tech_abstract_1",
+          "tier": 2
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 394,
+            "y": 450
+          },
+          "name": "High-Energy Capacitors",
+          "stepCost": 0.0,
+          "technologyId": "tech_power_plant_1",
+          "tier": 0
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 450,
+            "y": 450
+          },
+          "name": "Field Modulation",
+          "stepCost": 1000.0,
+          "technologyId": "tech_power_plant_2",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 506,
+            "y": 450
+          },
+          "name": "Quantum Energy States",
+          "stepCost": 2000.0,
+          "technologyId": "tech_power_plant_3",
+          "tier": 2
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 562,
+            "y": 450
+          },
+          "name": "Quantum Field Manipulation",
+          "stepCost": 4000.0,
+          "technologyId": "tech_power_plant_4",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 450,
+            "y": 674
+          },
+          "name": "Applied Abstract Physics",
+          "stepCost": 5000.0,
+          "technologyId": "tech_abstract_2",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 114,
+            "y": 394
+          },
+          "name": "Photonic Matter Utilization",
+          "stepCost": 6000.0,
+          "technologyId": "tech_photonic_m",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 674,
+            "y": 282
+          },
+          "name": "Negative Pressure Application",
+          "stepCost": 8000.0,
+          "technologyId": "tech_negative_pressure",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 506,
+            "y": 674
+          },
+          "name": "Quoudroplean Formalism",
+          "stepCost": 16000.0,
+          "technologyId": "tech_abstract_3",
+          "tier": 5
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 394,
+            "y": 898
+          },
+          "name": "Scientific Method",
+          "stepCost": 500.0,
+          "technologyId": "tech_basic_science_lab_1",
+          "tier": 0
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 450,
+            "y": 898
+          },
+          "name": "Exotic Materials Labs",
+          "stepCost": 1500.0,
+          "technologyId": "tech_basic_science_lab_2",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 786,
+            "y": 394
+          },
+          "name": "Unified Government",
+          "stepCost": 500.0,
+          "technologyId": "tech_planetary_government",
+          "tier": 0
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 2,
+            "y": 450
+          },
+          "name": "Societal Unification",
+          "stepCost": 1000.0,
+          "technologyId": "tech_planetary_unification",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 1234
+          },
+          "name": "Colonial Centralization",
+          "stepCost": 2500.0,
+          "technologyId": "tech_colonial_centralization",
+          "tier": 2
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 506,
+            "y": 898
+          },
+          "name": "Multi-Dimensional Studies",
+          "stepCost": 4000.0,
+          "technologyId": "tech_basic_science_lab_3",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 674,
+            "y": 842
+          },
+          "name": "Zero-G Engineering",
+          "stepCost": 0.0,
+          "technologyId": "tech_space_construction",
+          "tier": 0
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 170,
+            "y": 898
+          },
+          "name": "Zero-G Laboratories",
+          "stepCost": 1000.0,
+          "technologyId": "tech_space_science_1",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 226,
+            "y": 898
+          },
+          "name": "Miniature Containment Fields",
+          "stepCost": 1500.0,
+          "technologyId": "tech_space_science_2",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 282,
+            "y": 898
+          },
+          "name": "Quantum Probes",
+          "stepCost": 2000.0,
+          "technologyId": "tech_space_science_3",
+          "tier": 2
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 338,
+            "y": 898
+          },
+          "name": "Autonomous Station Protocols",
+          "stepCost": 3000.0,
+          "technologyId": "tech_space_science_4",
+          "tier": 2
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 394,
+            "y": 898
+          },
+          "name": "Multi-Dimensional Analysis",
+          "stepCost": 4000.0,
+          "technologyId": "tech_space_science_5",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "weight-gated",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 282,
+            "y": 1066
+          },
+          "name": "Unorthodox Reality Examination Techniques",
+          "stepCost": 24000.0,
+          "technologyId": "tech_u_r_e_t",
+          "tier": 5
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 394,
+            "y": 730
+          },
+          "name": "Gravitic Sensors",
+          "stepCost": 2000.0,
+          "technologyId": "tech_sensors_2",
+          "tier": 2
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 450,
+            "y": 730
+          },
+          "name": "Subspace Sensors",
+          "stepCost": 4000.0,
+          "technologyId": "tech_sensors_3",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 506,
+            "y": 730
+          },
+          "name": "Tachyon Sensors",
+          "stepCost": 8000.0,
+          "technologyId": "tech_sensors_4",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 170,
+            "y": 226
+          },
+          "name": "Dark Matter Drawing",
+          "stepCost": 6000.0,
+          "technologyId": "tech_mine_dark_matter",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 562,
+            "y": 898
+          },
+          "name": "Sterile Hyper-Neutrino Detection",
+          "stepCost": 20000.0,
+          "technologyId": "tech_ssn_det",
+          "tier": 5
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 226,
+            "y": 1962
+          },
+          "name": "Hardlight Construct Utilization",
+          "stepCost": 20000.0,
+          "technologyId": "tech_hardlight_c_u",
+          "tier": 5
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 618,
+            "y": 282
+          },
+          "name": "Negative Energy Studies",
+          "stepCost": 20000.0,
+          "technologyId": "tech_negative_e_s",
+          "tier": 5
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 954,
+            "y": 282
+          },
+          "name": "Prototype Negative Mass Utilities",
+          "stepCost": 64000.0,
+          "technologyId": "tech_nm_utilization_1",
+          "tier": 5
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 394,
+            "y": 170
+          },
+          "name": "Maulers",
+          "stepCost": 500.0,
+          "technologyId": "tech_maulers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_construction#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 562,
+            "y": 1234
+          },
+          "name": "Weavers",
+          "stepCost": 1000.0,
+          "technologyId": "tech_weavers",
+          "tier": 1
+        },
+        {
+          "alternatives": [
+            {
+              "name": "Mega-Engineering",
+              "technologyId": "tech_mega_engineering"
+            }
+          ],
+          "availabilityState": "available",
+          "groupId": "tech_ehof_phase_03#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 786
+          },
+          "name": "Arkship Construction",
+          "stepCost": 4000.0,
+          "technologyId": "tech_arkship_construction",
+          "tier": 3
+        }
+      ],
+      "totalCost": 320000.0,
+      "totalCostIsEstimate": true
+    },
+    "tech_frameworld_defensive_station_5": {
+      "configGatedTarget": null,
+      "estimateReasons": [
+        "weight-gated-step"
+      ],
+      "status": "path",
+      "steps": [],
+      "totalCost": 0.0,
+      "totalCostIsEstimate": true
+    },
+    "tech_frameworld_repeatable_outpost_output": {
+      "configGatedTarget": null,
+      "estimateReasons": [],
+      "status": "path",
+      "steps": [
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 114,
+            "y": 1010
+          },
+          "name": "Fission Metabolism",
+          "stepCost": 0.0,
+          "technologyId": "tech_fission_power",
+          "tier": 0
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 338,
+            "y": 1010
+          },
+          "name": "Fusion Metabolism",
+          "stepCost": 1250.0,
+          "technologyId": "tech_fusion_power",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 506,
+            "y": 954
+          },
+          "name": "Cold Fusion Metabolism",
+          "stepCost": 2500.0,
+          "technologyId": "tech_cold_fusion_power",
+          "tier": 2
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 898
+          },
+          "name": "Antimatter Metabolism",
+          "stepCost": 5000.0,
+          "technologyId": "tech_antimatter_power",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 1178
+          },
+          "name": "Zero Point Metabolism",
+          "stepCost": 10000.0,
+          "technologyId": "tech_zero_point_power",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 394,
+            "y": 170
+          },
+          "name": "Maulers",
+          "stepCost": 500.0,
+          "technologyId": "tech_maulers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_construction#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 562,
+            "y": 1234
+          },
+          "name": "Weavers",
+          "stepCost": 1000.0,
+          "technologyId": "tech_weavers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 786
+          },
+          "name": "Arkship Construction",
+          "stepCost": 4000.0,
+          "technologyId": "tech_arkship_construction",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_tier_2#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 1962
+          },
+          "name": "Harbingers",
+          "stepCost": 4000.0,
+          "technologyId": "tech_harbingers",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 114,
+            "y": 842
+          },
+          "name": "Arkship Engineering",
+          "stepCost": 5000.0,
+          "technologyId": "tech_arkship_tier_2",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_tier_3#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 114,
+            "y": 954
+          },
+          "name": "Stingers",
+          "stepCost": 8000.0,
+          "technologyId": "tech_stingers",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_mega_engineering#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 842
+          },
+          "name": "Arkship Mastery",
+          "stepCost": 10000.0,
+          "technologyId": "tech_arkship_tier_3",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 786,
+            "y": 170
+          },
+          "name": "Mega-Engineering",
+          "stepCost": 24000.0,
+          "technologyId": "tech_mega_engineering",
+          "tier": 5
+        }
+      ],
+      "totalCost": 125250.0,
+      "totalCostIsEstimate": false
+    },
+    "tech_gateway_construction": {
+      "configGatedTarget": null,
+      "estimateReasons": [
+        "weight-gated-step"
+      ],
+      "status": "path",
+      "steps": [
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 394,
+            "y": 1010
+          },
+          "name": "Hyperspace Travel",
+          "stepCost": 750.0,
+          "technologyId": "tech_hyper_drive_1",
+          "tier": 0
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 450,
+            "y": 1010
+          },
+          "name": "Hyperlane Breach Points",
+          "stepCost": 2500.0,
+          "technologyId": "tech_hyper_drive_2",
+          "tier": 2
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 506,
+            "y": 1010
+          },
+          "name": "Hyperspace Slipstreams",
+          "stepCost": 6000.0,
+          "technologyId": "tech_hyper_drive_3",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "weight-gated",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 506,
+            "y": 1850
+          },
+          "name": "Gateway Activation",
+          "stepCost": 12000.0,
+          "technologyId": "tech_gateway_activation",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 114,
+            "y": 1010
+          },
+          "name": "Fission Metabolism",
+          "stepCost": 0.0,
+          "technologyId": "tech_fission_power",
+          "tier": 0
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 338,
+            "y": 1010
+          },
+          "name": "Fusion Metabolism",
+          "stepCost": 1250.0,
+          "technologyId": "tech_fusion_power",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 506,
+            "y": 954
+          },
+          "name": "Cold Fusion Metabolism",
+          "stepCost": 2500.0,
+          "technologyId": "tech_cold_fusion_power",
+          "tier": 2
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 898
+          },
+          "name": "Antimatter Metabolism",
+          "stepCost": 5000.0,
+          "technologyId": "tech_antimatter_power",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 1178
+          },
+          "name": "Zero Point Metabolism",
+          "stepCost": 10000.0,
+          "technologyId": "tech_zero_point_power",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 394,
+            "y": 170
+          },
+          "name": "Maulers",
+          "stepCost": 500.0,
+          "technologyId": "tech_maulers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_construction#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 562,
+            "y": 1234
+          },
+          "name": "Weavers",
+          "stepCost": 1000.0,
+          "technologyId": "tech_weavers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 786
+          },
+          "name": "Arkship Construction",
+          "stepCost": 4000.0,
+          "technologyId": "tech_arkship_construction",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_tier_2#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 1962
+          },
+          "name": "Harbingers",
+          "stepCost": 4000.0,
+          "technologyId": "tech_harbingers",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 114,
+            "y": 842
+          },
+          "name": "Arkship Engineering",
+          "stepCost": 5000.0,
+          "technologyId": "tech_arkship_tier_2",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_tier_3#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 114,
+            "y": 954
+          },
+          "name": "Stingers",
+          "stepCost": 8000.0,
+          "technologyId": "tech_stingers",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_mega_engineering#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 842
+          },
+          "name": "Arkship Mastery",
+          "stepCost": 10000.0,
+          "technologyId": "tech_arkship_tier_3",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 786,
+            "y": 170
+          },
+          "name": "Mega-Engineering",
+          "stepCost": 24000.0,
+          "technologyId": "tech_mega_engineering",
+          "tier": 5
+        }
+      ],
+      "totalCost": 120500.0,
+      "totalCostIsEstimate": true
+    },
+    "tech_habitat_1": {
+      "status": "unavailable"
+    },
+    "tech_habitat_2": {
+      "status": "unavailable"
+    },
+    "tech_housing_1": {
+      "configGatedTarget": null,
+      "estimateReasons": [],
+      "status": "path",
+      "steps": [],
+      "totalCost": 2500.0,
+      "totalCostIsEstimate": false
+    },
+    "tech_housing_2": {
+      "configGatedTarget": null,
+      "estimateReasons": [],
+      "status": "path",
+      "steps": [
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 618,
+            "y": 1962
+          },
+          "name": "Weather Control Systems",
+          "stepCost": 2500.0,
+          "technologyId": "tech_housing_1",
+          "tier": 2
+        }
+      ],
+      "totalCost": 6500.0,
+      "totalCostIsEstimate": false
+    },
+    "tech_housing_agrarian_idyll": {
+      "configGatedTarget": null,
+      "estimateReasons": [],
+      "status": "path",
+      "steps": [],
+      "totalCost": 4000.0,
+      "totalCostIsEstimate": false
+    },
+    "tech_interstellar_assembly": {
+      "status": "unavailable"
+    },
+    "tech_matter_decompressor": {
+      "status": "unavailable"
+    },
+    "tech_mega_art": {
+      "status": "unavailable"
+    },
+    "tech_mega_engineering": {
+      "configGatedTarget": null,
+      "estimateReasons": [],
+      "status": "path",
+      "steps": [
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 114,
+            "y": 1010
+          },
+          "name": "Fission Metabolism",
+          "stepCost": 0.0,
+          "technologyId": "tech_fission_power",
+          "tier": 0
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 338,
+            "y": 1010
+          },
+          "name": "Fusion Metabolism",
+          "stepCost": 1250.0,
+          "technologyId": "tech_fusion_power",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 506,
+            "y": 954
+          },
+          "name": "Cold Fusion Metabolism",
+          "stepCost": 2500.0,
+          "technologyId": "tech_cold_fusion_power",
+          "tier": 2
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 898
+          },
+          "name": "Antimatter Metabolism",
+          "stepCost": 5000.0,
+          "technologyId": "tech_antimatter_power",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 1178
+          },
+          "name": "Zero Point Metabolism",
+          "stepCost": 10000.0,
+          "technologyId": "tech_zero_point_power",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 394,
+            "y": 170
+          },
+          "name": "Maulers",
+          "stepCost": 500.0,
+          "technologyId": "tech_maulers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_construction#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 562,
+            "y": 1234
+          },
+          "name": "Weavers",
+          "stepCost": 1000.0,
+          "technologyId": "tech_weavers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 786
+          },
+          "name": "Arkship Construction",
+          "stepCost": 4000.0,
+          "technologyId": "tech_arkship_construction",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_tier_2#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 1962
+          },
+          "name": "Harbingers",
+          "stepCost": 4000.0,
+          "technologyId": "tech_harbingers",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 114,
+            "y": 842
+          },
+          "name": "Arkship Engineering",
+          "stepCost": 5000.0,
+          "technologyId": "tech_arkship_tier_2",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_tier_3#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 114,
+            "y": 954
+          },
+          "name": "Stingers",
+          "stepCost": 8000.0,
+          "technologyId": "tech_stingers",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_mega_engineering#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 842
+          },
+          "name": "Arkship Mastery",
+          "stepCost": 10000.0,
+          "technologyId": "tech_arkship_tier_3",
+          "tier": 4
+        }
+      ],
+      "totalCost": 75250.0,
+      "totalCostIsEstimate": false
+    },
+    "tech_mega_shipyard": {
+      "status": "unavailable"
+    },
+    "tech_mine_living_metal": {
+      "configGatedTarget": null,
+      "estimateReasons": [],
+      "status": "path",
+      "steps": [
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 674,
+            "y": 842
+          },
+          "name": "Zero-G Engineering",
+          "stepCost": 0.0,
+          "technologyId": "tech_space_construction",
+          "tier": 0
+        }
+      ],
+      "totalCost": 16000.0,
+      "totalCostIsEstimate": false
+    },
+    "tech_quantum_catapult": {
+      "configGatedTarget": null,
+      "estimateReasons": [
+        "uncertain-availability"
+      ],
+      "status": "path",
+      "steps": [],
+      "totalCost": 8000.0,
+      "totalCostIsEstimate": true
+    },
+    "tech_ring_world": {
+      "configGatedTarget": null,
+      "estimateReasons": [
+        "weight-gated-step"
+      ],
+      "status": "path",
+      "steps": [
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 114,
+            "y": 1010
+          },
+          "name": "Fission Metabolism",
+          "stepCost": 0.0,
+          "technologyId": "tech_fission_power",
+          "tier": 0
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 338,
+            "y": 1010
+          },
+          "name": "Fusion Metabolism",
+          "stepCost": 1250.0,
+          "technologyId": "tech_fusion_power",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 506,
+            "y": 954
+          },
+          "name": "Cold Fusion Metabolism",
+          "stepCost": 2500.0,
+          "technologyId": "tech_cold_fusion_power",
+          "tier": 2
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 898
+          },
+          "name": "Antimatter Metabolism",
+          "stepCost": 5000.0,
+          "technologyId": "tech_antimatter_power",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 1178
+          },
+          "name": "Zero Point Metabolism",
+          "stepCost": 10000.0,
+          "technologyId": "tech_zero_point_power",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 394,
+            "y": 170
+          },
+          "name": "Maulers",
+          "stepCost": 500.0,
+          "technologyId": "tech_maulers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_construction#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 562,
+            "y": 1234
+          },
+          "name": "Weavers",
+          "stepCost": 1000.0,
+          "technologyId": "tech_weavers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 786
+          },
+          "name": "Arkship Construction",
+          "stepCost": 4000.0,
+          "technologyId": "tech_arkship_construction",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_tier_2#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 1962
+          },
+          "name": "Harbingers",
+          "stepCost": 4000.0,
+          "technologyId": "tech_harbingers",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 114,
+            "y": 842
+          },
+          "name": "Arkship Engineering",
+          "stepCost": 5000.0,
+          "technologyId": "tech_arkship_tier_2",
+          "tier": 3
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_arkship_tier_3#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 114,
+            "y": 954
+          },
+          "name": "Stingers",
+          "stepCost": 8000.0,
+          "technologyId": "tech_stingers",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": "tech_mega_engineering#alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 842
+          },
+          "name": "Arkship Mastery",
+          "stepCost": 10000.0,
+          "technologyId": "tech_arkship_tier_3",
+          "tier": 4
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 786,
+            "y": 170
+          },
+          "name": "Mega-Engineering",
+          "stepCost": 24000.0,
+          "technologyId": "tech_mega_engineering",
+          "tier": 5
+        }
+      ],
+      "totalCost": 99250.0,
+      "totalCostIsEstimate": true
+    },
+    "tech_science_nexus": {
+      "status": "unavailable"
+    },
+    "tech_sentry_array": {
+      "status": "unavailable"
+    },
+    "tech_sm_megastructure": {
+      "status": "unavailable"
+    },
+    "tech_starbase_3": {
+      "status": "unavailable"
+    },
+    "tech_starbase_5": {
+      "status": "unavailable"
+    },
+    "tech_stingers": {
+      "configGatedTarget": null,
+      "estimateReasons": [],
+      "status": "path",
+      "steps": [
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 394,
+            "y": 170
+          },
+          "name": "Maulers",
+          "stepCost": 500.0,
+          "technologyId": "tech_maulers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 562,
+            "y": 1234
+          },
+          "name": "Weavers",
+          "stepCost": 1000.0,
+          "technologyId": "tech_weavers",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 170,
+            "y": 1962
+          },
+          "name": "Harbingers",
+          "stepCost": 4000.0,
+          "technologyId": "tech_harbingers",
+          "tier": 3
+        }
+      ],
+      "totalCost": 13500.0,
+      "totalCostIsEstimate": false
+    },
+    "tech_strategic_coordination": {
+      "status": "unavailable"
+    },
+    "tech_zero_point_power": {
+      "configGatedTarget": null,
+      "estimateReasons": [],
+      "status": "path",
+      "steps": [
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 114,
+            "y": 1010
+          },
+          "name": "Fission Metabolism",
+          "stepCost": 0.0,
+          "technologyId": "tech_fission_power",
+          "tier": 0
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 338,
+            "y": 1010
+          },
+          "name": "Fusion Metabolism",
+          "stepCost": 1250.0,
+          "technologyId": "tech_fusion_power",
+          "tier": 1
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 506,
+            "y": 954
+          },
+          "name": "Cold Fusion Metabolism",
+          "stepCost": 2500.0,
+          "technologyId": "tech_cold_fusion_power",
+          "tier": 2
+        },
+        {
+          "alternatives": [],
+          "availabilityState": "available",
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 842,
+            "y": 898
+          },
+          "name": "Antimatter Metabolism",
+          "stepCost": 5000.0,
+          "technologyId": "tech_antimatter_power",
+          "tier": 3
+        }
+      ],
+      "totalCost": 18750.0,
+      "totalCostIsEstimate": false
+    }
+  },
+  "schemaVersion": "1.0.0",
+  "swapMappings": [
+    {
+      "area": null,
+      "category": null,
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 170,
+        "y": 1178
+      },
+      "name": "Zero Point Metabolism",
+      "technologyId": "tech_zero_point_power"
+    },
+    {
+      "area": null,
+      "category": null,
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_1",
+        "width": 52,
+        "x": 226,
+        "y": 226
+      },
+      "name": "Improved Living Metal",
+      "technologyId": "tech_mine_living_metal"
+    },
+    {
+      "area": null,
+      "category": null,
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 394,
+        "y": 1570
+      },
+      "name": "Horizon Drive Omega",
+      "technologyId": "tech_ehof_phase_03"
+    }
+  ]
+}

@@ -60,6 +60,8 @@ import {
   type RowPatternSpec,
 } from "./tokens";
 import { createCamera, type Camera, type ContentBBox } from "./camera";
+import { formatCost, formatRepeatableBadgeLabel, showCostPanel } from "./format";
+import { rankSearchMatches, tokenizeQuery } from "./search";
 import {
   CONTENT_SHED_THRESHOLD,
   COST_SHED_THRESHOLD,
@@ -1137,8 +1139,8 @@ async function render(): Promise<void> {
     // under the icon; name is hard-clamped to MAX_NAME_LINES so it can no longer grow into this
     // space -- the `belowNameY` term stays only as a defensive floor, never the binding constraint
     // post-clamp for the real corpus.
-    if (tech.cost !== null && tech.cost !== 0) {
-      const costText = new Text({ text: `Cost: ${Math.round(tech.cost).toLocaleString("en-US")}`, style: costStyle });
+    if (showCostPanel(tech.cost)) {
+      const costText = new Text({ text: `Cost: ${formatCost(tech.cost)}`, style: costStyle });
       const bottomAnchorY = y + CARD_HEIGHT - costText.height - 8;
       const belowNameY = nameText.y + nameText.height + 4;
       costText.position.set(x + ICON_MARGIN, Math.max(bottomAnchorY, belowNameY));
@@ -1178,7 +1180,7 @@ async function render(): Promise<void> {
     // Tier / repeat badge (mutually exclusive -- D-13's declared exception means a repeatable
     // node's badge is its REPEAT COUNT, never its declared tier).
     if (tech.repeatable) {
-      const label = tech.repeatable.levels === null ? "∞" : `×${tech.repeatable.levels}`;
+      const label = formatRepeatableBadgeLabel(tech.repeatable.levels);
       nodeTierBadges.push(null);
       nodeRepeatBadges.push(makeTextBadge(label, 0xc9d3e0));
     } else {
@@ -1814,7 +1816,7 @@ async function render(): Promise<void> {
     popupContentEl.innerHTML = `
       <h2>${escapeHtml(displayedName)}</h2>
       <div class="field-value" style="color:#9fb3c8">${escapeHtml(row?.label ?? tech.rowId)} &middot; ${tierBandLabel} &middot; ${escapeHtml(displayedArea)}${displayedCategory ? ` / ${escapeHtml(displayedCategory)}` : ""}${tech.crisisFaction ? ` &middot; ${escapeHtml(tech.crisisFaction)}` : ""}</div>
-      ${tech.cost !== null && tech.cost !== 0 ? `<div class="field-value">Cost: ${Math.round(tech.cost).toLocaleString("en-US")}</div>` : ""}
+      ${showCostPanel(tech.cost) ? `<div class="field-value">Cost: ${formatCost(tech.cost)}</div>` : ""}
       ${tech.requiresMods.length > 0 ? `<div class="badge-row">${tech.requiresMods.map((m) => `<span class="chip" style="background:#4a5568;color:#fff">${escapeHtml(m)}</span>`).join("")}</div>` : ""}
       <div class="field-label">Availability (${escapeHtml(profileLabel(currentProfile))})</div>
       <div class="field-value" id="popup-availability">${escapeHtml(tech.availabilityMatrix[profileIndex]!)}</div>
@@ -1985,7 +1987,7 @@ async function render(): Promise<void> {
       .map((s) => {
         const uncertainBadge = s.availabilityState === "uncertain" ? ` <span class="research-path-uncertain">uncertain</span>` : "";
         const weightGatedBadge = s.availabilityState === "weight-gated" ? ` <span class="research-path-weight-gated">not currently drawn</span>` : "";
-        const costText = s.stepCost !== null ? Math.round(s.stepCost).toLocaleString("en-US") : "unresolved";
+        const costText = formatCost(s.stepCost) ?? "unresolved";
         const altSuffix = s.alternatives.length > 0
           ? ` <span class="research-path-alt-note">(also: ${s.alternatives.map((a) => escapeHtml(a.name)).join(", ")})</span>`
           : "";
@@ -1994,7 +1996,7 @@ async function render(): Promise<void> {
       .join("");
 
     const totalText = entry.totalCost !== null && entry.totalCost !== undefined
-      ? Math.round(entry.totalCost).toLocaleString("en-US")
+      ? formatCost(entry.totalCost)
       : "unresolved";
     const estimateNote = entry.totalCostIsEstimate
       ? ` <span class="research-path-estimate-note">(estimate${(entry.estimateReasons ?? []).length > 0 ? `: ${(entry.estimateReasons ?? []).join(", ")}` : ""})</span>`
@@ -2147,10 +2149,6 @@ async function render(): Promise<void> {
     }
   });
 
-  function tokenizeQuery(q: string): string[] {
-    return q.toLowerCase().split(/[^a-z0-9]+/).filter((t) => t.length > 0);
-  }
-
   function runSearch(query: string): void {
     searchMatchLayer.removeChildren();
     searchResultsEl.innerHTML = "";
@@ -2159,24 +2157,11 @@ async function render(): Promise<void> {
       searchStatusEl.textContent = searchIndexEntries ? "" : searchStatusEl.textContent;
       return;
     }
-    const queryTokens = tokenizeQuery(trimmed);
-    if (queryTokens.length === 0) return;
-    // P-6: exact/prefix matches ranked above fuzzy -- this implementation is prefix-only (no
-    // fuzzy/edit-distance matching, which P-6 marks optional), so ranking is exact-name-match >
-    // name-starts-with-query > every query token prefix-matches at least one entry token (AND
-    // across query words, matching how a multi-word search box query is normally read).
-    const matches: { id: string; rank: number }[] = [];
-    for (const entry of searchIndexEntries) {
-      const allTokensMatch = queryTokens.every((qt) => entry.tokens.some((t) => t.startsWith(qt)));
-      if (!allTokensMatch) continue;
-      // Item 2: rank against the DISPLAYED (swap-substituted, if any) name -- a search that
-      // exactly matches the profile-correct name should rank as an exact match even when the
-      // base dataset's own name differs for this profile.
-      const nameLower = displayName(entry.technologyId).toLowerCase();
-      const rank = nameLower === trimmed.toLowerCase() ? 0 : nameLower.startsWith(trimmed.toLowerCase()) ? 1 : 2;
-      matches.push({ id: entry.technologyId, rank });
-    }
-    matches.sort((a, b) => a.rank - b.rank || a.id.localeCompare(b.id));
+    if (tokenizeQuery(trimmed).length === 0) return;
+    // Item 2: rank against the DISPLAYED (swap-substituted, if any) name -- a search that
+    // exactly matches the profile-correct name should rank as an exact match even when the
+    // base dataset's own name differs for this profile.
+    const matches = rankSearchMatches(trimmed, searchIndexEntries, displayName);
 
     searchStatusEl.textContent = `${matches.length} match${matches.length === 1 ? "" : "es"}`;
     for (const { id } of matches) {

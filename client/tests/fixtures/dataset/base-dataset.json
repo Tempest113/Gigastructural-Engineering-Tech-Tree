@@ -1,0 +1,4010 @@
+{
+  "adjacency": {
+    "forward": {
+      "giga_tech_amb_living_metal_infusion": {
+        "prerequisite": [
+          0,
+          1
+        ]
+      },
+      "giga_tech_arkship_neutronium_harvester": {
+        "potential-gate": [
+          2
+        ],
+        "prerequisite": [
+          3
+        ]
+      },
+      "giga_tech_asteroid_artillery": {
+        "alternative": [
+          4,
+          5
+        ]
+      },
+      "giga_tech_asteroid_artillery_health_upgrade": {
+        "prerequisite": [
+          6
+        ]
+      },
+      "giga_tech_blokkat_engineering_repeatable": {
+        "prerequisite": [
+          7
+        ]
+      },
+      "giga_tech_disco_moon": {
+        "prerequisite": [
+          8
+        ]
+      },
+      "giga_tech_equatorial_shipyard": {
+        "prerequisite": [
+          9
+        ]
+      },
+      "giga_tech_interstellar_habitat": {
+        "prerequisite": [
+          10,
+          11,
+          12
+        ]
+      },
+      "giga_tech_maginot_firepower_1": {
+        "prerequisite": [
+          13
+        ]
+      },
+      "giga_tech_maginot_world": {
+        "prerequisite": [
+          14,
+          15
+        ]
+      },
+      "giga_tech_orbital_arcologies": {
+        "prerequisite": [
+          16
+        ]
+      },
+      "giga_tech_penrose_sphere_1": {
+        "prerequisite": [
+          17,
+          18
+        ]
+      },
+      "giga_tech_planetary_drive_yard": {
+        "prerequisite": [
+          19
+        ]
+      },
+      "giga_tech_psychic_hypersiphon": {
+        "prerequisite": [
+          20
+        ]
+      },
+      "giga_tech_repeatable_alderson_cap": {
+        "prerequisite": [
+          21
+        ]
+      },
+      "giga_tech_repeatable_maginot_cap": {
+        "prerequisite": [
+          22
+        ]
+      },
+      "giga_tech_repeatable_reduced_mega_building_time": {
+        "prerequisite": [
+          23
+        ]
+      },
+      "giga_tech_ringworld_buildings": {
+        "prerequisite": [
+          24
+        ]
+      },
+      "giga_tech_substellar_compressor": {
+        "prerequisite": [
+          25,
+          26
+        ]
+      },
+      "giga_tech_war_moon_1": {
+        "prerequisite": [
+          27,
+          28
+        ]
+      },
+      "giga_tech_yggdrasil_orchid": {
+        "alternative": [
+          29,
+          30
+        ],
+        "prerequisite": [
+          31
+        ]
+      },
+      "tech_arkship_tier_3": {
+        "alternative": [
+          32,
+          33
+        ]
+      },
+      "tech_dyson_sphere": {
+        "prerequisite": [
+          34
+        ]
+      },
+      "tech_ehof_phase_03": {
+        "alternative": [
+          35
+        ]
+      },
+      "tech_frameworld_defensive_station_5": {
+        "potential-gate": [
+          36
+        ]
+      },
+      "tech_frameworld_repeatable_outpost_output": {
+        "prerequisite": [
+          37
+        ]
+      },
+      "tech_gateway_construction": {
+        "prerequisite": [
+          38
+        ]
+      },
+      "tech_habitat_1": {
+        "prerequisite": [
+          39
+        ]
+      },
+      "tech_habitat_2": {
+        "prerequisite": [
+          40
+        ]
+      },
+      "tech_housing_2": {
+        "prerequisite": [
+          41
+        ]
+      },
+      "tech_interstellar_assembly": {
+        "prerequisite": [
+          42
+        ]
+      },
+      "tech_matter_decompressor": {
+        "prerequisite": [
+          43
+        ]
+      },
+      "tech_mega_art": {
+        "prerequisite": [
+          44
+        ]
+      },
+      "tech_mega_engineering": {
+        "alternative": [
+          45,
+          46,
+          47,
+          48
+        ],
+        "prerequisite": [
+          49
+        ]
+      },
+      "tech_mega_shipyard": {
+        "prerequisite": [
+          50
+        ]
+      },
+      "tech_quantum_catapult": {
+        "potential-gate": [
+          51
+        ]
+      },
+      "tech_ring_world": {
+        "prerequisite": [
+          52
+        ]
+      },
+      "tech_science_nexus": {
+        "prerequisite": [
+          53
+        ]
+      },
+      "tech_sentry_array": {
+        "prerequisite": [
+          54
+        ]
+      },
+      "tech_sm_megastructure": {
+        "prerequisite": [
+          55
+        ]
+      },
+      "tech_strategic_coordination": {
+        "prerequisite": [
+          56
+        ]
+      }
+    },
+    "reverse": {
+      "giga_tech_alderson_disk": {
+        "prerequisite": [
+          21
+        ]
+      },
+      "giga_tech_amb_supertensiles": {
+        "prerequisite": [
+          0
+        ]
+      },
+      "giga_tech_asteroid_artillery": {
+        "prerequisite": [
+          14,
+          27
+        ]
+      },
+      "giga_tech_blokkat_armor_study": {
+        "prerequisite": [
+          7
+        ]
+      },
+      "giga_tech_maginot_world": {
+        "potential-gate": [
+          36
+        ],
+        "prerequisite": [
+          13,
+          22
+        ]
+      },
+      "tech_arkship_tier_3": {
+        "alternative": [
+          45
+        ]
+      },
+      "tech_battleships": {
+        "alternative": [
+          4,
+          29,
+          32,
+          46
+        ]
+      },
+      "tech_gateway_construction": {
+        "prerequisite": [
+          10
+        ]
+      },
+      "tech_habitat_1": {
+        "prerequisite": [
+          11,
+          40
+        ]
+      },
+      "tech_housing_1": {
+        "prerequisite": [
+          41
+        ]
+      },
+      "tech_mega_engineering": {
+        "alternative": [
+          35
+        ],
+        "potential-gate": [
+          2,
+          51
+        ],
+        "prerequisite": [
+          3,
+          6,
+          8,
+          9,
+          12,
+          15,
+          16,
+          17,
+          19,
+          20,
+          23,
+          24,
+          25,
+          28,
+          31,
+          34,
+          37,
+          38,
+          42,
+          43,
+          44,
+          50,
+          52,
+          53,
+          54,
+          55,
+          56
+        ]
+      },
+      "tech_mine_living_metal": {
+        "prerequisite": [
+          1
+        ]
+      },
+      "tech_starbase_3": {
+        "prerequisite": [
+          39
+        ]
+      },
+      "tech_starbase_5": {
+        "alternative": [
+          47
+        ]
+      },
+      "tech_stingers": {
+        "alternative": [
+          5,
+          30,
+          33,
+          48
+        ]
+      },
+      "tech_zero_point_power": {
+        "prerequisite": [
+          18,
+          26,
+          49
+        ]
+      }
+    }
+  },
+  "categories": [
+    "archaeostudies",
+    "biology",
+    "blokkats",
+    "computing",
+    "field_manipulation",
+    "industry",
+    "materials",
+    "military_theory",
+    "new_worlds",
+    "particles",
+    "propulsion",
+    "psionics",
+    "statecraft",
+    "voidcraft"
+  ],
+  "edges": [
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": -4,
+      "from": "giga_tech_amb_supertensiles",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_amb_living_metal_infusion"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_mine_living_metal",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_amb_living_metal_infusion"
+    },
+    {
+      "appliesToEmpireTypes": {
+        "nomadic": [
+          "yes"
+        ]
+      },
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "potential-gate",
+      "to": "giga_tech_arkship_neutronium_harvester"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_arkship_neutronium_harvester"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_battleships",
+      "groupId": "giga_tech_asteroid_artillery#alt0",
+      "kind": "alternative",
+      "to": "giga_tech_asteroid_artillery"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_stingers",
+      "groupId": "giga_tech_asteroid_artillery#alt0",
+      "kind": "alternative",
+      "to": "giga_tech_asteroid_artillery"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": true,
+      "bandSpan": 1,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_asteroid_artillery_health_upgrade"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": -5,
+      "from": "giga_tech_blokkat_armor_study",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_blokkat_engineering_repeatable"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": true,
+      "bandSpan": 1,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_disco_moon"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": true,
+      "bandSpan": 1,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_equatorial_shipyard"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": true,
+      "bandSpan": 1,
+      "from": "tech_gateway_construction",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_interstellar_habitat"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": -1,
+      "from": "tech_habitat_1",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_interstellar_habitat"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": true,
+      "bandSpan": 1,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_interstellar_habitat"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "giga_tech_maginot_world",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_maginot_firepower_1"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": -1,
+      "from": "giga_tech_asteroid_artillery",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_maginot_world"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_maginot_world"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": true,
+      "bandSpan": 1,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_orbital_arcologies"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": true,
+      "bandSpan": 2,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_penrose_sphere_1"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": true,
+      "bandSpan": 1,
+      "from": "tech_zero_point_power",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_penrose_sphere_1"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": true,
+      "bandSpan": 1,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_planetary_drive_yard"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_psychic_hypersiphon"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": -5,
+      "from": "giga_tech_alderson_disk",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_repeatable_alderson_cap"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": -5,
+      "from": "giga_tech_maginot_world",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_repeatable_maginot_cap"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": -5,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_repeatable_reduced_mega_building_time"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_ringworld_buildings"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": true,
+      "bandSpan": 1,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_substellar_compressor"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_zero_point_power",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_substellar_compressor"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": -1,
+      "from": "giga_tech_asteroid_artillery",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_war_moon_1"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_war_moon_1"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_battleships",
+      "groupId": "giga_tech_yggdrasil_orchid#alt0",
+      "kind": "alternative",
+      "to": "giga_tech_yggdrasil_orchid"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_stingers",
+      "groupId": "giga_tech_yggdrasil_orchid#alt0",
+      "kind": "alternative",
+      "to": "giga_tech_yggdrasil_orchid"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": true,
+      "bandSpan": 1,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "giga_tech_yggdrasil_orchid"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_battleships",
+      "groupId": "tech_arkship_tier_3#alt0",
+      "kind": "alternative",
+      "to": "tech_arkship_tier_3"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_stingers",
+      "groupId": "tech_arkship_tier_3#alt0",
+      "kind": "alternative",
+      "to": "tech_arkship_tier_3"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "tech_dyson_sphere"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_mega_engineering",
+      "groupId": "tech_ehof_phase_03#alt0",
+      "kind": "alternative",
+      "to": "tech_ehof_phase_03"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": true,
+      "bandSpan": 4,
+      "from": "giga_tech_maginot_world",
+      "groupId": null,
+      "kind": "potential-gate",
+      "to": "tech_frameworld_defensive_station_5"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": -5,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "tech_frameworld_repeatable_outpost_output"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "tech_gateway_construction"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": -1,
+      "from": "tech_starbase_3",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "tech_habitat_1"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": -1,
+      "from": "tech_habitat_1",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "tech_habitat_2"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": -1,
+      "from": "tech_housing_1",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "tech_housing_2"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "tech_interstellar_assembly"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "tech_matter_decompressor"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "tech_mega_art"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": -1,
+      "from": "tech_arkship_tier_3",
+      "groupId": "tech_mega_engineering#alt0",
+      "kind": "alternative",
+      "to": "tech_mega_engineering"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": -1,
+      "from": "tech_battleships",
+      "groupId": "tech_mega_engineering#alt1",
+      "kind": "alternative",
+      "to": "tech_mega_engineering"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": -1,
+      "from": "tech_starbase_5",
+      "groupId": "tech_mega_engineering#alt0",
+      "kind": "alternative",
+      "to": "tech_mega_engineering"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": -1,
+      "from": "tech_stingers",
+      "groupId": "tech_mega_engineering#alt1",
+      "kind": "alternative",
+      "to": "tech_mega_engineering"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": -1,
+      "from": "tech_zero_point_power",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "tech_mega_engineering"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "tech_mega_shipyard"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": true,
+      "bandSpan": 2,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "potential-gate",
+      "to": "tech_quantum_catapult"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "tech_ring_world"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "tech_science_nexus"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "tech_sentry_array"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "tech_sm_megastructure"
+    },
+    {
+      "appliesToEmpireTypes": {},
+      "backward": false,
+      "bandSpan": 0,
+      "from": "tech_mega_engineering",
+      "groupId": null,
+      "kind": "prerequisite",
+      "to": "tech_strategic_coordination"
+    }
+  ],
+  "empireProfileAxes": {
+    "axes": [
+      {
+        "name": "authority",
+        "stride": 4,
+        "values": [
+          "regular",
+          "hive_mind",
+          "machine_intelligence"
+        ]
+      },
+      {
+        "name": "shipset",
+        "stride": 2,
+        "values": [
+          "mechanical",
+          "biological"
+        ]
+      },
+      {
+        "name": "nomadic",
+        "stride": 1,
+        "values": [
+          "no",
+          "yes"
+        ]
+      }
+    ],
+    "totalProfileCount": 12
+  },
+  "geometry": {
+    "edgePolylines": {
+      "byteOffset": 0,
+      "dtype": "float32",
+      "file": "edge-polylines.f32",
+      "length": 684
+    },
+    "nodePositions": {
+      "byteOffset": 0,
+      "dtype": "float32",
+      "file": "node-positions.f32",
+      "length": 106
+    }
+  },
+  "iconAtlases": [
+    {
+      "height": 2016,
+      "name": "technologies_0",
+      "png": "technologies_0.png",
+      "webp": "technologies_0.webp",
+      "width": 1008
+    },
+    {
+      "height": 1406,
+      "name": "technologies_1",
+      "png": "technologies_1.png",
+      "webp": "technologies_1.webp",
+      "width": 1008
+    },
+    {
+      "height": 384,
+      "name": "ascension_perks_0",
+      "png": "ascension_perks_0.png",
+      "webp": "ascension_perks_0.webp",
+      "width": 504
+    }
+  ],
+  "metadata": {
+    "acotVersion": "1419304439",
+    "aotVersion": "2178603631",
+    "buildTimestamp": "2026-08-28T19:34:00.816704+00:00",
+    "gigastructuresCommit": "0f1f2b024f43249dc7dfe132fe7c0e4201398ef5",
+    "vanillaVersion": "v4.5.0"
+  },
+  "rows": [
+    {
+      "crisisFaction": null,
+      "id": "computing",
+      "label": "Computing",
+      "technologyCount": 2
+    },
+    {
+      "crisisFaction": null,
+      "id": "field_manipulation",
+      "label": "Field Manipulation",
+      "technologyCount": 3
+    },
+    {
+      "crisisFaction": null,
+      "id": "particles",
+      "label": "Particles",
+      "technologyCount": 6
+    },
+    {
+      "crisisFaction": null,
+      "id": "archaeostudies",
+      "label": "Archaeostudies",
+      "technologyCount": 0
+    },
+    {
+      "crisisFaction": null,
+      "id": "biology",
+      "label": "Biology",
+      "technologyCount": 2
+    },
+    {
+      "crisisFaction": null,
+      "id": "military_theory",
+      "label": "Military Theory",
+      "technologyCount": 5
+    },
+    {
+      "crisisFaction": null,
+      "id": "new_worlds",
+      "label": "New Worlds",
+      "technologyCount": 1
+    },
+    {
+      "crisisFaction": null,
+      "id": "psionics",
+      "label": "Psionics",
+      "technologyCount": 1
+    },
+    {
+      "crisisFaction": null,
+      "id": "statecraft",
+      "label": "Statecraft",
+      "technologyCount": 4
+    },
+    {
+      "crisisFaction": null,
+      "id": "industry",
+      "label": "Industry",
+      "technologyCount": 4
+    },
+    {
+      "crisisFaction": null,
+      "id": "materials",
+      "label": "Materials",
+      "technologyCount": 2
+    },
+    {
+      "crisisFaction": null,
+      "id": "propulsion",
+      "label": "Propulsion",
+      "technologyCount": 0
+    },
+    {
+      "crisisFaction": null,
+      "id": "voidcraft",
+      "label": "Voidcraft",
+      "technologyCount": 20
+    },
+    {
+      "crisisFaction": "Aeternum",
+      "id": "Aeternum",
+      "label": "Aeternum",
+      "technologyCount": 1
+    },
+    {
+      "crisisFaction": "Blokkats",
+      "id": "Blokkats",
+      "label": "Blokkats",
+      "technologyCount": 2
+    },
+    {
+      "crisisFaction": "Compound",
+      "id": "Compound",
+      "label": "Compound",
+      "technologyCount": 0
+    },
+    {
+      "crisisFaction": "Sirenalia",
+      "id": "Sirenalia",
+      "label": "Sirenalia",
+      "technologyCount": 0
+    },
+    {
+      "crisisFaction": "Katzenartig Imperium",
+      "id": "Katzenartig Imperium",
+      "label": "Katzenartig Imperium",
+      "technologyCount": 0
+    }
+  ],
+  "schemaVersion": "1.0.0",
+  "technologies": [
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available"
+      ],
+      "category": "materials",
+      "cost": 64000.0,
+      "crisisFaction": "Aeternum",
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 51,
+        "y": 2
+      },
+      "id": "giga_tech_aeternite_armor",
+      "labelPriority": 5,
+      "name": "Aeternite Loop-Quantum Defensive Matrix",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "Aeternum",
+      "tier": 5
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked"
+      ],
+      "category": "voidcraft",
+      "cost": 96000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": {
+            "height": 60,
+            "sheet": "ascension_perks_0",
+            "width": 52,
+            "x": 2,
+            "y": 130
+          },
+          "inherited": false,
+          "kind": "ascension_perk",
+          "label": "Needs Gigastructural Constructs",
+          "negated": false,
+          "refId": "ap_gigastructural_constructs",
+          "sourceTechnologyId": null
+        },
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": {
+            "height": 60,
+            "sheet": "ascension_perks_0",
+            "width": 52,
+            "x": 450,
+            "y": 66
+          },
+          "inherited": true,
+          "kind": "ascension_perk",
+          "label": "Needs Galactic Wonders",
+          "negated": false,
+          "refId": "ap_galactic_wonders",
+          "sourceTechnologyId": "giga_tech_ringworld_titanic_2"
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 163,
+        "y": 2
+      },
+      "id": "giga_tech_alderson_disk",
+      "labelPriority": 6,
+      "name": "The Alderson Disk",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "voidcraft",
+      "tier": 5
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain"
+      ],
+      "category": "materials",
+      "cost": 16000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 730,
+            "y": 898
+          },
+          "inherited": true,
+          "kind": "technology",
+          "label": "Needs Starhold",
+          "negated": false,
+          "refId": "tech_starbase_3",
+          "sourceTechnologyId": "giga_tech_amb_supertensiles"
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 219,
+        "y": 2
+      },
+      "id": "giga_tech_amb_living_metal_infusion",
+      "labelPriority": 5,
+      "name": "Living Metal Infusion Process",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "materials",
+      "tier": 5
+    },
+    {
+      "area": "physics",
+      "availabilityMatrix": [
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain"
+      ],
+      "category": "field_manipulation",
+      "cost": 4000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 730,
+            "y": 898
+          },
+          "inherited": false,
+          "kind": "technology",
+          "label": "Needs Starhold",
+          "negated": false,
+          "refId": "tech_starbase_3",
+          "sourceTechnologyId": null
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 331,
+        "y": 2
+      },
+      "id": "giga_tech_amb_supertensiles",
+      "labelPriority": 4,
+      "name": "Applied Supertensiles",
+      "rare": false,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "field_manipulation",
+      "tier": 1
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available"
+      ],
+      "category": "voidcraft",
+      "cost": 40000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 58,
+        "y": 338
+      },
+      "id": "giga_tech_arkship_neutronium_harvester",
+      "labelPriority": 5,
+      "name": "Mass Neutronium Extraction",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "voidcraft",
+      "tier": 5
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available"
+      ],
+      "category": "voidcraft",
+      "cost": 10000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 611,
+        "y": 2
+      },
+      "id": "giga_tech_asteroid_artillery",
+      "labelPriority": 9,
+      "name": "Planetoid Defensive Operations",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "voidcraft",
+      "tier": 4
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available"
+      ],
+      "category": "voidcraft",
+      "cost": 20000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 723,
+        "y": 2
+      },
+      "id": "giga_tech_asteroid_artillery_health_upgrade",
+      "labelPriority": 6,
+      "name": "Enhanced Asteroid Shield Generators",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "voidcraft",
+      "tier": 4
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available"
+      ],
+      "category": "blokkats",
+      "cost": 256000.0,
+      "crisisFaction": "Blokkats",
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 170,
+        "y": 58
+      },
+      "id": "giga_tech_blokkat_armor_study",
+      "labelPriority": 6,
+      "name": "Blokkat Engineering Study",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "Blokkats",
+      "tier": 5
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated"
+      ],
+      "category": "blokkats",
+      "cost": 320000.0,
+      "crisisFaction": "Blokkats",
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 562,
+        "y": 58
+      },
+      "id": "giga_tech_blokkat_engineering_repeatable",
+      "labelPriority": 5,
+      "name": "Blokkat Construction Techniques",
+      "rare": true,
+      "repeatable": {
+        "costPerLevel": 320000.0,
+        "levels": 40
+      },
+      "requiresMods": [],
+      "rowId": "Blokkats",
+      "tier": 5
+    },
+    {
+      "area": "physics",
+      "availabilityMatrix": [
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked"
+      ],
+      "category": "particles",
+      "cost": 10000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "giga_tech_disco_moon#gate-alt0",
+          "icon": null,
+          "inherited": false,
+          "kind": "ethics_or_civic",
+          "label": "or: Rogue Servitor",
+          "negated": false,
+          "refId": "civic_machine_servitor",
+          "sourceTechnologyId": null
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "giga_tech_disco_moon#gate-alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 58,
+            "y": 898
+          },
+          "inherited": false,
+          "kind": "technology",
+          "label": "or: Automated Curation Algorithms",
+          "negated": false,
+          "refId": "tech_autocurating_vault",
+          "sourceTechnologyId": null
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "giga_tech_disco_moon#gate-alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 170,
+            "y": 1066
+          },
+          "inherited": false,
+          "kind": "technology",
+          "label": "or: Metacognitive Faith",
+          "negated": false,
+          "refId": "tech_transcendent_faith",
+          "sourceTechnologyId": null
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 786,
+        "y": 170
+      },
+      "id": "giga_tech_disco_moon",
+      "labelPriority": 1,
+      "name": "Hyperscale Refracting Apparatuses",
+      "rare": false,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "particles",
+      "tier": 4
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked"
+      ],
+      "category": "industry",
+      "cost": 16000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "tech_alloys_1#weight-gate0-alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 2,
+            "y": 1122
+          },
+          "inherited": true,
+          "kind": "technology",
+          "label": "or: Mote Stabilization",
+          "negated": false,
+          "refId": "tech_mine_volatile_motes",
+          "sourceTechnologyId": "tech_alloys_1"
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "tech_alloys_1#weight-gate0-alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 2,
+            "y": 1122
+          },
+          "inherited": true,
+          "kind": "technology",
+          "label": "or: Volatile Material Plants",
+          "negated": false,
+          "refId": "tech_volatile_motes",
+          "sourceTechnologyId": "tech_alloys_1"
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 674,
+        "y": 226
+      },
+      "id": "giga_tech_equatorial_shipyard",
+      "labelPriority": 6,
+      "name": "Molten World Shipyard Facilities",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "industry",
+      "tier": 4
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked"
+      ],
+      "category": "voidcraft",
+      "cost": 12000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": null,
+          "inherited": true,
+          "kind": "origin",
+          "label": "Unavailable to Wilderness",
+          "negated": true,
+          "refId": "origin_wilderness",
+          "sourceTechnologyId": "tech_habitat_1"
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 170,
+        "y": 282
+      },
+      "id": "giga_tech_interstellar_habitat",
+      "labelPriority": 6,
+      "name": "Interstellar Habitation",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "voidcraft",
+      "tier": 4
+    },
+    {
+      "area": "society",
+      "availabilityMatrix": [
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available"
+      ],
+      "category": "military_theory",
+      "cost": 48000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "giga_tech_maginot_world#weight-gate0-alt0",
+          "icon": {
+            "height": 60,
+            "sheet": "ascension_perks_0",
+            "width": 52,
+            "x": 450,
+            "y": 66
+          },
+          "inherited": true,
+          "kind": "ascension_perk",
+          "label": "or: Galactic Wonders",
+          "negated": false,
+          "refId": "ap_galactic_wonders",
+          "sourceTechnologyId": "giga_tech_maginot_world"
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "giga_tech_maginot_world#weight-gate0-alt0",
+          "icon": {
+            "height": 1,
+            "sheet": "technologies_0",
+            "width": 1,
+            "x": 0,
+            "y": 0
+          },
+          "inherited": true,
+          "kind": "ascension_perk",
+          "label": "or: Galactic Wonders",
+          "negated": false,
+          "refId": "ap_galactic_wonders_utopia",
+          "sourceTechnologyId": "giga_tech_maginot_world"
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "giga_tech_maginot_world#weight-gate0-alt0",
+          "icon": {
+            "height": 1,
+            "sheet": "technologies_0",
+            "width": 1,
+            "x": 0,
+            "y": 0
+          },
+          "inherited": true,
+          "kind": "ascension_perk",
+          "label": "or: Galactic Wonders",
+          "negated": false,
+          "refId": "ap_galactic_wonders_megacorp",
+          "sourceTechnologyId": "giga_tech_maginot_world"
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "giga_tech_maginot_world#weight-gate0-alt0",
+          "icon": {
+            "height": 1,
+            "sheet": "technologies_0",
+            "width": 1,
+            "x": 0,
+            "y": 0
+          },
+          "inherited": true,
+          "kind": "ascension_perk",
+          "label": "or: Galactic Wonders",
+          "negated": false,
+          "refId": "ap_galactic_wonders_utopia_and_megacorp",
+          "sourceTechnologyId": "giga_tech_maginot_world"
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 562,
+        "y": 282
+      },
+      "id": "giga_tech_maginot_firepower_1",
+      "labelPriority": 1,
+      "name": "Improved Maginot Firepower",
+      "rare": false,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "military_theory",
+      "tier": 5
+    },
+    {
+      "area": "society",
+      "availabilityMatrix": [
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked"
+      ],
+      "category": "military_theory",
+      "cost": 40000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "giga_tech_maginot_world#weight-gate0-alt0",
+          "icon": {
+            "height": 60,
+            "sheet": "ascension_perks_0",
+            "width": 52,
+            "x": 450,
+            "y": 66
+          },
+          "inherited": false,
+          "kind": "ascension_perk",
+          "label": "or: Galactic Wonders",
+          "negated": false,
+          "refId": "ap_galactic_wonders",
+          "sourceTechnologyId": null
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "giga_tech_maginot_world#weight-gate0-alt0",
+          "icon": {
+            "height": 1,
+            "sheet": "technologies_0",
+            "width": 1,
+            "x": 0,
+            "y": 0
+          },
+          "inherited": false,
+          "kind": "ascension_perk",
+          "label": "or: Galactic Wonders",
+          "negated": false,
+          "refId": "ap_galactic_wonders_utopia",
+          "sourceTechnologyId": null
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "giga_tech_maginot_world#weight-gate0-alt0",
+          "icon": {
+            "height": 1,
+            "sheet": "technologies_0",
+            "width": 1,
+            "x": 0,
+            "y": 0
+          },
+          "inherited": false,
+          "kind": "ascension_perk",
+          "label": "or: Galactic Wonders",
+          "negated": false,
+          "refId": "ap_galactic_wonders_megacorp",
+          "sourceTechnologyId": null
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "giga_tech_maginot_world#weight-gate0-alt0",
+          "icon": {
+            "height": 1,
+            "sheet": "technologies_0",
+            "width": 1,
+            "x": 0,
+            "y": 0
+          },
+          "inherited": false,
+          "kind": "ascension_perk",
+          "label": "or: Galactic Wonders",
+          "negated": false,
+          "refId": "ap_galactic_wonders_utopia_and_megacorp",
+          "sourceTechnologyId": null
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 730,
+        "y": 282
+      },
+      "id": "giga_tech_maginot_world",
+      "labelPriority": 7,
+      "name": "Ultimate Strongpoint Defense Theory",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "military_theory",
+      "tier": 5
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked"
+      ],
+      "category": "voidcraft",
+      "cost": 10000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 170,
+        "y": 338
+      },
+      "id": "giga_tech_orbital_arcologies",
+      "labelPriority": 6,
+      "name": "Orbital Ringworld Arcologies",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "voidcraft",
+      "tier": 4
+    },
+    {
+      "area": "physics",
+      "availabilityMatrix": [
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available"
+      ],
+      "category": "particles",
+      "cost": 6000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 506,
+        "y": 338
+      },
+      "id": "giga_tech_penrose_sphere_1",
+      "labelPriority": 7,
+      "name": "Superradiant Scattering Exploitation",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "particles",
+      "tier": 3
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available"
+      ],
+      "category": "voidcraft",
+      "cost": 12000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 786,
+        "y": 338
+      },
+      "id": "giga_tech_planetary_drive_yard",
+      "labelPriority": 7,
+      "name": "Planetary Shipbuilding Facilities",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "voidcraft",
+      "tier": 4
+    },
+    {
+      "area": "society",
+      "availabilityMatrix": [
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain"
+      ],
+      "category": "psionics",
+      "cost": 24000.0,
+      "crisisFaction": null,
+      "dangerous": true,
+      "gates": [
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "tech_telepathy#weight-gate0-alt0",
+          "icon": {
+            "height": 60,
+            "sheet": "ascension_perks_0",
+            "width": 52,
+            "x": 170,
+            "y": 194
+          },
+          "inherited": true,
+          "kind": "ascension_perk",
+          "label": "or: Mind Over Matter",
+          "negated": false,
+          "refId": "ap_mind_over_matter",
+          "sourceTechnologyId": "tech_telepathy"
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "tech_telepathy#weight-gate0-alt0",
+          "icon": null,
+          "inherited": true,
+          "kind": "origin",
+          "label": "or: Teachers of the Shroud",
+          "negated": false,
+          "refId": "origin_shroudwalker_apprentice",
+          "sourceTechnologyId": "tech_telepathy"
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "tech_telepathy#weight-gate0-alt0",
+          "icon": null,
+          "inherited": true,
+          "kind": "origin",
+          "label": "or: Endbringers",
+          "negated": false,
+          "refId": "origin_endbringers",
+          "sourceTechnologyId": "tech_telepathy"
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "tech_telepathy#weight-gate0-alt0",
+          "icon": null,
+          "inherited": true,
+          "kind": "origin",
+          "label": "or: Shroud-Forged",
+          "negated": false,
+          "refId": "origin_shroud_forged",
+          "sourceTechnologyId": "tech_telepathy"
+        },
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": null,
+          "inherited": true,
+          "kind": "origin",
+          "label": "Unavailable to Mindwardens",
+          "negated": true,
+          "refId": "origin_mindwardens",
+          "sourceTechnologyId": "tech_psionic_theory"
+        },
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": null,
+          "inherited": true,
+          "kind": "ethics_or_civic",
+          "label": "Unavailable to Gestalt Consciousness",
+          "negated": true,
+          "refId": "ethic_gestalt_consciousness",
+          "sourceTechnologyId": "tech_telepathy"
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "tech_telepathy#weight-gate0-alt1",
+          "icon": null,
+          "inherited": true,
+          "kind": "ethics_or_civic",
+          "label": "or: Chosen",
+          "negated": false,
+          "refId": "civic_chosen",
+          "sourceTechnologyId": "tech_telepathy"
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "tech_telepathy#weight-gate0-alt1",
+          "icon": null,
+          "inherited": true,
+          "kind": "ethics_or_civic",
+          "label": "or: Chosen Many",
+          "negated": false,
+          "refId": "civic_hive_chosen",
+          "sourceTechnologyId": "tech_telepathy"
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "tech_telepathy#weight-gate0-alt1",
+          "icon": null,
+          "inherited": true,
+          "kind": "ethics_or_civic",
+          "label": "or: Apostle Network",
+          "negated": false,
+          "refId": "civic_machine_chosen",
+          "sourceTechnologyId": "tech_telepathy"
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "tech_telepathy#weight-gate0-alt1",
+          "icon": null,
+          "inherited": true,
+          "kind": "ethics_or_civic",
+          "label": "or: Chosen Executives",
+          "negated": false,
+          "refId": "civic_corporate_chosen",
+          "sourceTechnologyId": "tech_telepathy"
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "tech_psionic_theory#weight-gate1-alt0",
+          "icon": null,
+          "inherited": true,
+          "kind": "ethics_or_civic",
+          "label": "or, unavailable to: Materialist",
+          "negated": true,
+          "refId": "ethic_materialist",
+          "sourceTechnologyId": "tech_psionic_theory"
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "tech_psionic_theory#weight-gate1-alt0",
+          "icon": null,
+          "inherited": true,
+          "kind": "ethics_or_civic",
+          "label": "or, unavailable to: Fanatic Materialist",
+          "negated": true,
+          "refId": "ethic_fanatic_materialist",
+          "sourceTechnologyId": "tech_psionic_theory"
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 114,
+        "y": 394
+      },
+      "id": "giga_tech_psychic_hypersiphon",
+      "labelPriority": 11,
+      "name": "Opening The Doorway",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "psionics",
+      "tier": 5
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "config-gated",
+        "config-gated",
+        "config-gated",
+        "config-gated",
+        "config-gated",
+        "config-gated",
+        "config-gated",
+        "config-gated",
+        "config-gated",
+        "config-gated",
+        "config-gated",
+        "config-gated"
+      ],
+      "category": "voidcraft",
+      "cost": 192000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": {
+            "height": 60,
+            "sheet": "ascension_perks_0",
+            "width": 52,
+            "x": 2,
+            "y": 130
+          },
+          "inherited": true,
+          "kind": "ascension_perk",
+          "label": "Needs Gigastructural Constructs",
+          "negated": false,
+          "refId": "ap_gigastructural_constructs",
+          "sourceTechnologyId": "giga_tech_alderson_disk"
+        },
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": {
+            "height": 60,
+            "sheet": "ascension_perks_0",
+            "width": 52,
+            "x": 450,
+            "y": 66
+          },
+          "inherited": true,
+          "kind": "ascension_perk",
+          "label": "Needs Galactic Wonders",
+          "negated": false,
+          "refId": "ap_galactic_wonders",
+          "sourceTechnologyId": "giga_tech_ringworld_titanic_2"
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 506,
+        "y": 394
+      },
+      "id": "giga_tech_repeatable_alderson_cap",
+      "labelPriority": 0,
+      "name": "Alderson Disk Management Protocols",
+      "rare": false,
+      "repeatable": {
+        "costPerLevel": 576000.0,
+        "levels": null
+      },
+      "requiresMods": [],
+      "rowId": "voidcraft",
+      "tier": 5
+    },
+    {
+      "area": "society",
+      "availabilityMatrix": [
+        "config-gated",
+        "config-gated",
+        "config-gated",
+        "config-gated",
+        "config-gated",
+        "config-gated",
+        "config-gated",
+        "config-gated",
+        "config-gated",
+        "config-gated",
+        "config-gated",
+        "config-gated"
+      ],
+      "category": "military_theory",
+      "cost": 36000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "giga_tech_maginot_world#weight-gate0-alt0",
+          "icon": {
+            "height": 60,
+            "sheet": "ascension_perks_0",
+            "width": 52,
+            "x": 450,
+            "y": 66
+          },
+          "inherited": true,
+          "kind": "ascension_perk",
+          "label": "or: Galactic Wonders",
+          "negated": false,
+          "refId": "ap_galactic_wonders",
+          "sourceTechnologyId": "giga_tech_maginot_world"
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "giga_tech_maginot_world#weight-gate0-alt0",
+          "icon": {
+            "height": 1,
+            "sheet": "technologies_0",
+            "width": 1,
+            "x": 0,
+            "y": 0
+          },
+          "inherited": true,
+          "kind": "ascension_perk",
+          "label": "or: Galactic Wonders",
+          "negated": false,
+          "refId": "ap_galactic_wonders_utopia",
+          "sourceTechnologyId": "giga_tech_maginot_world"
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "giga_tech_maginot_world#weight-gate0-alt0",
+          "icon": {
+            "height": 1,
+            "sheet": "technologies_0",
+            "width": 1,
+            "x": 0,
+            "y": 0
+          },
+          "inherited": true,
+          "kind": "ascension_perk",
+          "label": "or: Galactic Wonders",
+          "negated": false,
+          "refId": "ap_galactic_wonders_megacorp",
+          "sourceTechnologyId": "giga_tech_maginot_world"
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "giga_tech_maginot_world#weight-gate0-alt0",
+          "icon": {
+            "height": 1,
+            "sheet": "technologies_0",
+            "width": 1,
+            "x": 0,
+            "y": 0
+          },
+          "inherited": true,
+          "kind": "ascension_perk",
+          "label": "or: Galactic Wonders",
+          "negated": false,
+          "refId": "ap_galactic_wonders_utopia_and_megacorp",
+          "sourceTechnologyId": "giga_tech_maginot_world"
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 562,
+        "y": 450
+      },
+      "id": "giga_tech_repeatable_maginot_cap",
+      "labelPriority": 0,
+      "name": "Maginot World Management Protocols",
+      "rare": false,
+      "repeatable": {
+        "costPerLevel": 108000.0,
+        "levels": null
+      },
+      "requiresMods": [],
+      "rowId": "military_theory",
+      "tier": 5
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available"
+      ],
+      "category": "industry",
+      "cost": 100000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 226,
+        "y": 506
+      },
+      "id": "giga_tech_repeatable_reduced_mega_building_time",
+      "labelPriority": 0,
+      "name": "Modular Megastructure Designs",
+      "rare": false,
+      "repeatable": {
+        "costPerLevel": 10000.0,
+        "levels": 40
+      },
+      "requiresMods": [],
+      "rowId": "industry",
+      "tier": 5
+    },
+    {
+      "area": "society",
+      "availabilityMatrix": [
+        "weight-gated",
+        "locked",
+        "weight-gated",
+        "locked",
+        "weight-gated",
+        "locked",
+        "weight-gated",
+        "locked",
+        "weight-gated",
+        "locked",
+        "weight-gated",
+        "locked"
+      ],
+      "category": "statecraft",
+      "cost": 16000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 562,
+        "y": 562
+      },
+      "id": "giga_tech_ringworld_buildings",
+      "labelPriority": 0,
+      "name": "Superscale Urban Development",
+      "rare": false,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "statecraft",
+      "tier": 5
+    },
+    {
+      "area": "physics",
+      "availabilityMatrix": [
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available"
+      ],
+      "category": "particles",
+      "cost": 12000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 2,
+        "y": 618
+      },
+      "id": "giga_tech_substellar_compressor",
+      "labelPriority": 7,
+      "name": "Helioforming",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "particles",
+      "tier": 4
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available"
+      ],
+      "category": "voidcraft",
+      "cost": 32000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 674,
+        "y": 618
+      },
+      "id": "giga_tech_war_moon_1",
+      "labelPriority": 6,
+      "name": "Colossal Movement Systems",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "voidcraft",
+      "tier": 5
+    },
+    {
+      "area": "society",
+      "availabilityMatrix": [
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available"
+      ],
+      "category": "biology",
+      "cost": 12000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": null,
+          "inherited": true,
+          "kind": "origin",
+          "label": "Needs Wilderness",
+          "negated": false,
+          "refId": "origin_wilderness",
+          "sourceTechnologyId": "tech_terrestrial_sculpting"
+        },
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": null,
+          "inherited": true,
+          "kind": "ethics_or_civic",
+          "label": "Unavailable to Devouring Swarm",
+          "negated": true,
+          "refId": "civic_hive_devouring_swarm",
+          "sourceTechnologyId": "tech_terrestrial_sculpting"
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": {
+            "nomadic": [
+              "no"
+            ]
+          },
+          "groupId": "giga_tech_orbital_artificial_eco#gate-alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 394,
+            "y": 1010
+          },
+          "inherited": true,
+          "kind": "technology",
+          "label": "or: Terrestrial Sculpting",
+          "negated": false,
+          "refId": "tech_terrestrial_sculpting",
+          "sourceTechnologyId": "giga_tech_orbital_artificial_eco"
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 338,
+        "y": 674
+      },
+      "id": "giga_tech_yggdrasil_orchid",
+      "labelPriority": 6,
+      "name": "Large-Scale Bioatmospheric Modification",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "biology",
+      "tier": 4
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available"
+      ],
+      "category": "voidcraft",
+      "cost": 10000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 170,
+        "y": 842
+      },
+      "id": "tech_arkship_tier_3",
+      "labelPriority": 5,
+      "name": "Arkship Mastery",
+      "rare": false,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "voidcraft",
+      "tier": 4
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "available",
+        "available",
+        "locked",
+        "locked",
+        "available",
+        "available",
+        "locked",
+        "locked",
+        "available",
+        "available",
+        "locked",
+        "locked"
+      ],
+      "category": "voidcraft",
+      "cost": 8000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 730,
+        "y": 898
+      },
+      "id": "tech_battleships",
+      "labelPriority": 2,
+      "name": "Battleships",
+      "rare": false,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "voidcraft",
+      "tier": 4
+    },
+    {
+      "area": "physics",
+      "availabilityMatrix": [
+        "weight-gated",
+        "locked",
+        "weight-gated",
+        "locked",
+        "weight-gated",
+        "locked",
+        "weight-gated",
+        "locked",
+        "weight-gated",
+        "locked",
+        "weight-gated",
+        "locked"
+      ],
+      "category": "field_manipulation",
+      "cost": 24000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": {
+            "height": 60,
+            "sheet": "ascension_perks_0",
+            "width": 52,
+            "x": 450,
+            "y": 66
+          },
+          "inherited": false,
+          "kind": "ascension_perk",
+          "label": "Needs Galactic Wonders",
+          "negated": false,
+          "refId": "ap_galactic_wonders",
+          "sourceTechnologyId": null
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 2,
+        "y": 1570
+      },
+      "id": "tech_dyson_sphere",
+      "labelPriority": 7,
+      "name": "Dyson Sphere",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "field_manipulation",
+      "tier": 5
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "uncertain",
+        "available",
+        "uncertain",
+        "available",
+        "uncertain",
+        "available",
+        "uncertain",
+        "available",
+        "uncertain",
+        "available",
+        "uncertain",
+        "available"
+      ],
+      "category": "voidcraft",
+      "cost": 80000.0,
+      "crisisFaction": null,
+      "dangerous": true,
+      "gates": [
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "tech_basic_science_lab_2#weight-gate0-alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 898,
+            "y": 1626
+          },
+          "inherited": true,
+          "kind": "technology",
+          "label": "or: Exotic Gas Extraction",
+          "negated": false,
+          "refId": "tech_mine_exotic_gases",
+          "sourceTechnologyId": "tech_basic_science_lab_2"
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "tech_basic_science_lab_2#weight-gate0-alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 898,
+            "y": 1626
+          },
+          "inherited": true,
+          "kind": "technology",
+          "label": "or: Exotic Gas Refining",
+          "negated": false,
+          "refId": "tech_exotic_gases",
+          "sourceTechnologyId": "tech_basic_science_lab_2"
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 394,
+        "y": 1570
+      },
+      "id": "tech_ehof_phase_03",
+      "labelPriority": 6,
+      "name": "E.H.O.F. Omega",
+      "rare": false,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "voidcraft",
+      "tier": 5
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated"
+      ],
+      "category": "voidcraft",
+      "cost": 0.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": null,
+          "inherited": false,
+          "kind": "origin",
+          "label": "Needs Frame World",
+          "negated": false,
+          "refId": "origin_frameworld",
+          "sourceTechnologyId": null
+        },
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_0",
+            "width": 52,
+            "x": 730,
+            "y": 282
+          },
+          "inherited": false,
+          "kind": "technology",
+          "label": "Needs Ultimate Strongpoint Defense Theory",
+          "negated": false,
+          "refId": "giga_tech_maginot_world",
+          "sourceTechnologyId": null
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 618,
+        "y": 1794
+      },
+      "id": "tech_frameworld_defensive_station_5",
+      "labelPriority": 0,
+      "name": "Defensive Perimeter Maginot Doctrine",
+      "rare": false,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "voidcraft",
+      "tier": 1
+    },
+    {
+      "area": "society",
+      "availabilityMatrix": [
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available"
+      ],
+      "category": "new_worlds",
+      "cost": 50000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": null,
+          "inherited": false,
+          "kind": "origin",
+          "label": "Needs Frame World",
+          "negated": false,
+          "refId": "origin_frameworld",
+          "sourceTechnologyId": null
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 842,
+        "y": 1794
+      },
+      "id": "tech_frameworld_repeatable_outpost_output",
+      "labelPriority": 0,
+      "name": "Planetary Expedition Infrastructure",
+      "rare": false,
+      "repeatable": {
+        "costPerLevel": 5000.0,
+        "levels": null
+      },
+      "requiresMods": [],
+      "rowId": "new_worlds",
+      "tier": 5
+    },
+    {
+      "area": "physics",
+      "availabilityMatrix": [
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available"
+      ],
+      "category": "particles",
+      "cost": 24000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 562,
+        "y": 1850
+      },
+      "id": "tech_gateway_construction",
+      "labelPriority": 6,
+      "name": "Gateway Construction",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "particles",
+      "tier": 5
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked"
+      ],
+      "category": "voidcraft",
+      "cost": 5000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": null,
+          "inherited": false,
+          "kind": "origin",
+          "label": "Unavailable to Wilderness",
+          "negated": true,
+          "refId": "origin_wilderness",
+          "sourceTechnologyId": null
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 842,
+        "y": 1906
+      },
+      "id": "tech_habitat_1",
+      "labelPriority": 2,
+      "name": "Orbital Habitats",
+      "rare": false,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "voidcraft",
+      "tier": 3
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "weight-gated",
+        "locked",
+        "weight-gated",
+        "locked",
+        "weight-gated",
+        "locked",
+        "weight-gated",
+        "locked",
+        "weight-gated",
+        "locked",
+        "weight-gated",
+        "locked"
+      ],
+      "category": "voidcraft",
+      "cost": 10000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": null,
+          "inherited": false,
+          "kind": "origin",
+          "label": "Unavailable to Wilderness",
+          "negated": true,
+          "refId": "origin_wilderness",
+          "sourceTechnologyId": null
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 898,
+        "y": 1906
+      },
+      "id": "tech_habitat_2",
+      "labelPriority": 6,
+      "name": "Habitat Expansion",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "voidcraft",
+      "tier": 4
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available"
+      ],
+      "category": "industry",
+      "cost": 2500.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": null,
+          "inherited": false,
+          "kind": "origin",
+          "label": "Unavailable to Wilderness",
+          "negated": true,
+          "refId": "origin_wilderness",
+          "sourceTechnologyId": null
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 618,
+        "y": 1962
+      },
+      "id": "tech_housing_1",
+      "labelPriority": 2,
+      "name": "Weather Control Systems",
+      "rare": false,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "industry",
+      "tier": 2
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available"
+      ],
+      "category": "industry",
+      "cost": 4000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": null,
+          "inherited": false,
+          "kind": "origin",
+          "label": "Unavailable to Wilderness",
+          "negated": true,
+          "refId": "origin_wilderness",
+          "sourceTechnologyId": null
+        },
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": null,
+          "inherited": false,
+          "kind": "ethics_or_civic",
+          "label": "Unavailable to Agrarian Idyll",
+          "negated": true,
+          "refId": "civic_agrarian_idyll",
+          "sourceTechnologyId": null
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 674,
+        "y": 1962
+      },
+      "id": "tech_housing_2",
+      "labelPriority": 0,
+      "name": "Anti-Gravity Engineering",
+      "rare": false,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "industry",
+      "tier": 3
+    },
+    {
+      "area": "society",
+      "availabilityMatrix": [
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available"
+      ],
+      "category": "statecraft",
+      "cost": 4000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": null,
+          "inherited": false,
+          "kind": "ethics_or_civic",
+          "label": "Needs Agrarian Idyll",
+          "negated": false,
+          "refId": "civic_agrarian_idyll",
+          "sourceTechnologyId": null
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 730,
+        "y": 1962
+      },
+      "id": "tech_housing_agrarian_idyll",
+      "labelPriority": 0,
+      "name": "Agrarian Utopias",
+      "rare": false,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "statecraft",
+      "tier": 3
+    },
+    {
+      "area": "society",
+      "availabilityMatrix": [
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked"
+      ],
+      "category": "statecraft",
+      "cost": 24000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_1",
+        "width": 52,
+        "x": 786,
+        "y": 2
+      },
+      "id": "tech_interstellar_assembly",
+      "labelPriority": 6,
+      "name": "Interstellar Assembly",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "statecraft",
+      "tier": 5
+    },
+    {
+      "area": "physics",
+      "availabilityMatrix": [
+        "weight-gated",
+        "locked",
+        "weight-gated",
+        "locked",
+        "weight-gated",
+        "locked",
+        "weight-gated",
+        "locked",
+        "weight-gated",
+        "locked",
+        "weight-gated",
+        "locked"
+      ],
+      "category": "field_manipulation",
+      "cost": 24000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": {
+            "height": 60,
+            "sheet": "ascension_perks_0",
+            "width": 52,
+            "x": 450,
+            "y": 66
+          },
+          "inherited": false,
+          "kind": "ascension_perk",
+          "label": "Needs Galactic Wonders",
+          "negated": false,
+          "refId": "ap_galactic_wonders",
+          "sourceTechnologyId": null
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_1",
+        "width": 52,
+        "x": 170,
+        "y": 170
+      },
+      "id": "tech_matter_decompressor",
+      "labelPriority": 6,
+      "name": "Matter Decompressor",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "field_manipulation",
+      "tier": 5
+    },
+    {
+      "area": "society",
+      "availabilityMatrix": [
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked"
+      ],
+      "category": "statecraft",
+      "cost": 24000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_1",
+        "width": 52,
+        "x": 674,
+        "y": 170
+      },
+      "id": "tech_mega_art",
+      "labelPriority": 6,
+      "name": "Mega Art Installation",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "statecraft",
+      "tier": 5
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available"
+      ],
+      "category": "voidcraft",
+      "cost": 24000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_1",
+        "width": 52,
+        "x": 786,
+        "y": 170
+      },
+      "id": "tech_mega_engineering",
+      "labelPriority": 32,
+      "name": "Mega-Engineering",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "voidcraft",
+      "tier": 5
+    },
+    {
+      "area": "society",
+      "availabilityMatrix": [
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked"
+      ],
+      "category": "military_theory",
+      "cost": 24000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_1",
+        "width": 52,
+        "x": 842,
+        "y": 170
+      },
+      "id": "tech_mega_shipyard",
+      "labelPriority": 6,
+      "name": "Mega Shipyard",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "military_theory",
+      "tier": 5
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available"
+      ],
+      "category": "materials",
+      "cost": 16000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_1",
+        "width": 52,
+        "x": 226,
+        "y": 226
+      },
+      "id": "tech_mine_living_metal",
+      "labelPriority": 2,
+      "name": "Living Metal",
+      "rare": false,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "materials",
+      "tier": 5
+    },
+    {
+      "area": "physics",
+      "availabilityMatrix": [
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain"
+      ],
+      "category": "particles",
+      "cost": 8000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "tech_quantum_catapult#gate-alt0",
+          "icon": null,
+          "inherited": false,
+          "kind": "origin",
+          "label": "or: Slingshot to the Stars",
+          "negated": false,
+          "refId": "origin_star_slingshot",
+          "sourceTechnologyId": null
+        },
+        {
+          "alternative": true,
+          "appliesToEmpireTypes": null,
+          "groupId": "tech_quantum_catapult#gate-alt0",
+          "icon": {
+            "height": 52,
+            "sheet": "technologies_1",
+            "width": 52,
+            "x": 786,
+            "y": 170
+          },
+          "inherited": false,
+          "kind": "technology",
+          "label": "or: Mega-Engineering",
+          "negated": false,
+          "refId": "tech_mega_engineering",
+          "sourceTechnologyId": null
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_1",
+        "width": 52,
+        "x": 58,
+        "y": 562
+      },
+      "id": "tech_quantum_catapult",
+      "labelPriority": 5,
+      "name": "Quantum Catapult",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "particles",
+      "tier": 3
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated",
+        "weight-gated"
+      ],
+      "category": "voidcraft",
+      "cost": 24000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": {
+            "height": 60,
+            "sheet": "ascension_perks_0",
+            "width": 52,
+            "x": 450,
+            "y": 66
+          },
+          "inherited": false,
+          "kind": "ascension_perk",
+          "label": "Needs Galactic Wonders",
+          "negated": false,
+          "refId": "ap_galactic_wonders",
+          "sourceTechnologyId": null
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_1",
+        "width": 52,
+        "x": 170,
+        "y": 674
+      },
+      "id": "tech_ring_world",
+      "labelPriority": 8,
+      "name": "Ring Segment",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "voidcraft",
+      "tier": 5
+    },
+    {
+      "area": "physics",
+      "availabilityMatrix": [
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked"
+      ],
+      "category": "computing",
+      "cost": 24000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_1",
+        "width": 52,
+        "x": 674,
+        "y": 674
+      },
+      "id": "tech_science_nexus",
+      "labelPriority": 6,
+      "name": "Science Nexus",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "computing",
+      "tier": 5
+    },
+    {
+      "area": "physics",
+      "availabilityMatrix": [
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked"
+      ],
+      "category": "computing",
+      "cost": 24000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_1",
+        "width": 52,
+        "x": 618,
+        "y": 730
+      },
+      "id": "tech_sentry_array",
+      "labelPriority": 6,
+      "name": "Sentry Array",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "computing",
+      "tier": 5
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked"
+      ],
+      "category": "voidcraft",
+      "cost": 96000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [
+        {
+          "alternative": false,
+          "appliesToEmpireTypes": null,
+          "groupId": null,
+          "icon": {
+            "height": 60,
+            "sheet": "ascension_perks_0",
+            "width": 52,
+            "x": 450,
+            "y": 66
+          },
+          "inherited": false,
+          "kind": "ascension_perk",
+          "label": "Needs Galactic Wonders",
+          "negated": false,
+          "refId": "ap_galactic_wonders",
+          "sourceTechnologyId": null
+        }
+      ],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_1",
+        "width": 52,
+        "x": 114,
+        "y": 842
+      },
+      "id": "tech_sm_megastructure",
+      "labelPriority": 5,
+      "name": "Sentient Metal Forge",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "voidcraft",
+      "tier": 5
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked"
+      ],
+      "category": "voidcraft",
+      "cost": 2500.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_1",
+        "width": 52,
+        "x": 730,
+        "y": 898
+      },
+      "id": "tech_starbase_3",
+      "labelPriority": 5,
+      "name": "Starhold",
+      "rare": false,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "voidcraft",
+      "tier": 2
+    },
+    {
+      "area": "engineering",
+      "availabilityMatrix": [
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked"
+      ],
+      "category": "voidcraft",
+      "cost": 10000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_1",
+        "width": 52,
+        "x": 842,
+        "y": 898
+      },
+      "id": "tech_starbase_5",
+      "labelPriority": 3,
+      "name": "Citadel",
+      "rare": false,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "voidcraft",
+      "tier": 4
+    },
+    {
+      "area": "society",
+      "availabilityMatrix": [
+        "locked",
+        "locked",
+        "available",
+        "available",
+        "locked",
+        "locked",
+        "available",
+        "available",
+        "locked",
+        "locked",
+        "available",
+        "available"
+      ],
+      "category": "biology",
+      "cost": 8000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_1",
+        "width": 52,
+        "x": 114,
+        "y": 954
+      },
+      "id": "tech_stingers",
+      "labelPriority": 3,
+      "name": "Stingers",
+      "rare": false,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "biology",
+      "tier": 4
+    },
+    {
+      "area": "society",
+      "availabilityMatrix": [
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked",
+        "available",
+        "locked"
+      ],
+      "category": "military_theory",
+      "cost": 24000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_1",
+        "width": 52,
+        "x": 394,
+        "y": 954
+      },
+      "id": "tech_strategic_coordination",
+      "labelPriority": 6,
+      "name": "Strategic Coordination Center",
+      "rare": true,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "military_theory",
+      "tier": 5
+    },
+    {
+      "area": "physics",
+      "availabilityMatrix": [
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available",
+        "available"
+      ],
+      "category": "particles",
+      "cost": 10000.0,
+      "crisisFaction": null,
+      "dangerous": false,
+      "gates": [],
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_1",
+        "width": 52,
+        "x": 282,
+        "y": 1346
+      },
+      "id": "tech_zero_point_power",
+      "labelPriority": 10,
+      "name": "Zero Point Power",
+      "rare": false,
+      "repeatable": null,
+      "requiresMods": [],
+      "rowId": "particles",
+      "tier": 4
+    }
+  ],
+  "tierBands": [
+    {
+      "bandIndex": 0,
+      "label": "Tier 0",
+      "tier": 0
+    },
+    {
+      "bandIndex": 1,
+      "label": "Tier 1",
+      "tier": 1
+    },
+    {
+      "bandIndex": 2,
+      "label": "Tier 2",
+      "tier": 2
+    },
+    {
+      "bandIndex": 3,
+      "label": "Tier 3",
+      "tier": 3
+    },
+    {
+      "bandIndex": 4,
+      "label": "Tier 4",
+      "tier": 4
+    },
+    {
+      "bandIndex": 5,
+      "label": "Tier 5",
+      "tier": 5
+    },
+    {
+      "bandIndex": 6,
+      "label": "Tier 6",
+      "tier": 6
+    },
+    {
+      "bandIndex": 7,
+      "label": "Tier 7",
+      "tier": 7
+    },
+    {
+      "bandIndex": 8,
+      "label": "Tier 8",
+      "tier": 8
+    },
+    {
+      "bandIndex": 9,
+      "label": "Tier 9",
+      "tier": 9
+    },
+    {
+      "bandIndex": 10,
+      "label": "Repeatables",
+      "tier": "repeatables"
+    }
+  ]
+}

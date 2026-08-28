@@ -1,0 +1,35 @@
+{
+  "$comment": "Reproduced by tools/build_client_fixture_dataset.py from vendor/. Not hashed (unlike client/public/dataset/'s real manifest) -- this is a fixed, committed test fixture, not a cache-busted deploy artefact.",
+  "baseDataset": "base-dataset.json",
+  "curatedIds": {
+    "alternative_group": "tech_mega_engineering",
+    "gated": "tech_habitat_1",
+    "repeatable": "giga_tech_blokkat_engineering_repeatable",
+    "state_available": "giga_tech_aeternite_armor",
+    "state_config-gated": "giga_tech_repeatable_alderson_cap",
+    "state_locked": "giga_tech_arkship_neutronium_harvester",
+    "state_uncertain": "giga_tech_amb_living_metal_infusion",
+    "state_weight-gated": "giga_tech_blokkat_engineering_repeatable",
+    "variants": "giga_tech_maginot_world",
+    "weight_modifier_pair_a": "tech_housing_2",
+    "weight_modifier_pair_b": "tech_housing_agrarian_idyll"
+  },
+  "details": {
+    "giga_tech_aeternite_armor": "detail-giga_tech_aeternite_armor.json",
+    "giga_tech_amb_living_metal_infusion": "detail-giga_tech_amb_living_metal_infusion.json",
+    "giga_tech_arkship_neutronium_harvester": "detail-giga_tech_arkship_neutronium_harvester.json",
+    "giga_tech_blokkat_engineering_repeatable": "detail-giga_tech_blokkat_engineering_repeatable.json",
+    "giga_tech_maginot_world": "detail-giga_tech_maginot_world.json",
+    "giga_tech_repeatable_alderson_cap": "detail-giga_tech_repeatable_alderson_cap.json",
+    "tech_habitat_1": "detail-tech_habitat_1.json",
+    "tech_housing_2": "detail-tech_housing_2.json",
+    "tech_housing_agrarian_idyll": "detail-tech_housing_agrarian_idyll.json",
+    "tech_mega_engineering": "detail-tech_mega_engineering.json"
+  },
+  "diagnostics": "diagnostics.json",
+  "overlays": {
+    "machine_intelligence-biological-yes": "empire-overlay-machine_intelligence-biological-yes.json",
+    "regular-mechanical-no": "empire-overlay-regular-mechanical-no.json"
+  },
+  "searchIndex": "search-index.json"
+}

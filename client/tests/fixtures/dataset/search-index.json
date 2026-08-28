@@ -1,0 +1,817 @@
+{
+  "entries": [
+    {
+      "technologyId": "giga_tech_aeternite_armor",
+      "tokens": [
+        "a",
+        "advanced",
+        "aeternite",
+        "aeternites",
+        "an",
+        "and",
+        "armor",
+        "by",
+        "combination",
+        "component",
+        "controlled",
+        "defensive",
+        "employ",
+        "fused",
+        "giga",
+        "highly",
+        "into",
+        "loop",
+        "matrix",
+        "of",
+        "phenomena",
+        "powered",
+        "quantum",
+        "shields",
+        "single",
+        "tech",
+        "the",
+        "unorthodox"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_alderson_disk",
+      "tokens": [
+        "alderson",
+        "disk",
+        "giga",
+        "tech",
+        "the"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_amb_living_metal_infusion",
+      "tokens": [
+        "amb",
+        "and",
+        "be",
+        "could",
+        "exploited",
+        "foundries",
+        "giga",
+        "improve",
+        "infusion",
+        "living",
+        "metal",
+        "molecular",
+        "of",
+        "our",
+        "output",
+        "process",
+        "properties",
+        "quality",
+        "regenerative",
+        "tech",
+        "the",
+        "theoretically",
+        "to"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_amb_supertensiles",
+      "tokens": [
+        "amb",
+        "applied",
+        "giga",
+        "supertensiles",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_arkship_neutronium_harvester",
+      "tokens": [
+        "a",
+        "aeons",
+        "alloys",
+        "arkship",
+        "arkships",
+        "as",
+        "by",
+        "can",
+        "come",
+        "extraction",
+        "for",
+        "giga",
+        "guarantee",
+        "harvest",
+        "harvester",
+        "mass",
+        "means",
+        "neutron",
+        "neutronium",
+        "of",
+        "our",
+        "providing",
+        "reliable",
+        "remnants",
+        "source",
+        "stars",
+        "stellar",
+        "such",
+        "tech",
+        "the",
+        "to",
+        "valuable",
+        "we",
+        "with"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_asteroid_artillery",
+      "tokens": [
+        "artillery",
+        "asteroid",
+        "defensive",
+        "giga",
+        "operations",
+        "planetoid",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_asteroid_artillery_health_upgrade",
+      "tokens": [
+        "artillery",
+        "asteroid",
+        "enhanced",
+        "generators",
+        "giga",
+        "health",
+        "shield",
+        "tech",
+        "upgrade"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_blokkat_armor_study",
+      "tokens": [
+        "armor",
+        "blokkat",
+        "engineering",
+        "giga",
+        "study",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_blokkat_engineering_repeatable",
+      "tokens": [
+        "a",
+        "and",
+        "blokkat",
+        "blokkats",
+        "but",
+        "construction",
+        "designing",
+        "difficult",
+        "engineer",
+        "engineering",
+        "giga",
+        "help",
+        "how",
+        "in",
+        "innovating",
+        "intel",
+        "is",
+        "likely",
+        "materials",
+        "new",
+        "on",
+        "our",
+        "provide",
+        "remotely",
+        "repeatable",
+        "science",
+        "ships",
+        "studying",
+        "task",
+        "teams",
+        "tech",
+        "techniques",
+        "the",
+        "their",
+        "to",
+        "undertake",
+        "valuable",
+        "vessels",
+        "will"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_disco_moon",
+      "tokens": [
+        "apparatuses",
+        "disco",
+        "giga",
+        "hyperscale",
+        "moon",
+        "refracting",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_equatorial_shipyard",
+      "tokens": [
+        "equatorial",
+        "facilities",
+        "giga",
+        "molten",
+        "shipyard",
+        "tech",
+        "world"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_interstellar_habitat",
+      "tokens": [
+        "giga",
+        "habitat",
+        "habitation",
+        "interstellar",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_maginot_firepower_1",
+      "tokens": [
+        "1",
+        "firepower",
+        "giga",
+        "improved",
+        "maginot",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_maginot_world",
+      "tokens": [
+        "a",
+        "addition",
+        "also",
+        "an",
+        "and",
+        "be",
+        "begin",
+        "building",
+        "built",
+        "bunkers",
+        "but",
+        "can",
+        "cannons",
+        "class",
+        "colossus",
+        "command",
+        "complex",
+        "complexes",
+        "construct",
+        "construction",
+        "continent",
+        "countless",
+        "dead",
+        "deep",
+        "defend",
+        "defense",
+        "defenses",
+        "defensive",
+        "deter",
+        "developed",
+        "development",
+        "empire",
+        "enemy",
+        "entire",
+        "equipped",
+        "for",
+        "fortress",
+        "full",
+        "generators",
+        "giga",
+        "hand",
+        "in",
+        "into",
+        "is",
+        "locations",
+        "maginot",
+        "massive",
+        "must",
+        "necessary",
+        "not",
+        "orbital",
+        "other",
+        "our",
+        "planet",
+        "planetary",
+        "shall",
+        "shield",
+        "sized",
+        "strongpoint",
+        "suitable",
+        "system",
+        "tech",
+        "the",
+        "theory",
+        "this",
+        "to",
+        "transform",
+        "ultimate",
+        "underground",
+        "warships",
+        "we",
+        "will",
+        "with",
+        "world"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_orbital_arcologies",
+      "tokens": [
+        "arcologies",
+        "giga",
+        "orbital",
+        "ringworld",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_penrose_sphere_1",
+      "tokens": [
+        "1",
+        "exploitation",
+        "giga",
+        "penrose",
+        "scattering",
+        "sphere",
+        "superradiant",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_planetary_drive_yard",
+      "tokens": [
+        "drive",
+        "facilities",
+        "giga",
+        "planetary",
+        "shipbuilding",
+        "tech",
+        "yard"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_psychic_hypersiphon",
+      "tokens": [
+        "doorway",
+        "giga",
+        "hypersiphon",
+        "opening",
+        "psychic",
+        "tech",
+        "the"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_repeatable_alderson_cap",
+      "tokens": [
+        "additional",
+        "advanced",
+        "alderson",
+        "allow",
+        "and",
+        "borders",
+        "cap",
+        "construction",
+        "disk",
+        "disks",
+        "empire",
+        "giga",
+        "maintenance",
+        "management",
+        "of",
+        "our",
+        "protocols",
+        "repeatable",
+        "s",
+        "tech",
+        "to",
+        "within"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_repeatable_maginot_cap",
+      "tokens": [
+        "cap",
+        "giga",
+        "maginot",
+        "management",
+        "protocols",
+        "repeatable",
+        "tech",
+        "world"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_repeatable_reduced_mega_building_time",
+      "tokens": [
+        "building",
+        "designs",
+        "giga",
+        "mega",
+        "megastructure",
+        "modular",
+        "reduced",
+        "repeatable",
+        "tech",
+        "time"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_ringworld_buildings",
+      "tokens": [
+        "buildings",
+        "development",
+        "giga",
+        "ringworld",
+        "superscale",
+        "tech",
+        "urban"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_substellar_compressor",
+      "tokens": [
+        "compressor",
+        "giga",
+        "helioforming",
+        "substellar",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_war_moon_1",
+      "tokens": [
+        "1",
+        "colossal",
+        "giga",
+        "moon",
+        "movement",
+        "systems",
+        "tech",
+        "war"
+      ]
+    },
+    {
+      "technologyId": "giga_tech_yggdrasil_orchid",
+      "tokens": [
+        "bioatmospheric",
+        "giga",
+        "large",
+        "modification",
+        "orchid",
+        "scale",
+        "tech",
+        "yggdrasil"
+      ]
+    },
+    {
+      "technologyId": "tech_arkship_tier_3",
+      "tokens": [
+        "3",
+        "arkship",
+        "mastery",
+        "tech",
+        "tier"
+      ]
+    },
+    {
+      "technologyId": "tech_battleships",
+      "tokens": [
+        "battleships",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "tech_dyson_sphere",
+      "tokens": [
+        "dyson",
+        "sphere",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "tech_ehof_phase_03",
+      "tokens": [
+        "03",
+        "drive",
+        "e",
+        "ehof",
+        "f",
+        "h",
+        "horizon",
+        "o",
+        "omega",
+        "phase",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "tech_frameworld_defensive_station_5",
+      "tokens": [
+        "5",
+        "defensive",
+        "doctrine",
+        "frameworld",
+        "maginot",
+        "perimeter",
+        "station",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "tech_frameworld_repeatable_outpost_output",
+      "tokens": [
+        "expedition",
+        "frameworld",
+        "infrastructure",
+        "outpost",
+        "output",
+        "planetary",
+        "repeatable",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "tech_gateway_construction",
+      "tokens": [
+        "construction",
+        "gateway",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "tech_habitat_1",
+      "tokens": [
+        "1",
+        "allows",
+        "construction",
+        "habitat",
+        "habitats",
+        "largely",
+        "of",
+        "orbital",
+        "self",
+        "sustaining",
+        "tech",
+        "the"
+      ]
+    },
+    {
+      "technologyId": "tech_habitat_2",
+      "tokens": [
+        "2",
+        "expansion",
+        "habitat",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "tech_housing_1",
+      "tokens": [
+        "1",
+        "control",
+        "housing",
+        "systems",
+        "tech",
+        "weather"
+      ]
+    },
+    {
+      "technologyId": "tech_housing_2",
+      "tokens": [
+        "2",
+        "anti",
+        "before",
+        "buildings",
+        "can",
+        "collapse",
+        "directional",
+        "engineering",
+        "ever",
+        "gravity",
+        "higher",
+        "housing",
+        "is",
+        "limit",
+        "of",
+        "on",
+        "planets",
+        "reach",
+        "risking",
+        "sky",
+        "structural",
+        "surface",
+        "tech",
+        "technology",
+        "than",
+        "the",
+        "with",
+        "without"
+      ]
+    },
+    {
+      "technologyId": "tech_housing_agrarian_idyll",
+      "tokens": [
+        "a",
+        "agrarian",
+        "can",
+        "communes",
+        "controlled",
+        "disrupting",
+        "establishment",
+        "housing",
+        "idyll",
+        "larger",
+        "life",
+        "of",
+        "our",
+        "population",
+        "rural",
+        "support",
+        "tech",
+        "the",
+        "through",
+        "utopias",
+        "way",
+        "we",
+        "weather",
+        "without"
+      ]
+    },
+    {
+      "technologyId": "tech_interstellar_assembly",
+      "tokens": [
+        "assembly",
+        "interstellar",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "tech_matter_decompressor",
+      "tokens": [
+        "decompressor",
+        "matter",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "tech_mega_art",
+      "tokens": [
+        "art",
+        "installation",
+        "mega",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "tech_mega_engineering",
+      "tokens": [
+        "a",
+        "achieve",
+        "and",
+        "both",
+        "complete",
+        "construction",
+        "engineering",
+        "first",
+        "for",
+        "fundamental",
+        "mega",
+        "megastructures",
+        "must",
+        "of",
+        "projects",
+        "requirements",
+        "resource",
+        "scales",
+        "staggering",
+        "storage",
+        "such",
+        "tech",
+        "the",
+        "to",
+        "truly",
+        "understanding",
+        "we"
+      ]
+    },
+    {
+      "technologyId": "tech_mega_shipyard",
+      "tokens": [
+        "mega",
+        "shipyard",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "tech_mine_living_metal",
+      "tokens": [
+        "improved",
+        "living",
+        "metal",
+        "mine",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "tech_quantum_catapult",
+      "tokens": [
+        "catapult",
+        "quantum",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "tech_ring_world",
+      "tokens": [
+        "ring",
+        "segment",
+        "tech",
+        "world"
+      ]
+    },
+    {
+      "technologyId": "tech_science_nexus",
+      "tokens": [
+        "nexus",
+        "science",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "tech_sentry_array",
+      "tokens": [
+        "array",
+        "sentry",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "tech_sm_megastructure",
+      "tokens": [
+        "forge",
+        "megastructure",
+        "metal",
+        "sentient",
+        "sm",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "tech_starbase_3",
+      "tokens": [
+        "3",
+        "starbase",
+        "starhold",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "tech_starbase_5",
+      "tokens": [
+        "5",
+        "citadel",
+        "starbase",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "tech_stingers",
+      "tokens": [
+        "stingers",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "tech_strategic_coordination",
+      "tokens": [
+        "center",
+        "coordination",
+        "strategic",
+        "tech"
+      ]
+    },
+    {
+      "technologyId": "tech_zero_point_power",
+      "tokens": [
+        "metabolism",
+        "point",
+        "power",
+        "tech",
+        "zero"
+      ]
+    }
+  ],
+  "schemaVersion": "1.0.0"
+}

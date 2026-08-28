@@ -1,0 +1,3714 @@
+{
+  "missingInlineScriptParameterCount": {
+    "current": 0,
+    "previous": 0
+  },
+  "missingLockReasonOverrides": [
+    "giga_tech_maginot_world"
+  ],
+  "overwriteReport": {
+    "scriptedVariableOverwrites": [
+      {
+        "affectedTechnologies": [
+          "giga_tech_amb_supertensiles_acot_delta",
+          "tech_acot_army_auth",
+          "tech_acot_army_clone_dm",
+          "tech_acot_army_cyborg",
+          "tech_acot_army_gene",
+          "tech_acot_army_hive_control",
+          "tech_acot_army_hive_dm",
+          "tech_acot_army_indie_machine_special",
+          "tech_acot_army_machine_special",
+          "tech_acot_army_mat",
+          "tech_acot_army_mili",
+          "tech_acot_army_paci",
+          "tech_acot_army_phile",
+          "tech_acot_army_phobe",
+          "tech_acot_army_robotic_dm",
+          "tech_acot_army_spirit",
+          "tech_acot_army_synth",
+          "tech_acot_dm_clone_vats",
+          "tech_acot_dm_dark_energy_pylon",
+          "tech_acot_dm_dark_matter_generator",
+          "tech_acot_dm_enigmatic_lab",
+          "tech_acot_dm_hive_evochamber",
+          "tech_acot_dm_machine_dome",
+          "tech_acot_dm_psg",
+          "tech_acot_dm_psi_altar",
+          "tech_acot_dm_stronghold",
+          "tech_acot_dm_super_assembly",
+          "tech_acot_dm_synt_center",
+          "tech_acot_dm_trade_center",
+          "tech_acot_end_chasm",
+          "tech_acot_end_rift",
+          "tech_acot_end_shifting_ground",
+          "tech_acot_fauna_space_whale_type_1",
+          "tech_acot_fauna_space_whale_type_2",
+          "tech_acot_fauna_space_whale_upgrades",
+          "tech_advanced_weapon",
+          "tech_apexpredator",
+          "tech_barrage_missile_dm",
+          "tech_benificialevolution",
+          "tech_bombardment_dm",
+          "tech_championofxeno",
+          "tech_commissar",
+          "tech_corporate_emperor",
+          "tech_diplomaticmastery",
+          "tech_disruptor_lance_dm",
+          "tech_dm_habitat",
+          "tech_energy_cannon_dm",
+          "tech_energy_torpedo_dm",
+          "tech_enhancedskin",
+          "tech_enlightenment",
+          "tech_fleetsupremacy",
+          "tech_forced_demand",
+          "tech_go_find_work",
+          "tech_go_sleep_machine",
+          "tech_goodmachine",
+          "tech_increased_processor",
+          "tech_kinetic_artillery_dm",
+          "tech_lawandorder",
+          "tech_libertyfukyeah",
+          "tech_machinelove",
+          "tech_macrocannon_dm",
+          "tech_master_shipcraft",
+          "tech_navy_commissar",
+          "tech_onbaord_engineer",
+          "tech_onboard_priest",
+          "tech_onlywar",
+          "tech_pacifist_tactics",
+          "tech_profit",
+          "tech_purgexeno",
+          "tech_reinforced_starbase",
+          "tech_strike_craft_bomber_dm",
+          "tech_strike_craft_fighter_dm",
+          "tech_strike_craft_scout_dm",
+          "tech_torpedo_dm",
+          "tech_wedemandit"
+        ],
+        "definedBy": "ACOT",
+        "overwrites": "Gigastructural Engineering",
+        "variable": "acot_tier6cost2"
+      },
+      {
+        "affectedTechnologies": [
+          "giga_tech_amb_supertensiles_acot_alpha",
+          "tech_acot_ae_clone_vats",
+          "tech_acot_ae_dark_energy_pylon",
+          "tech_acot_ae_dark_matter_generator",
+          "tech_acot_ae_enigmatic_lab",
+          "tech_acot_ae_hive_evochamber",
+          "tech_acot_ae_machine_dome",
+          "tech_acot_ae_psg",
+          "tech_acot_ae_psi_altar",
+          "tech_acot_ae_stronghold",
+          "tech_acot_ae_super_assembly",
+          "tech_acot_ae_synt_center",
+          "tech_acot_ae_trade_center",
+          "tech_acot_army_auth_hero",
+          "tech_acot_army_ega_hero",
+          "tech_acot_army_gene_hero",
+          "tech_acot_army_hive_ae",
+          "tech_acot_army_hive_hero",
+          "tech_acot_army_indie_machine_hero",
+          "tech_acot_army_machine_hero",
+          "tech_acot_army_mili_hero",
+          "tech_acot_army_paci_hero",
+          "tech_acot_army_phile_hero",
+          "tech_acot_army_phobe_hero",
+          "tech_acot_army_psi_hero",
+          "tech_acot_army_robotic_ae",
+          "tech_acot_army_spirit_hero",
+          "tech_ae_bureau",
+          "tech_ae_commercial_megaplex",
+          "tech_ae_embassy",
+          "tech_ae_habitat",
+          "tech_barrage_missile_ae",
+          "tech_bombardment_ae",
+          "tech_disruptor_lance_ae",
+          "tech_energy_cannon_ae",
+          "tech_energy_torpedo_ae",
+          "tech_kinetic_artillery_ae",
+          "tech_macrocannon_ae",
+          "tech_mass_accelerator_ae",
+          "tech_precursor_bc",
+          "tech_precursor_colonizer",
+          "tech_precursor_construcor",
+          "tech_precursor_design",
+          "tech_precursor_escort",
+          "tech_precursor_guardian",
+          "tech_precursor_science",
+          "tech_precursor_sentinel",
+          "tech_precursor_world_shaper",
+          "tech_reinforced_starbase_ae",
+          "tech_strike_craft_bomber_ae",
+          "tech_strike_craft_fighter_ae",
+          "tech_strike_craft_scout_ae",
+          "tech_torpedo_ae"
+        ],
+        "definedBy": "ACOT",
+        "overwrites": "Gigastructural Engineering",
+        "variable": "acot_tier7cost2"
+      },
+      {
+        "affectedTechnologies": [
+          "giga_tech_amb_supertensiles_acot_phanon",
+          "tech_acot_army_hive_se",
+          "tech_acot_army_robotic_se",
+          "tech_barrage_missile_pe",
+          "tech_bombardment_pe",
+          "tech_disruptor_lance_pe",
+          "tech_energy_cannon_pe",
+          "tech_energy_torpedo_pe",
+          "tech_kinetic_artillery_pe",
+          "tech_macrocannon_pe",
+          "tech_mass_accelerator_pe",
+          "tech_phanon_bureau",
+          "tech_phanon_clone_vats",
+          "tech_phanon_commercial_megaplex",
+          "tech_phanon_embassy",
+          "tech_phanon_enigmatic_lab",
+          "tech_phanon_hive_evochamber",
+          "tech_phanon_machine_dome",
+          "tech_phanon_psi_altar",
+          "tech_phanon_super_assembly",
+          "tech_phanon_synt_center",
+          "tech_phanon_synthersizer",
+          "tech_phanon_trade_center",
+          "tech_precursor_bc_alpha",
+          "tech_precursor_bc_runic",
+          "tech_precursor_colonizer_alpha",
+          "tech_precursor_construcor_alpha",
+          "tech_precursor_escort_alpha",
+          "tech_precursor_escort_runic",
+          "tech_precursor_guardian_alpha",
+          "tech_precursor_guardian_runic",
+          "tech_precursor_science_alpha",
+          "tech_shroud_barrier",
+          "tech_shroud_hanger",
+          "tech_shroud_jump_drive",
+          "tech_shroud_missile",
+          "tech_shroud_storm",
+          "tech_strike_craft_bomber_pe",
+          "tech_strike_craft_fighter_pe",
+          "tech_strike_craft_scout_pe"
+        ],
+        "definedBy": "ACOT",
+        "overwrites": "Gigastructural Engineering",
+        "variable": "acot_tier8cost2"
+      },
+      {
+        "affectedTechnologies": [
+          "giga_tech_amb_supertensiles_acot_sigma",
+          "tech_acot_bio_ships_sigma",
+          "tech_acot_fauna_mutations_sigma",
+          "tech_acot_pleb_ships_sigma",
+          "tech_acot_stellarite_nexus",
+          "tech_analyzer_oe",
+          "tech_arc_emitter_oe",
+          "tech_armor_oe",
+          "tech_auto_laser_oe",
+          "tech_autocannons_oe",
+          "tech_barrage_missile_oe",
+          "tech_barrage_missile_re",
+          "tech_barrage_missile_se",
+          "tech_bombardment_se",
+          "tech_ccm_oe",
+          "tech_computer_lightmatter",
+          "tech_dark_matter_deflector_oe",
+          "tech_dark_matter_power_core_oe",
+          "tech_dark_matter_power_core_se",
+          "tech_darkmatter_afterburners_oe",
+          "tech_darkmatter_armor_supercharger_oe",
+          "tech_darkmatter_aura_energy_drainer_oe",
+          "tech_darkmatter_hyper_jump_drive_oe",
+          "tech_darkmatter_reactive_drone_oe",
+          "tech_darkmatter_shield_supercharger_oe",
+          "tech_disruptor_lance_re",
+          "tech_disruptor_lance_se",
+          "tech_disruptor_oe",
+          "tech_energy_cannon_oe",
+          "tech_energy_cannon_re",
+          "tech_energy_cannon_se",
+          "tech_energy_core_oe",
+          "tech_energy_lance_oe",
+          "tech_energy_torpedo_oe",
+          "tech_energy_torpedo_re",
+          "tech_energy_torpedo_se",
+          "tech_enigmatic_drive_oe",
+          "tech_flak_batteries_oe",
+          "tech_gatekeepers_omega",
+          "tech_hull_power_oe",
+          "tech_inspire_aura_oe",
+          "tech_kinetic_artillery_oe",
+          "tech_kinetic_artillery_re",
+          "tech_kinetic_artillery_se",
+          "tech_laser_oe",
+          "tech_macrocannon_oe",
+          "tech_macrocannon_re",
+          "tech_macrocannon_se",
+          "tech_mass_accelerator_oe",
+          "tech_mass_accelerator_re",
+          "tech_mass_driver_oe",
+          "tech_missile_nuke_oe",
+          "tech_missile_oe",
+          "tech_omega_juggernaut",
+          "tech_perdition_beam_oe",
+          "tech_plasma_oe",
+          "tech_point_defense_oe",
+          "tech_precursor_bc_sigma",
+          "tech_precursor_colonizer_sigma",
+          "tech_precursor_construcor_sigma",
+          "tech_precursor_escort_sigma",
+          "tech_precursor_guardian_sigma",
+          "tech_precursor_science_sigma",
+          "tech_reinforced_starbase_se",
+          "tech_se_deluge",
+          "tech_se_devolution",
+          "tech_se_divine_enforcer",
+          "tech_se_global_pacifier",
+          "tech_se_nanobot_diffuser",
+          "tech_se_neutron_sweep",
+          "tech_se_world_cracker",
+          "tech_sensor_oe",
+          "tech_stellarite_bureau",
+          "tech_stellarite_clone_vats",
+          "tech_stellarite_commercial_megaplex",
+          "tech_stellarite_embassy",
+          "tech_stellarite_enigmatic_lab",
+          "tech_stellarite_hive_evochamber",
+          "tech_stellarite_machine_dome",
+          "tech_stellarite_psi_altar",
+          "tech_stellarite_super_assembly",
+          "tech_stellarite_synt_center",
+          "tech_stellarite_synthersizer",
+          "tech_stellarite_trade_center",
+          "tech_strike_craft_bomber_oe",
+          "tech_strike_craft_bomber_re",
+          "tech_strike_craft_bomber_se",
+          "tech_strike_craft_fighter_oe",
+          "tech_strike_craft_fighter_re",
+          "tech_strike_craft_fighter_se",
+          "tech_strike_craft_gunship_oe",
+          "tech_strike_craft_scout_oe",
+          "tech_strike_craft_scout_re",
+          "tech_strike_craft_scout_se",
+          "tech_swarmer_missile_oe",
+          "tech_thrusters_oe",
+          "tech_titan_emitter_oe",
+          "tech_torpedo_oe",
+          "tech_xl_missile_oe"
+        ],
+        "definedBy": "ACOT",
+        "overwrites": "Gigastructural Engineering",
+        "variable": "acot_tier9cost2"
+      }
+    ],
+    "technologyBlockOverwrites": [
+      {
+        "changedFields": [
+          "flags"
+        ],
+        "definedBy": "AoT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_tier7cost3",
+            "afterResolved": "192000",
+            "beforePresent": true,
+            "beforeRaw": "@acot_tier7cost3",
+            "beforeResolved": "192000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_techweight_advanced",
+            "afterResolved": "30",
+            "beforePresent": true,
+            "beforeRaw": "@acot_techweight_advanced",
+            "beforeResolved": "30",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "7",
+            "afterResolved": "7",
+            "beforePresent": true,
+            "beforeRaw": "7",
+            "beforeResolved": "7",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_acot_dm_ancient_control_center",
+              "tech_dark_matter_power_core_ae"
+            ],
+            "afterResolved": [
+              "tech_acot_dm_ancient_control_center",
+              "tech_dark_matter_power_core_ae"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_acot_dm_ancient_control_center",
+              "tech_dark_matter_power_core_ae"
+            ],
+            "beforeResolved": [
+              "tech_acot_dm_ancient_control_center",
+              "tech_dark_matter_power_core_ae"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "statecraft"
+            ],
+            "afterResolved": [
+              "statecraft"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "statecraft"
+            ],
+            "beforeResolved": [
+              "statecraft"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": false,
+            "afterRaw": {},
+            "afterResolved": {},
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes"
+            },
+            "beforeResolved": {
+              "is_rare": "yes"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "ACOT (modified by AoT)",
+        "overwrites": "ACOT",
+        "technology": "tech_acot_ae_ancient_control_center"
+      },
+      {
+        "changedFields": [
+          "flags"
+        ],
+        "definedBy": "AoT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_tier7cost3",
+            "afterResolved": "192000",
+            "beforePresent": true,
+            "beforeRaw": "@acot_tier7cost3",
+            "beforeResolved": "192000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_techweight_advanced",
+            "afterResolved": "30",
+            "beforePresent": true,
+            "beforeRaw": "@acot_techweight_advanced",
+            "beforeResolved": "30",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "7",
+            "afterResolved": "7",
+            "beforePresent": true,
+            "beforeRaw": "7",
+            "beforeResolved": "7",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_acot_dm_ancient_hive_cluster",
+              "tech_dark_matter_power_core_ae"
+            ],
+            "afterResolved": [
+              "tech_acot_dm_ancient_hive_cluster",
+              "tech_dark_matter_power_core_ae"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_acot_dm_ancient_hive_cluster",
+              "tech_dark_matter_power_core_ae"
+            ],
+            "beforeResolved": [
+              "tech_acot_dm_ancient_hive_cluster",
+              "tech_dark_matter_power_core_ae"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "statecraft"
+            ],
+            "afterResolved": [
+              "statecraft"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "statecraft"
+            ],
+            "beforeResolved": [
+              "statecraft"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": false,
+            "afterRaw": {},
+            "afterResolved": {},
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes"
+            },
+            "beforeResolved": {
+              "is_rare": "yes"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "ACOT (modified by AoT)",
+        "overwrites": "ACOT",
+        "technology": "tech_acot_ae_ancient_hive_cluster"
+      },
+      {
+        "changedFields": [],
+        "definedBy": "AoT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_tier7cost3",
+            "afterResolved": "192000",
+            "beforePresent": true,
+            "beforeRaw": "@acot_tier7cost3",
+            "beforeResolved": "192000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_techweight_advanced",
+            "afterResolved": "30",
+            "beforePresent": true,
+            "beforeRaw": "@acot_techweight_advanced",
+            "beforeResolved": "30",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "7",
+            "afterResolved": "7",
+            "beforePresent": true,
+            "beforeRaw": "7",
+            "beforeResolved": "7",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_acot_dm_ancient_palace",
+              "tech_dark_matter_power_core_ae"
+            ],
+            "afterResolved": [
+              "tech_acot_dm_ancient_palace",
+              "tech_dark_matter_power_core_ae"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_acot_dm_ancient_palace",
+              "tech_dark_matter_power_core_ae"
+            ],
+            "beforeResolved": [
+              "tech_acot_dm_ancient_palace",
+              "tech_dark_matter_power_core_ae"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "statecraft"
+            ],
+            "afterResolved": [
+              "statecraft"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "statecraft"
+            ],
+            "beforeResolved": [
+              "statecraft"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": false,
+            "afterRaw": {},
+            "afterResolved": {},
+            "beforePresent": false,
+            "beforeRaw": {},
+            "beforeResolved": {},
+            "field": "flags"
+          }
+        ],
+        "label": "ACOT (modified by AoT)",
+        "overwrites": "ACOT",
+        "technology": "tech_acot_ae_ancient_palace"
+      },
+      {
+        "changedFields": [],
+        "definedBy": "AoT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_tier7cost2",
+            "afterResolved": "160000",
+            "beforePresent": true,
+            "beforeRaw": "@acot_tier7cost2",
+            "beforeResolved": "160000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_techweight_basic",
+            "afterResolved": "60",
+            "beforePresent": true,
+            "beforeRaw": "@acot_techweight_basic",
+            "beforeResolved": "60",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "8",
+            "afterResolved": "8",
+            "beforePresent": true,
+            "beforeRaw": "8",
+            "beforeResolved": "8",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_acot_army_psi"
+            ],
+            "afterResolved": [
+              "tech_acot_army_psi"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_acot_army_psi"
+            ],
+            "beforeResolved": [
+              "tech_acot_army_psi"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "psionics"
+            ],
+            "afterResolved": [
+              "psionics"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "psionics"
+            ],
+            "beforeResolved": [
+              "psionics"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": {
+              "is_rare": "yes",
+              "is_reverse_engineerable": "no"
+            },
+            "afterResolved": {
+              "is_rare": "yes",
+              "is_reverse_engineerable": "no"
+            },
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes",
+              "is_reverse_engineerable": "no"
+            },
+            "beforeResolved": {
+              "is_rare": "yes",
+              "is_reverse_engineerable": "no"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "ACOT (modified by AoT)",
+        "overwrites": "ACOT",
+        "technology": "tech_acot_army_psi_hero"
+      },
+      {
+        "changedFields": [
+          "cost",
+          "weight"
+        ],
+        "definedBy": "AoT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_tier9cost3",
+            "afterResolved": "1728000",
+            "beforePresent": true,
+            "beforeRaw": "@acot_tier8cost3",
+            "beforeResolved": "576000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "5",
+            "afterResolved": "5",
+            "beforePresent": true,
+            "beforeRaw": "@acot_techweight_rare",
+            "beforeResolved": "15",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "9",
+            "afterResolved": "9",
+            "beforePresent": true,
+            "beforeRaw": "9",
+            "beforeResolved": "9",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_acot_stellarite_nexus",
+              "tech_dark_matter_power_core_se",
+              "tech_darkmatter_reactor_booster_se"
+            ],
+            "afterResolved": [
+              "tech_acot_stellarite_nexus",
+              "tech_dark_matter_power_core_se",
+              "tech_darkmatter_reactor_booster_se"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_acot_stellarite_nexus",
+              "tech_dark_matter_power_core_se",
+              "tech_darkmatter_reactor_booster_se"
+            ],
+            "beforeResolved": [
+              "tech_acot_stellarite_nexus",
+              "tech_dark_matter_power_core_se",
+              "tech_darkmatter_reactor_booster_se"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "field_manipulation"
+            ],
+            "afterResolved": [
+              "field_manipulation"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "field_manipulation"
+            ],
+            "beforeResolved": [
+              "field_manipulation"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": {
+              "is_rare": "yes"
+            },
+            "afterResolved": {
+              "is_rare": "yes"
+            },
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes"
+            },
+            "beforeResolved": {
+              "is_rare": "yes"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "ACOT (modified by AoT)",
+        "overwrites": "ACOT",
+        "technology": "tech_acot_stellarite_generator_ae"
+      },
+      {
+        "changedFields": [
+          "cost",
+          "prerequisites",
+          "weight"
+        ],
+        "definedBy": "AoT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_tier9cost2",
+            "afterResolved": "1440000",
+            "beforePresent": true,
+            "beforeRaw": "@acot_tier8cost1",
+            "beforeResolved": "384000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "@tier5weight1",
+            "afterResolved": "30",
+            "beforePresent": true,
+            "beforeRaw": "@acot_techweight_rare",
+            "beforeResolved": "15",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "9",
+            "afterResolved": "9",
+            "beforePresent": true,
+            "beforeRaw": "9",
+            "beforeResolved": "9",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_dark_matter_power_core_se",
+              "tech_phanon_stellarite_nexus",
+              "tech_phanon_synthersizer"
+            ],
+            "afterResolved": [
+              "tech_dark_matter_power_core_se",
+              "tech_phanon_stellarite_nexus",
+              "tech_phanon_synthersizer"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_dark_matter_power_core_se",
+              "tech_darkmatter_reactor_booster_se"
+            ],
+            "beforeResolved": [
+              "tech_dark_matter_power_core_se",
+              "tech_darkmatter_reactor_booster_se"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "field_manipulation"
+            ],
+            "afterResolved": [
+              "field_manipulation"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "field_manipulation"
+            ],
+            "beforeResolved": [
+              "field_manipulation"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": {
+              "is_rare": "yes"
+            },
+            "afterResolved": {
+              "is_rare": "yes"
+            },
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes"
+            },
+            "beforeResolved": {
+              "is_rare": "yes"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "ACOT (modified by AoT)",
+        "overwrites": "ACOT",
+        "technology": "tech_acot_stellarite_nexus"
+      },
+      {
+        "changedFields": [
+          "cost",
+          "tier",
+          "prerequisites",
+          "weight"
+        ],
+        "definedBy": "ACOT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@tier3cost2",
+            "afterResolved": "5000",
+            "beforePresent": true,
+            "beforeRaw": "@tier2cost2",
+            "beforeResolved": "2500",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "@tier3weight2",
+            "afterResolved": "60",
+            "beforePresent": true,
+            "beforeRaw": "@tier2weight2",
+            "beforeResolved": "75",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "3",
+            "afterResolved": "3",
+            "beforePresent": true,
+            "beforeRaw": "2",
+            "beforeResolved": "2",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_assault_armies"
+            ],
+            "afterResolved": [
+              "tech_assault_armies"
+            ],
+            "beforePresent": false,
+            "beforeRaw": [],
+            "beforeResolved": [],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "military_theory"
+            ],
+            "afterResolved": [
+              "military_theory"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "military_theory"
+            ],
+            "beforeResolved": [
+              "military_theory"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": false,
+            "afterRaw": {},
+            "afterResolved": {},
+            "beforePresent": false,
+            "beforeRaw": {},
+            "beforeResolved": {},
+            "field": "flags"
+          }
+        ],
+        "label": "Vanilla (modified by ACOT)",
+        "overwrites": "Vanilla",
+        "technology": "tech_adaptive_combat_algorithms"
+      },
+      {
+        "changedFields": [
+          "cost",
+          "tier",
+          "flags"
+        ],
+        "definedBy": "ACOT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@tier5cost2",
+            "afterResolved": "20000",
+            "beforePresent": true,
+            "beforeRaw": "@tier4cost2",
+            "beforeResolved": "10000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "@tier4weight2",
+            "afterResolved": "40",
+            "beforePresent": true,
+            "beforeRaw": "@tier4weight2",
+            "beforeResolved": "40",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "5",
+            "afterResolved": "5",
+            "beforePresent": true,
+            "beforeRaw": "4",
+            "beforeResolved": "4",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_adaptive_combat_algorithms"
+            ],
+            "afterResolved": [
+              "tech_adaptive_combat_algorithms"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_adaptive_combat_algorithms"
+            ],
+            "beforeResolved": [
+              "tech_adaptive_combat_algorithms"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "biology"
+            ],
+            "afterResolved": [
+              "biology"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "biology"
+            ],
+            "beforeResolved": [
+              "biology"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": false,
+            "afterRaw": {},
+            "afterResolved": {},
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes"
+            },
+            "beforeResolved": {
+              "is_rare": "yes"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "Vanilla (modified by ACOT)",
+        "overwrites": "Vanilla",
+        "technology": "tech_biomechanics"
+      },
+      {
+        "changedFields": [],
+        "definedBy": "Gigastructural Engineering",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@tier5cost3",
+            "afterResolved": "24000",
+            "beforePresent": true,
+            "beforeRaw": "@tier5cost3",
+            "beforeResolved": "24000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "@tier5weight3",
+            "afterResolved": "20",
+            "beforePresent": true,
+            "beforeRaw": "@tier5weight3",
+            "beforeResolved": "20",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "5",
+            "afterResolved": "5",
+            "beforePresent": true,
+            "beforeRaw": "5",
+            "beforeResolved": "5",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_arkship_tier_3",
+              "tech_battleships",
+              "tech_starbase_5",
+              "tech_stingers",
+              "tech_zero_point_power"
+            ],
+            "afterResolved": [
+              "tech_arkship_tier_3",
+              "tech_battleships",
+              "tech_starbase_5",
+              "tech_stingers",
+              "tech_zero_point_power"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_arkship_tier_3",
+              "tech_battleships",
+              "tech_starbase_5",
+              "tech_stingers",
+              "tech_zero_point_power"
+            ],
+            "beforeResolved": [
+              "tech_arkship_tier_3",
+              "tech_battleships",
+              "tech_starbase_5",
+              "tech_stingers",
+              "tech_zero_point_power"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "voidcraft"
+            ],
+            "afterResolved": [
+              "voidcraft"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "voidcraft"
+            ],
+            "beforeResolved": [
+              "voidcraft"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": {
+              "is_rare": "yes"
+            },
+            "afterResolved": {
+              "is_rare": "yes"
+            },
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes"
+            },
+            "beforeResolved": {
+              "is_rare": "yes"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "Vanilla (modified by Gigastructural Engineering)",
+        "overwrites": "Vanilla",
+        "technology": "tech_mega_engineering"
+      },
+      {
+        "changedFields": [
+          "weight"
+        ],
+        "definedBy": "AoT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_tier7cost3",
+            "afterResolved": "192000",
+            "beforePresent": true,
+            "beforeRaw": "@acot_tier7cost3",
+            "beforeResolved": "192000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "@tier5weight3",
+            "afterResolved": "20",
+            "beforePresent": true,
+            "beforeRaw": "0",
+            "beforeResolved": "0",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "7",
+            "afterResolved": "7",
+            "beforePresent": true,
+            "beforeRaw": "7",
+            "beforeResolved": "7",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_acot_dm_dark_matter_synthersizer",
+              "tech_dyson_sphere",
+              "tech_precursor_construcor",
+              "tech_precursor_enigmalith"
+            ],
+            "afterResolved": [
+              "tech_acot_dm_dark_matter_synthersizer",
+              "tech_dyson_sphere",
+              "tech_precursor_construcor",
+              "tech_precursor_enigmalith"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_acot_dm_dark_matter_synthersizer",
+              "tech_dyson_sphere",
+              "tech_precursor_construcor",
+              "tech_precursor_enigmalith"
+            ],
+            "beforeResolved": [
+              "tech_acot_dm_dark_matter_synthersizer",
+              "tech_dyson_sphere",
+              "tech_precursor_construcor",
+              "tech_precursor_enigmalith"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "field_manipulation"
+            ],
+            "afterResolved": [
+              "field_manipulation"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "field_manipulation"
+            ],
+            "beforeResolved": [
+              "field_manipulation"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": {
+              "is_rare": "yes"
+            },
+            "afterResolved": {
+              "is_rare": "yes"
+            },
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes"
+            },
+            "beforeResolved": {
+              "is_rare": "yes"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "ACOT (modified by AoT)",
+        "overwrites": "ACOT",
+        "technology": "tech_precursor_dyson_sphere"
+      },
+      {
+        "changedFields": [
+          "prerequisites",
+          "weight"
+        ],
+        "definedBy": "AoT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_tier7cost3",
+            "afterResolved": "192000",
+            "beforePresent": true,
+            "beforeRaw": "@acot_tier7cost3",
+            "beforeResolved": "192000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "10",
+            "afterResolved": "10",
+            "beforePresent": true,
+            "beforeRaw": "0",
+            "beforeResolved": "0",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "7",
+            "afterResolved": "7",
+            "beforePresent": true,
+            "beforeRaw": "7",
+            "beforeResolved": "7",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_dark_matter_power_core_dm",
+              "tech_precursor_design"
+            ],
+            "afterResolved": [
+              "tech_dark_matter_power_core_dm",
+              "tech_precursor_design"
+            ],
+            "beforePresent": false,
+            "beforeRaw": [],
+            "beforeResolved": [],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "field_manipulation"
+            ],
+            "afterResolved": [
+              "field_manipulation"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "field_manipulation"
+            ],
+            "beforeResolved": [
+              "field_manipulation"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": {
+              "is_rare": "yes"
+            },
+            "afterResolved": {
+              "is_rare": "yes"
+            },
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes"
+            },
+            "beforeResolved": {
+              "is_rare": "yes"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "ACOT (modified by AoT)",
+        "overwrites": "ACOT",
+        "technology": "tech_precursor_enigmalith"
+      },
+      {
+        "changedFields": [],
+        "definedBy": "AoT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_tier8cost3",
+            "afterResolved": "576000",
+            "beforePresent": true,
+            "beforeRaw": "@acot_tier8cost3",
+            "beforeResolved": "576000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "10",
+            "afterResolved": "10",
+            "beforePresent": true,
+            "beforeRaw": "10",
+            "beforeResolved": "10",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "8",
+            "afterResolved": "8",
+            "beforePresent": true,
+            "beforeRaw": "8",
+            "beforeResolved": "8",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_dark_matter_power_core_ae",
+              "tech_precursor_design",
+              "tech_precursor_enigmalith"
+            ],
+            "afterResolved": [
+              "tech_dark_matter_power_core_ae",
+              "tech_precursor_design",
+              "tech_precursor_enigmalith"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_dark_matter_power_core_ae",
+              "tech_precursor_design",
+              "tech_precursor_enigmalith"
+            ],
+            "beforeResolved": [
+              "tech_dark_matter_power_core_ae",
+              "tech_precursor_design",
+              "tech_precursor_enigmalith"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "field_manipulation"
+            ],
+            "afterResolved": [
+              "field_manipulation"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "field_manipulation"
+            ],
+            "beforeResolved": [
+              "field_manipulation"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": {
+              "is_rare": "yes"
+            },
+            "afterResolved": {
+              "is_rare": "yes"
+            },
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes"
+            },
+            "beforeResolved": {
+              "is_rare": "yes"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "ACOT (modified by AoT)",
+        "overwrites": "ACOT",
+        "technology": "tech_precursor_enigmalith_ae"
+      },
+      {
+        "changedFields": [
+          "prerequisites"
+        ],
+        "definedBy": "AoT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_tier10cost3",
+            "afterResolved": "4608000",
+            "beforePresent": true,
+            "beforeRaw": "@acot_tier10cost3",
+            "beforeResolved": "4608000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "10",
+            "afterResolved": "10",
+            "beforePresent": true,
+            "beforeRaw": "10",
+            "beforeResolved": "10",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "10",
+            "afterResolved": "10",
+            "beforePresent": true,
+            "beforeRaw": "10",
+            "beforeResolved": "10",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_dark_matter_power_core_oe",
+              "tech_precursor_design",
+              "tech_precursor_enigmalith_pe"
+            ],
+            "afterResolved": [
+              "tech_dark_matter_power_core_oe",
+              "tech_precursor_design",
+              "tech_precursor_enigmalith_pe"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_dark_matter_power_core_oe",
+              "tech_precursor_design",
+              "tech_precursor_enigmalith_se"
+            ],
+            "beforeResolved": [
+              "tech_dark_matter_power_core_oe",
+              "tech_precursor_design",
+              "tech_precursor_enigmalith_se"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "field_manipulation"
+            ],
+            "afterResolved": [
+              "field_manipulation"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "field_manipulation"
+            ],
+            "beforeResolved": [
+              "field_manipulation"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": {
+              "is_rare": "yes"
+            },
+            "afterResolved": {
+              "is_rare": "yes"
+            },
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes"
+            },
+            "beforeResolved": {
+              "is_rare": "yes"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "ACOT (modified by AoT)",
+        "overwrites": "ACOT",
+        "technology": "tech_precursor_enigmalith_oe"
+      },
+      {
+        "changedFields": [
+          "prerequisites"
+        ],
+        "definedBy": "AoT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_tier9cost3",
+            "afterResolved": "1728000",
+            "beforePresent": true,
+            "beforeRaw": "@acot_tier9cost3",
+            "beforeResolved": "1728000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "10",
+            "afterResolved": "10",
+            "beforePresent": true,
+            "beforeRaw": "10",
+            "beforeResolved": "10",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "9",
+            "afterResolved": "9",
+            "beforePresent": true,
+            "beforeRaw": "9",
+            "beforeResolved": "9",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_dark_matter_power_core_se",
+              "tech_precursor_design",
+              "tech_precursor_enigmalith_pe"
+            ],
+            "afterResolved": [
+              "tech_dark_matter_power_core_se",
+              "tech_precursor_design",
+              "tech_precursor_enigmalith_pe"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_dark_matter_power_core_se",
+              "tech_precursor_design",
+              "tech_precursor_enigmalith_ae"
+            ],
+            "beforeResolved": [
+              "tech_dark_matter_power_core_se",
+              "tech_precursor_design",
+              "tech_precursor_enigmalith_ae"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "field_manipulation"
+            ],
+            "afterResolved": [
+              "field_manipulation"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "field_manipulation"
+            ],
+            "beforeResolved": [
+              "field_manipulation"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": {
+              "is_rare": "yes"
+            },
+            "afterResolved": {
+              "is_rare": "yes"
+            },
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes"
+            },
+            "beforeResolved": {
+              "is_rare": "yes"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "ACOT (modified by AoT)",
+        "overwrites": "ACOT",
+        "technology": "tech_precursor_enigmalith_se"
+      },
+      {
+        "changedFields": [
+          "weight"
+        ],
+        "definedBy": "AoT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_tier7cost3",
+            "afterResolved": "192000",
+            "beforePresent": true,
+            "beforeRaw": "@acot_tier7cost3",
+            "beforeResolved": "192000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "@tier5weight3",
+            "afterResolved": "20",
+            "beforePresent": true,
+            "beforeRaw": "0",
+            "beforeResolved": "0",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "7",
+            "afterResolved": "7",
+            "beforePresent": true,
+            "beforeRaw": "7",
+            "beforeResolved": "7",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_enigmatic_drive_dm",
+              "tech_gateway_construction",
+              "tech_precursor_enigmalith"
+            ],
+            "afterResolved": [
+              "tech_enigmatic_drive_dm",
+              "tech_gateway_construction",
+              "tech_precursor_enigmalith"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_enigmatic_drive_dm",
+              "tech_gateway_construction",
+              "tech_precursor_enigmalith"
+            ],
+            "beforeResolved": [
+              "tech_enigmatic_drive_dm",
+              "tech_gateway_construction",
+              "tech_precursor_enigmalith"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "field_manipulation"
+            ],
+            "afterResolved": [
+              "field_manipulation"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "field_manipulation"
+            ],
+            "beforeResolved": [
+              "field_manipulation"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": {
+              "is_rare": "yes"
+            },
+            "afterResolved": {
+              "is_rare": "yes"
+            },
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes"
+            },
+            "beforeResolved": {
+              "is_rare": "yes"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "ACOT (modified by AoT)",
+        "overwrites": "ACOT",
+        "technology": "tech_precursor_gateway"
+      },
+      {
+        "changedFields": [
+          "weight",
+          "category"
+        ],
+        "definedBy": "AoT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_tier7cost3",
+            "afterResolved": "192000",
+            "beforePresent": true,
+            "beforeRaw": "@acot_tier7cost3",
+            "beforeResolved": "192000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "@tier5weight3",
+            "afterResolved": "20",
+            "beforePresent": true,
+            "beforeRaw": "0",
+            "beforeResolved": "0",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "7",
+            "afterResolved": "7",
+            "beforePresent": true,
+            "beforeRaw": "7",
+            "beforeResolved": "7",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_acot_dm_dark_matter_synthersizer",
+              "tech_mega_shipyard",
+              "tech_precursor_citadel",
+              "tech_precursor_enigmalith"
+            ],
+            "afterResolved": [
+              "tech_acot_dm_dark_matter_synthersizer",
+              "tech_mega_shipyard",
+              "tech_precursor_citadel",
+              "tech_precursor_enigmalith"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_acot_dm_dark_matter_synthersizer",
+              "tech_mega_shipyard",
+              "tech_precursor_citadel",
+              "tech_precursor_enigmalith"
+            ],
+            "beforeResolved": [
+              "tech_acot_dm_dark_matter_synthersizer",
+              "tech_mega_shipyard",
+              "tech_precursor_citadel",
+              "tech_precursor_enigmalith"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "voidcraft"
+            ],
+            "afterResolved": [
+              "voidcraft"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "field_manipulation"
+            ],
+            "beforeResolved": [
+              "field_manipulation"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": {
+              "is_rare": "yes"
+            },
+            "afterResolved": {
+              "is_rare": "yes"
+            },
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes"
+            },
+            "beforeResolved": {
+              "is_rare": "yes"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "ACOT (modified by AoT)",
+        "overwrites": "ACOT",
+        "technology": "tech_precursor_mega_shipyard"
+      },
+      {
+        "changedFields": [
+          "weight",
+          "category"
+        ],
+        "definedBy": "AoT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_tier7cost3",
+            "afterResolved": "192000",
+            "beforePresent": true,
+            "beforeRaw": "@acot_tier7cost3",
+            "beforeResolved": "192000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "@tier5weight3",
+            "afterResolved": "20",
+            "beforePresent": true,
+            "beforeRaw": "0",
+            "beforeResolved": "0",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "7",
+            "afterResolved": "7",
+            "beforePresent": true,
+            "beforeRaw": "7",
+            "beforeResolved": "7",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_acot_dm_institute",
+              "tech_precursor_enigmalith",
+              "tech_precursor_science",
+              "tech_science_nexus"
+            ],
+            "afterResolved": [
+              "tech_acot_dm_institute",
+              "tech_precursor_enigmalith",
+              "tech_precursor_science",
+              "tech_science_nexus"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_acot_dm_institute",
+              "tech_precursor_enigmalith",
+              "tech_precursor_science",
+              "tech_science_nexus"
+            ],
+            "beforeResolved": [
+              "tech_acot_dm_institute",
+              "tech_precursor_enigmalith",
+              "tech_precursor_science",
+              "tech_science_nexus"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "computing"
+            ],
+            "afterResolved": [
+              "computing"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "field_manipulation"
+            ],
+            "beforeResolved": [
+              "field_manipulation"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": {
+              "is_rare": "yes"
+            },
+            "afterResolved": {
+              "is_rare": "yes"
+            },
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes"
+            },
+            "beforeResolved": {
+              "is_rare": "yes"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "ACOT (modified by AoT)",
+        "overwrites": "ACOT",
+        "technology": "tech_precursor_nexus"
+      },
+      {
+        "changedFields": [
+          "prerequisites",
+          "weight",
+          "flags"
+        ],
+        "definedBy": "AoT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_tier8cost3",
+            "afterResolved": "576000",
+            "beforePresent": true,
+            "beforeRaw": "@acot_tier8cost3",
+            "beforeResolved": "576000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "25",
+            "afterResolved": "25",
+            "beforePresent": true,
+            "beforeRaw": "0",
+            "beforeResolved": "0",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "7",
+            "afterResolved": "7",
+            "beforePresent": true,
+            "beforeRaw": "7",
+            "beforeResolved": "7",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_phanon_dimensional_mirror"
+            ],
+            "afterResolved": [
+              "tech_phanon_dimensional_mirror"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_dark_matter_power_core_dm"
+            ],
+            "beforeResolved": [
+              "tech_dark_matter_power_core_dm"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "computing"
+            ],
+            "afterResolved": [
+              "computing"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "computing"
+            ],
+            "beforeResolved": [
+              "computing"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": {
+              "is_rare": "no",
+              "is_reverse_engineerable": "no"
+            },
+            "afterResolved": {
+              "is_rare": "no",
+              "is_reverse_engineerable": "no"
+            },
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes",
+              "is_reverse_engineerable": "no"
+            },
+            "beforeResolved": {
+              "is_rare": "yes",
+              "is_reverse_engineerable": "no"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "ACOT (modified by AoT)",
+        "overwrites": "ACOT",
+        "technology": "tech_precursor_phanon_design_pe_1"
+      },
+      {
+        "changedFields": [
+          "weight",
+          "flags"
+        ],
+        "definedBy": "AoT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_tier9cost3",
+            "afterResolved": "1728000",
+            "beforePresent": true,
+            "beforeRaw": "@acot_tier9cost3",
+            "beforeResolved": "1728000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "25",
+            "afterResolved": "25",
+            "beforePresent": true,
+            "beforeRaw": "0",
+            "beforeResolved": "0",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "8",
+            "afterResolved": "8",
+            "beforePresent": true,
+            "beforeRaw": "8",
+            "beforeResolved": "8",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_precursor_phanon_design_pe_1"
+            ],
+            "afterResolved": [
+              "tech_precursor_phanon_design_pe_1"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_precursor_phanon_design_pe_1"
+            ],
+            "beforeResolved": [
+              "tech_precursor_phanon_design_pe_1"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "computing"
+            ],
+            "afterResolved": [
+              "computing"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "computing"
+            ],
+            "beforeResolved": [
+              "computing"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": {
+              "is_rare": "no",
+              "is_reverse_engineerable": "no"
+            },
+            "afterResolved": {
+              "is_rare": "no",
+              "is_reverse_engineerable": "no"
+            },
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes",
+              "is_reverse_engineerable": "no"
+            },
+            "beforeResolved": {
+              "is_rare": "yes",
+              "is_reverse_engineerable": "no"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "ACOT (modified by AoT)",
+        "overwrites": "ACOT",
+        "technology": "tech_precursor_phanon_design_pe_2"
+      },
+      {
+        "changedFields": [
+          "weight",
+          "flags"
+        ],
+        "definedBy": "AoT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_tier10cost2",
+            "afterResolved": "4320000",
+            "beforePresent": true,
+            "beforeRaw": "@acot_tier10cost2",
+            "beforeResolved": "4320000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "25",
+            "afterResolved": "25",
+            "beforePresent": true,
+            "beforeRaw": "0",
+            "beforeResolved": "0",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "8",
+            "afterResolved": "8",
+            "beforePresent": true,
+            "beforeRaw": "8",
+            "beforeResolved": "8",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_precursor_phanon_design_pe_2"
+            ],
+            "afterResolved": [
+              "tech_precursor_phanon_design_pe_2"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_precursor_phanon_design_pe_2"
+            ],
+            "beforeResolved": [
+              "tech_precursor_phanon_design_pe_2"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "computing"
+            ],
+            "afterResolved": [
+              "computing"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "computing"
+            ],
+            "beforeResolved": [
+              "computing"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": {
+              "is_rare": "no",
+              "is_reverse_engineerable": "no"
+            },
+            "afterResolved": {
+              "is_rare": "no",
+              "is_reverse_engineerable": "no"
+            },
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes",
+              "is_reverse_engineerable": "no"
+            },
+            "beforeResolved": {
+              "is_rare": "yes",
+              "is_reverse_engineerable": "no"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "ACOT (modified by AoT)",
+        "overwrites": "ACOT",
+        "technology": "tech_precursor_phanon_design_pe_3"
+      },
+      {
+        "changedFields": [
+          "weight",
+          "category"
+        ],
+        "definedBy": "AoT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_tier7cost3",
+            "afterResolved": "192000",
+            "beforePresent": true,
+            "beforeRaw": "@acot_tier7cost3",
+            "beforeResolved": "192000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "@tier5weight3",
+            "afterResolved": "20",
+            "beforePresent": true,
+            "beforeRaw": "0",
+            "beforeResolved": "0",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "7",
+            "afterResolved": "7",
+            "beforePresent": true,
+            "beforeRaw": "7",
+            "beforeResolved": "7",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_darkmatter_star_charter_dm",
+              "tech_precursor_enigmalith",
+              "tech_precursor_science",
+              "tech_sentry_array"
+            ],
+            "afterResolved": [
+              "tech_darkmatter_star_charter_dm",
+              "tech_precursor_enigmalith",
+              "tech_precursor_science",
+              "tech_sentry_array"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_darkmatter_star_charter_dm",
+              "tech_precursor_enigmalith",
+              "tech_precursor_science",
+              "tech_sentry_array"
+            ],
+            "beforeResolved": [
+              "tech_darkmatter_star_charter_dm",
+              "tech_precursor_enigmalith",
+              "tech_precursor_science",
+              "tech_sentry_array"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "particles"
+            ],
+            "afterResolved": [
+              "particles"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "field_manipulation"
+            ],
+            "beforeResolved": [
+              "field_manipulation"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": {
+              "is_rare": "yes"
+            },
+            "afterResolved": {
+              "is_rare": "yes"
+            },
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes"
+            },
+            "beforeResolved": {
+              "is_rare": "yes"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "ACOT (modified by AoT)",
+        "overwrites": "ACOT",
+        "technology": "tech_precursor_spyorb"
+      },
+      {
+        "changedFields": [
+          "weight",
+          "category"
+        ],
+        "definedBy": "AoT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@acot_tier7cost3",
+            "afterResolved": "192000",
+            "beforePresent": true,
+            "beforeRaw": "@acot_tier7cost3",
+            "beforeResolved": "192000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "@tier5weight3",
+            "afterResolved": "20",
+            "beforePresent": true,
+            "beforeRaw": "0",
+            "beforeResolved": "0",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "7",
+            "afterResolved": "7",
+            "beforePresent": true,
+            "beforeRaw": "7",
+            "beforeResolved": "7",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_acot_dm_stronghold",
+              "tech_precursor_enigmalith",
+              "tech_precursor_titan",
+              "tech_strategic_coordination"
+            ],
+            "afterResolved": [
+              "tech_acot_dm_stronghold",
+              "tech_precursor_enigmalith",
+              "tech_precursor_titan",
+              "tech_strategic_coordination"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_acot_dm_stronghold",
+              "tech_precursor_enigmalith",
+              "tech_precursor_titan",
+              "tech_strategic_coordination"
+            ],
+            "beforeResolved": [
+              "tech_acot_dm_stronghold",
+              "tech_precursor_enigmalith",
+              "tech_precursor_titan",
+              "tech_strategic_coordination"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "military_theory"
+            ],
+            "afterResolved": [
+              "military_theory"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "field_manipulation"
+            ],
+            "beforeResolved": [
+              "field_manipulation"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": {
+              "is_rare": "yes"
+            },
+            "afterResolved": {
+              "is_rare": "yes"
+            },
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes"
+            },
+            "beforeResolved": {
+              "is_rare": "yes"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "ACOT (modified by AoT)",
+        "overwrites": "ACOT",
+        "technology": "tech_precursor_strategy_center"
+      },
+      {
+        "changedFields": [],
+        "definedBy": "Gigastructural Engineering",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@tier5cost3",
+            "afterResolved": "24000",
+            "beforePresent": true,
+            "beforeRaw": "@tier5cost3",
+            "beforeResolved": "24000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "@tier5weight3",
+            "afterResolved": "20",
+            "beforePresent": true,
+            "beforeRaw": "@tier5weight3",
+            "beforeResolved": "20",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "5",
+            "afterResolved": "5",
+            "beforePresent": true,
+            "beforeRaw": "5",
+            "beforeResolved": "5",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_mega_engineering"
+            ],
+            "afterResolved": [
+              "tech_mega_engineering"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_mega_engineering"
+            ],
+            "beforeResolved": [
+              "tech_mega_engineering"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "voidcraft"
+            ],
+            "afterResolved": [
+              "voidcraft"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "voidcraft"
+            ],
+            "beforeResolved": [
+              "voidcraft"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": {
+              "is_rare": "yes"
+            },
+            "afterResolved": {
+              "is_rare": "yes"
+            },
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes"
+            },
+            "beforeResolved": {
+              "is_rare": "yes"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "Vanilla (modified by Gigastructural Engineering)",
+        "overwrites": "Vanilla",
+        "technology": "tech_ring_world"
+      },
+      {
+        "changedFields": [],
+        "definedBy": "ACOT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@tier5cost2",
+            "afterResolved": "20000",
+            "beforePresent": true,
+            "beforeRaw": "@tier5cost2",
+            "beforeResolved": "20000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "@tier5weight2",
+            "afterResolved": "25",
+            "beforePresent": true,
+            "beforeRaw": "@tier5weight2",
+            "beforeResolved": "25",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "5",
+            "afterResolved": "5",
+            "beforePresent": true,
+            "beforeRaw": "5",
+            "beforeResolved": "5",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_titans"
+            ],
+            "afterResolved": [
+              "tech_titans"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_titans"
+            ],
+            "beforeResolved": [
+              "tech_titans"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "voidcraft"
+            ],
+            "afterResolved": [
+              "voidcraft"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "voidcraft"
+            ],
+            "beforeResolved": [
+              "voidcraft"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": {
+              "is_rare": "yes"
+            },
+            "afterResolved": {
+              "is_rare": "yes"
+            },
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes"
+            },
+            "beforeResolved": {
+              "is_rare": "yes"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "Vanilla (modified by ACOT)",
+        "overwrites": "Vanilla",
+        "technology": "tech_titan_hull_1"
+      },
+      {
+        "changedFields": [],
+        "definedBy": "ACOT",
+        "fieldChanges": [
+          {
+            "afterPresent": true,
+            "afterRaw": "@tier5cost3",
+            "afterResolved": "24000",
+            "beforePresent": true,
+            "beforeRaw": "@tier5cost3",
+            "beforeResolved": "24000",
+            "field": "cost"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "@tier5weight3",
+            "afterResolved": "20",
+            "beforePresent": true,
+            "beforeRaw": "@tier5weight3",
+            "beforeResolved": "20",
+            "field": "weight"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": "5",
+            "afterResolved": "5",
+            "beforePresent": true,
+            "beforeRaw": "5",
+            "beforeResolved": "5",
+            "field": "tier"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "tech_titan_hull_1"
+            ],
+            "afterResolved": [
+              "tech_titan_hull_1"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "tech_titan_hull_1"
+            ],
+            "beforeResolved": [
+              "tech_titan_hull_1"
+            ],
+            "field": "prerequisites"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": [
+              "voidcraft"
+            ],
+            "afterResolved": [
+              "voidcraft"
+            ],
+            "beforePresent": true,
+            "beforeRaw": [
+              "voidcraft"
+            ],
+            "beforeResolved": [
+              "voidcraft"
+            ],
+            "field": "category"
+          },
+          {
+            "afterPresent": true,
+            "afterRaw": {
+              "is_rare": "yes"
+            },
+            "afterResolved": {
+              "is_rare": "yes"
+            },
+            "beforePresent": true,
+            "beforeRaw": {
+              "is_rare": "yes"
+            },
+            "beforeResolved": {
+              "is_rare": "yes"
+            },
+            "field": "flags"
+          }
+        ],
+        "label": "Vanilla (modified by ACOT)",
+        "overwrites": "Vanilla",
+        "technology": "tech_titan_hull_2"
+      }
+    ]
+  },
+  "placeholderTechnologiesAbsent": [],
+  "profileDependentUncertainty": [
+    {
+      "previousRate": 0.013360739979445015,
+      "profile": {
+        "authority": "regular",
+        "nomadic": "no",
+        "shipset": "mechanical"
+      },
+      "rate": 0.013360739979445015,
+      "status": "ok"
+    },
+    {
+      "previousRate": 0.006166495375128468,
+      "profile": {
+        "authority": "regular",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "rate": 0.006166495375128468,
+      "status": "ok"
+    },
+    {
+      "previousRate": 0.015416238437821172,
+      "profile": {
+        "authority": "regular",
+        "nomadic": "no",
+        "shipset": "biological"
+      },
+      "rate": 0.015416238437821172,
+      "status": "ok"
+    },
+    {
+      "previousRate": 0.008221993833504625,
+      "profile": {
+        "authority": "regular",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "rate": 0.008221993833504625,
+      "status": "ok"
+    },
+    {
+      "previousRate": 0.014388489208633094,
+      "profile": {
+        "authority": "hive_mind",
+        "nomadic": "no",
+        "shipset": "mechanical"
+      },
+      "rate": 0.014388489208633094,
+      "status": "ok"
+    },
+    {
+      "previousRate": 0.007194244604316547,
+      "profile": {
+        "authority": "hive_mind",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "rate": 0.007194244604316547,
+      "status": "ok"
+    },
+    {
+      "previousRate": 0.01644398766700925,
+      "profile": {
+        "authority": "hive_mind",
+        "nomadic": "no",
+        "shipset": "biological"
+      },
+      "rate": 0.01644398766700925,
+      "status": "ok"
+    },
+    {
+      "previousRate": 0.009249743062692703,
+      "profile": {
+        "authority": "hive_mind",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "rate": 0.009249743062692703,
+      "status": "ok"
+    },
+    {
+      "previousRate": 0.008221993833504625,
+      "profile": {
+        "authority": "machine_intelligence",
+        "nomadic": "no",
+        "shipset": "mechanical"
+      },
+      "rate": 0.008221993833504625,
+      "status": "ok"
+    },
+    {
+      "previousRate": 0.0010277492291880781,
+      "profile": {
+        "authority": "machine_intelligence",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "rate": 0.0010277492291880781,
+      "status": "ok"
+    },
+    {
+      "previousRate": 0.010277492291880781,
+      "profile": {
+        "authority": "machine_intelligence",
+        "nomadic": "no",
+        "shipset": "biological"
+      },
+      "rate": 0.010277492291880781,
+      "status": "ok"
+    },
+    {
+      "previousRate": 0.003083247687564234,
+      "profile": {
+        "authority": "machine_intelligence",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "rate": 0.003083247687564234,
+      "status": "ok"
+    }
+  ],
+  "schemaVersion": "1.0.0",
+  "swapsRenderingOnInheritedIcon": [
+    {
+      "swapKey": "giga_tech_ring_world_swap_no_habitables",
+      "technologyId": "tech_ring_world"
+    }
+  ],
+  "tierPromotions": [],
+  "uncertainTechnologies": [
+    {
+      "name": "Living Metal Infusion Process",
+      "perProfile": [
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "regular",
+            "nomadic": "no",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "regular",
+            "nomadic": "yes",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "regular",
+            "nomadic": "no",
+            "shipset": "biological"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "regular",
+            "nomadic": "yes",
+            "shipset": "biological"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "hive_mind",
+            "nomadic": "no",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "hive_mind",
+            "nomadic": "yes",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "hive_mind",
+            "nomadic": "no",
+            "shipset": "biological"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "hive_mind",
+            "nomadic": "yes",
+            "shipset": "biological"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "machine_intelligence",
+            "nomadic": "no",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "machine_intelligence",
+            "nomadic": "yes",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "machine_intelligence",
+            "nomadic": "no",
+            "shipset": "biological"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "machine_intelligence",
+            "nomadic": "yes",
+            "shipset": "biological"
+          }
+        }
+      ],
+      "technologyId": "giga_tech_amb_living_metal_infusion",
+      "unconditional": true
+    },
+    {
+      "name": "Applied Supertensiles",
+      "perProfile": [
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "regular",
+            "nomadic": "no",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "regular",
+            "nomadic": "yes",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "regular",
+            "nomadic": "no",
+            "shipset": "biological"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "regular",
+            "nomadic": "yes",
+            "shipset": "biological"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "hive_mind",
+            "nomadic": "no",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "hive_mind",
+            "nomadic": "yes",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "hive_mind",
+            "nomadic": "no",
+            "shipset": "biological"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "hive_mind",
+            "nomadic": "yes",
+            "shipset": "biological"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "machine_intelligence",
+            "nomadic": "no",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "machine_intelligence",
+            "nomadic": "yes",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "machine_intelligence",
+            "nomadic": "no",
+            "shipset": "biological"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_global_flag = @giga_amb_flag",
+          "profile": {
+            "authority": "machine_intelligence",
+            "nomadic": "yes",
+            "shipset": "biological"
+          }
+        }
+      ],
+      "technologyId": "giga_tech_amb_supertensiles",
+      "unconditional": true
+    },
+    {
+      "name": "Opening The Doorway",
+      "perProfile": [
+        {
+          "category": "unclassified",
+          "description": "has_tradition = tr_psionics_finish",
+          "profile": {
+            "authority": "regular",
+            "nomadic": "no",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_tradition = tr_psionics_finish",
+          "profile": {
+            "authority": "regular",
+            "nomadic": "yes",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_tradition = tr_psionics_finish",
+          "profile": {
+            "authority": "regular",
+            "nomadic": "no",
+            "shipset": "biological"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_tradition = tr_psionics_finish",
+          "profile": {
+            "authority": "regular",
+            "nomadic": "yes",
+            "shipset": "biological"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_tradition = tr_psionics_finish",
+          "profile": {
+            "authority": "hive_mind",
+            "nomadic": "no",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_tradition = tr_psionics_finish",
+          "profile": {
+            "authority": "hive_mind",
+            "nomadic": "yes",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_tradition = tr_psionics_finish",
+          "profile": {
+            "authority": "hive_mind",
+            "nomadic": "no",
+            "shipset": "biological"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_tradition = tr_psionics_finish",
+          "profile": {
+            "authority": "hive_mind",
+            "nomadic": "yes",
+            "shipset": "biological"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_tradition = tr_psionics_finish",
+          "profile": {
+            "authority": "machine_intelligence",
+            "nomadic": "no",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_tradition = tr_psionics_finish",
+          "profile": {
+            "authority": "machine_intelligence",
+            "nomadic": "yes",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_tradition = tr_psionics_finish",
+          "profile": {
+            "authority": "machine_intelligence",
+            "nomadic": "no",
+            "shipset": "biological"
+          }
+        },
+        {
+          "category": "unclassified",
+          "description": "has_tradition = tr_psionics_finish",
+          "profile": {
+            "authority": "machine_intelligence",
+            "nomadic": "yes",
+            "shipset": "biological"
+          }
+        }
+      ],
+      "technologyId": "giga_tech_psychic_hypersiphon",
+      "unconditional": true
+    },
+    {
+      "name": "E.H.O.F. Omega",
+      "perProfile": [
+        {
+          "category": "opaque_country_state",
+          "description": "check_variable = { which = ehof_phase value >= 2 }",
+          "profile": {
+            "authority": "regular",
+            "nomadic": "no",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "opaque_country_state",
+          "description": "check_variable = { which = ehof_phase value >= 2 }",
+          "profile": {
+            "authority": "regular",
+            "nomadic": "no",
+            "shipset": "biological"
+          }
+        },
+        {
+          "category": "opaque_country_state",
+          "description": "check_variable = { which = ehof_phase value >= 2 }",
+          "profile": {
+            "authority": "hive_mind",
+            "nomadic": "no",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "opaque_country_state",
+          "description": "check_variable = { which = ehof_phase value >= 2 }",
+          "profile": {
+            "authority": "hive_mind",
+            "nomadic": "no",
+            "shipset": "biological"
+          }
+        },
+        {
+          "category": "opaque_country_state",
+          "description": "check_variable = { which = ehof_phase value >= 2 }",
+          "profile": {
+            "authority": "machine_intelligence",
+            "nomadic": "no",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "opaque_country_state",
+          "description": "check_variable = { which = ehof_phase value >= 2 }",
+          "profile": {
+            "authority": "machine_intelligence",
+            "nomadic": "no",
+            "shipset": "biological"
+          }
+        }
+      ],
+      "technologyId": "tech_ehof_phase_03",
+      "unconditional": false
+    },
+    {
+      "name": "Quantum Catapult",
+      "perProfile": [
+        {
+          "category": "opaque_country_state",
+          "description": "Unresolved internal flag: has_quantum_catapult_insight",
+          "profile": {
+            "authority": "regular",
+            "nomadic": "no",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "opaque_country_state",
+          "description": "Unresolved internal flag: has_quantum_catapult_insight",
+          "profile": {
+            "authority": "regular",
+            "nomadic": "yes",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "opaque_country_state",
+          "description": "Unresolved internal flag: has_quantum_catapult_insight",
+          "profile": {
+            "authority": "regular",
+            "nomadic": "no",
+            "shipset": "biological"
+          }
+        },
+        {
+          "category": "opaque_country_state",
+          "description": "Unresolved internal flag: has_quantum_catapult_insight",
+          "profile": {
+            "authority": "regular",
+            "nomadic": "yes",
+            "shipset": "biological"
+          }
+        },
+        {
+          "category": "opaque_country_state",
+          "description": "Unresolved internal flag: has_quantum_catapult_insight",
+          "profile": {
+            "authority": "hive_mind",
+            "nomadic": "no",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "opaque_country_state",
+          "description": "Unresolved internal flag: has_quantum_catapult_insight",
+          "profile": {
+            "authority": "hive_mind",
+            "nomadic": "yes",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "opaque_country_state",
+          "description": "Unresolved internal flag: has_quantum_catapult_insight",
+          "profile": {
+            "authority": "hive_mind",
+            "nomadic": "no",
+            "shipset": "biological"
+          }
+        },
+        {
+          "category": "opaque_country_state",
+          "description": "Unresolved internal flag: has_quantum_catapult_insight",
+          "profile": {
+            "authority": "hive_mind",
+            "nomadic": "yes",
+            "shipset": "biological"
+          }
+        },
+        {
+          "category": "opaque_country_state",
+          "description": "Unresolved internal flag: has_quantum_catapult_insight",
+          "profile": {
+            "authority": "machine_intelligence",
+            "nomadic": "no",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "opaque_country_state",
+          "description": "Unresolved internal flag: has_quantum_catapult_insight",
+          "profile": {
+            "authority": "machine_intelligence",
+            "nomadic": "yes",
+            "shipset": "mechanical"
+          }
+        },
+        {
+          "category": "opaque_country_state",
+          "description": "Unresolved internal flag: has_quantum_catapult_insight",
+          "profile": {
+            "authority": "machine_intelligence",
+            "nomadic": "no",
+            "shipset": "biological"
+          }
+        },
+        {
+          "category": "opaque_country_state",
+          "description": "Unresolved internal flag: has_quantum_catapult_insight",
+          "profile": {
+            "authority": "machine_intelligence",
+            "nomadic": "yes",
+            "shipset": "biological"
+          }
+        }
+      ],
+      "technologyId": "tech_quantum_catapult",
+      "unconditional": true
+    }
+  ],
+  "unconditionalUncertainty": {
+    "categoryDistribution": [
+      {
+        "category": "crisis_or_story_progress",
+        "count": 1
+      },
+      {
+        "category": "opaque_country_state",
+        "count": 12
+      },
+      {
+        "category": "unclassified",
+        "count": 18
+      }
+    ],
+    "count": 31,
+    "previousCount": 31,
+    "previousRate": 0.03186022610483042,
+    "rate": 0.03186022610483042
+  },
+  "unrecognisedGatePatterns": [],
+  "unresolvableResearchPaths": [
+    {
+      "profile": {
+        "authority": "regular",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "technologyId": "giga_tech_asteroid_artillery"
+    },
+    {
+      "profile": {
+        "authority": "regular",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "technologyId": "giga_tech_asteroid_artillery_health_upgrade"
+    },
+    {
+      "profile": {
+        "authority": "regular",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "technologyId": "giga_tech_maginot_firepower_1"
+    },
+    {
+      "profile": {
+        "authority": "regular",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "technologyId": "giga_tech_repeatable_alderson_cap"
+    },
+    {
+      "profile": {
+        "authority": "regular",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "technologyId": "giga_tech_repeatable_maginot_cap"
+    },
+    {
+      "profile": {
+        "authority": "regular",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "technologyId": "giga_tech_war_moon_1"
+    },
+    {
+      "profile": {
+        "authority": "regular",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "technologyId": "giga_tech_yggdrasil_orchid"
+    },
+    {
+      "profile": {
+        "authority": "regular",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "technologyId": "giga_tech_asteroid_artillery"
+    },
+    {
+      "profile": {
+        "authority": "regular",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "technologyId": "giga_tech_asteroid_artillery_health_upgrade"
+    },
+    {
+      "profile": {
+        "authority": "regular",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "technologyId": "giga_tech_maginot_firepower_1"
+    },
+    {
+      "profile": {
+        "authority": "regular",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "technologyId": "giga_tech_repeatable_alderson_cap"
+    },
+    {
+      "profile": {
+        "authority": "regular",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "technologyId": "giga_tech_repeatable_maginot_cap"
+    },
+    {
+      "profile": {
+        "authority": "regular",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "technologyId": "giga_tech_war_moon_1"
+    },
+    {
+      "profile": {
+        "authority": "regular",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "technologyId": "giga_tech_yggdrasil_orchid"
+    },
+    {
+      "profile": {
+        "authority": "hive_mind",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "technologyId": "giga_tech_asteroid_artillery"
+    },
+    {
+      "profile": {
+        "authority": "hive_mind",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "technologyId": "giga_tech_asteroid_artillery_health_upgrade"
+    },
+    {
+      "profile": {
+        "authority": "hive_mind",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "technologyId": "giga_tech_maginot_firepower_1"
+    },
+    {
+      "profile": {
+        "authority": "hive_mind",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "technologyId": "giga_tech_repeatable_alderson_cap"
+    },
+    {
+      "profile": {
+        "authority": "hive_mind",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "technologyId": "giga_tech_repeatable_maginot_cap"
+    },
+    {
+      "profile": {
+        "authority": "hive_mind",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "technologyId": "giga_tech_war_moon_1"
+    },
+    {
+      "profile": {
+        "authority": "hive_mind",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "technologyId": "giga_tech_yggdrasil_orchid"
+    },
+    {
+      "profile": {
+        "authority": "hive_mind",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "technologyId": "giga_tech_asteroid_artillery"
+    },
+    {
+      "profile": {
+        "authority": "hive_mind",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "technologyId": "giga_tech_asteroid_artillery_health_upgrade"
+    },
+    {
+      "profile": {
+        "authority": "hive_mind",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "technologyId": "giga_tech_maginot_firepower_1"
+    },
+    {
+      "profile": {
+        "authority": "hive_mind",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "technologyId": "giga_tech_repeatable_alderson_cap"
+    },
+    {
+      "profile": {
+        "authority": "hive_mind",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "technologyId": "giga_tech_repeatable_maginot_cap"
+    },
+    {
+      "profile": {
+        "authority": "hive_mind",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "technologyId": "giga_tech_war_moon_1"
+    },
+    {
+      "profile": {
+        "authority": "hive_mind",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "technologyId": "giga_tech_yggdrasil_orchid"
+    },
+    {
+      "profile": {
+        "authority": "machine_intelligence",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "technologyId": "giga_tech_asteroid_artillery"
+    },
+    {
+      "profile": {
+        "authority": "machine_intelligence",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "technologyId": "giga_tech_asteroid_artillery_health_upgrade"
+    },
+    {
+      "profile": {
+        "authority": "machine_intelligence",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "technologyId": "giga_tech_maginot_firepower_1"
+    },
+    {
+      "profile": {
+        "authority": "machine_intelligence",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "technologyId": "giga_tech_repeatable_alderson_cap"
+    },
+    {
+      "profile": {
+        "authority": "machine_intelligence",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "technologyId": "giga_tech_repeatable_maginot_cap"
+    },
+    {
+      "profile": {
+        "authority": "machine_intelligence",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "technologyId": "giga_tech_war_moon_1"
+    },
+    {
+      "profile": {
+        "authority": "machine_intelligence",
+        "nomadic": "yes",
+        "shipset": "mechanical"
+      },
+      "technologyId": "giga_tech_yggdrasil_orchid"
+    },
+    {
+      "profile": {
+        "authority": "machine_intelligence",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "technologyId": "giga_tech_asteroid_artillery"
+    },
+    {
+      "profile": {
+        "authority": "machine_intelligence",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "technologyId": "giga_tech_asteroid_artillery_health_upgrade"
+    },
+    {
+      "profile": {
+        "authority": "machine_intelligence",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "technologyId": "giga_tech_maginot_firepower_1"
+    },
+    {
+      "profile": {
+        "authority": "machine_intelligence",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "technologyId": "giga_tech_repeatable_alderson_cap"
+    },
+    {
+      "profile": {
+        "authority": "machine_intelligence",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "technologyId": "giga_tech_repeatable_maginot_cap"
+    },
+    {
+      "profile": {
+        "authority": "machine_intelligence",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "technologyId": "giga_tech_war_moon_1"
+    },
+    {
+      "profile": {
+        "authority": "machine_intelligence",
+        "nomadic": "yes",
+        "shipset": "biological"
+      },
+      "technologyId": "giga_tech_yggdrasil_orchid"
+    }
+  ],
+  "unresolvedModDependencies": [],
+  "unresolvedTriggers": [],
+  "vanillaTechnologiesRevertedFromAcotOverwrite": [],
+  "vendorSourcesLoaded": [
+    "Vanilla",
+    "Gigastructural Engineering",
+    "ACOT",
+    "AoT"
+  ],
+  "weightGateSuppressions": [
+    {
+      "justification": "user: reached within minutes of game start at any speed -- not a real gate on anything",
+      "leafKey": "years_passed",
+      "matchCount": 1,
+      "resolvesTo": false
+    },
+    {
+      "justification": "user: every empire passes this almost immediately",
+      "leafKey": "num_owned_planets",
+      "matchCount": 14,
+      "resolvesTo": false
+    },
+    {
+      "justification": "user: likewise -- trivially satisfied within minutes of expanding at all",
+      "leafKey": "any_owned_nonprimary_starbase",
+      "matchCount": 3,
+      "resolvesTo": true
+    },
+    {
+      "justification": "user: first contact is effectively guaranteed early -- covers both the `< 1` and `< 2` thresholds the corpus actually uses (a stricter threshold is still trivially crossed)",
+      "leafKey": "num_communications",
+      "matchCount": 6,
+      "resolvesTo": false
+    },
+    {
+      "justification": "user: strategic-resource-deposit checks gating harvesting technologies on having encountered the resource -- every empire can obtain all of them; rarity (living metal especially) varies by playthrough luck, not by empire type, and \"can this empire type get it\" is the question this tool answers",
+      "leafKey": "any_planet_within_border",
+      "matchCount": 5,
+      "resolvesTo": true
+    },
+    {
+      "justification": "user: the flag counterpart of the same strategic-resource-discovery mechanism, same reasoning -- matched by the `_found` suffix the corpus's resource-discovery flags all share (sr_dark_matter_found, rare_crystals_found, volatile_motes_found, negative_mass_found, exotic_gases_found, sr_living_metal_found, giga_sr_amb_megaconstruction_found); does NOT match an unrelated flag that merely contains \"found\" elsewhere in its name (e.g. `found_presapients`) or a same-key, different-meaning flag (e.g. `has_market_access`)",
+      "leafKey": "has_country_flag",
+      "matchCount": 8,
+      "resolvesTo": true
+    }
+  ]
+}

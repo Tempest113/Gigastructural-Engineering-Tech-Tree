@@ -1,0 +1,27 @@
+{
+  "description": "The regenerative properties of living metal could theoretically be exploited to improve the quality and output of our molecular foundries.",
+  "offTreePrerequisiteNames": [],
+  "overwriteDiff": null,
+  "repeatableCostProgression": null,
+  "repositoryLink": {
+    "kind": "gigastructures-permalink",
+    "lineRange": {
+      "endLine": 44,
+      "file": "giga_17_alternative_mega_build.txt",
+      "startLine": 44
+    },
+    "url": "https://github.com/Pouchkinn-s-Gigastructures/Gigastructures/blob/0f1f2b024f43249dc7dfe132fe7c0e4201398ef5/giga_17_alternative_mega_build.txt#L44"
+  },
+  "schemaVersion": "1.0.0",
+  "source": {
+    "definedBy": "Gigastructural Engineering",
+    "label": "Gigastructural Engineering",
+    "overwrites": null
+  },
+  "technologyId": "giga_tech_amb_living_metal_infusion",
+  "variants": [],
+  "weight": {
+    "base": 30.0,
+    "modifiers": []
+  }
+}

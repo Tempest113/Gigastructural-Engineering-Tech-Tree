@@ -1,0 +1,39 @@
+{
+  "description": "To defend our empire we must construct the ultimate defensive strongpoint, and transform an entire planet into a massive fortress complex - the Maginot World. \n\nThis world shall be equipped with orbital defenses, planetary cannons, countless bunkers, deep underground command complexes, and continent-sized shield generators. In addition, a Dead Hand system will be developed to deter enemy Colossus-class warships.\n\nThe planetary building is necessary to begin Maginot World construction, but the building can also be built in other locations not suitable for full development.",
+  "offTreePrerequisiteNames": [],
+  "overwriteDiff": null,
+  "repeatableCostProgression": null,
+  "repositoryLink": {
+    "kind": "gigastructures-permalink",
+    "lineRange": {
+      "endLine": 8,
+      "file": "giga_15_maginot.txt",
+      "startLine": 8
+    },
+    "url": "https://github.com/Pouchkinn-s-Gigastructures/Gigastructures/blob/0f1f2b024f43249dc7dfe132fe7c0e4201398ef5/giga_15_maginot.txt#L8"
+  },
+  "schemaVersion": "1.0.0",
+  "source": {
+    "definedBy": "Gigastructural Engineering",
+    "label": "Gigastructural Engineering",
+    "overwrites": null
+  },
+  "technologyId": "giga_tech_maginot_world",
+  "variants": [
+    {
+      "conditionText": "is_wilderness_empire = yes",
+      "icon": {
+        "height": 52,
+        "sheet": "technologies_0",
+        "width": 52,
+        "x": 730,
+        "y": 282
+      },
+      "name": "Ultimate Strongpoint Defense Adaptations"
+    }
+  ],
+  "weight": {
+    "base": 20.0,
+    "modifiers": []
+  }
+}

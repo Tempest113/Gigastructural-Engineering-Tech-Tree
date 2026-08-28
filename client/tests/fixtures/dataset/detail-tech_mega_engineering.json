@@ -1,0 +1,34 @@
+{
+  "description": "To complete construction projects of truly staggering scales we must first achieve a fundamental understanding of both the engineering and resource storage requirements for such megastructures.",
+  "offTreePrerequisiteNames": [],
+  "overwriteDiff": {
+    "changedFields": []
+  },
+  "repeatableCostProgression": null,
+  "repositoryLink": {
+    "kind": "gigastructures-permalink",
+    "lineRange": {
+      "endLine": 79,
+      "file": "zz_giga_tech_overwrites.txt",
+      "startLine": 79
+    },
+    "url": "https://github.com/Pouchkinn-s-Gigastructures/Gigastructures/blob/0f1f2b024f43249dc7dfe132fe7c0e4201398ef5/zz_giga_tech_overwrites.txt#L79"
+  },
+  "schemaVersion": "1.0.0",
+  "source": {
+    "definedBy": "Gigastructural Engineering",
+    "label": "Vanilla (modified by Gigastructural Engineering)",
+    "overwrites": "Vanilla"
+  },
+  "technologyId": "tech_mega_engineering",
+  "variants": [],
+  "weight": {
+    "base": 20.0,
+    "modifiers": [
+      {
+        "conditionText": "modifier = { factor = 1.5 OR = { has_trait_in_council = { TRAIT = leader_trait_curator } has_trait_in_council = { TRAIT = leader_trait_maniacal } has_trait_in_council = { TRAIT = leader_trait_maniacal_2 } has_trait_in_council = { TRAIT = leader_trait_maniacal_3 } } }",
+        "factor": 0.25
+      }
+    ]
+  }
+}

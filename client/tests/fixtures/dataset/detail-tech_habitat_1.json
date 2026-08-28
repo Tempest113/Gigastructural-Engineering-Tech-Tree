@@ -1,0 +1,23 @@
+{
+  "description": "Allows the construction of largely self-sustaining Orbital Habitats.",
+  "offTreePrerequisiteNames": [],
+  "overwriteDiff": null,
+  "repeatableCostProgression": null,
+  "repositoryLink": {
+    "kind": "stellaris-wiki",
+    "lineRange": null,
+    "url": "https://stellaris.paradoxwikis.com/habitat_1"
+  },
+  "schemaVersion": "1.0.0",
+  "source": {
+    "definedBy": "Vanilla",
+    "label": "Vanilla",
+    "overwrites": null
+  },
+  "technologyId": "tech_habitat_1",
+  "variants": [],
+  "weight": {
+    "base": 60.0,
+    "modifiers": []
+  }
+}
