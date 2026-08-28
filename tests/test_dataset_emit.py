@@ -190,30 +190,51 @@ def test_base_dataset_gates_match_the_gate_classification_survey(ctx, base_datas
     (weight zero WITHOUT it -- a POSITIVE "Needs Agrarian Idyll") -- an early version of this fix,
     without the inversion, badged this pair exactly backwards.
 
-    Real corpus, NOW: TOTAL 724 gate instances (198 ascension_perk + 126 origin + 203
-    ethics_or_civic + 197 technology) over 346 gated technologies, 196 of which carry more than one
-    gate instance. DIRECT 333 gate instances (106 ascension_perk + 60 origin + 79 ethics_or_civic +
-    88 technology) over 206 directly-gated technologies. See `docs/BUILD-LOG.md`'s "negative gates"
-    session entry for the full accounting and the polarity breakdown by kind."""
+    Real corpus, THEN (pre "cleanly-gated narrowing"): TOTAL 724 gate instances (198
+    ascension_perk + 126 origin + 203 ethics_or_civic + 197 technology) over 346 gated
+    technologies, 196 of which carry more than one gate instance. DIRECT 333 gate instances (106
+    ascension_perk + 60 origin + 79 ethics_or_civic + 88 technology) over 206 directly-gated
+    technologies.
+
+    **"Cleanly-gated narrowing" (a later session, user-reported) moved both figures.** A
+    zero-factor `weight_modifier` condition contributes gate badges only when it is structurally
+    safe to decompose leaf-by-leaf (`pipeline.gate_patterns.weight_gate_condition_is_cleanly_
+    gated`: a lone gate leaf, or a lone OR/NOR group of them). 25 weight-condition blocks over 24
+    technologies were AND-conjunctions that dissolved a compound scripted trigger into leaves that
+    individually over-claimed -- `tech_terrestrial_sculpting`'s `is_lithoid_devouring_swarm`
+    (bare "Needs Wilderness" + "Unavailable to Devouring Swarm"), the 16 `tech_fe_*_1` families'
+    `NOT{ap_cosmogenesis} AND calc_true_if{...}` ("Needs Cosmogenesis"), `tech_psionic_theory`'s
+    materialist OR-group AND-constrained by a council-trait NOR, and the 6 `tech_lathe_*` (their
+    lone leaf was already deduped against a `potential` match, so no visible badge changed). 84
+    gate instances drop (0 added), all direct-or-inherited from those blocks -- TOTAL 724 -> 640
+    (198 ap -> 182, 126 origin -> 108, 203 e/c -> 153, technology 197 unchanged) over 346 -> 332
+    gated technologies, 196 -> 162 multi-gate; DIRECT 333 -> 313 (106 ap -> 90, 60 origin -> 59,
+    79 e/c -> 76, technology 88 unchanged) over 206 -> 205 directly-gated. 14 technologies drop to
+    zero gates (`tech_terrestrial_sculpting` + 13 inheritors that carried only the inherited
+    Wilderness/Devouring-Swarm pair). Each affected block stops being suppressed from
+    `_apply_weight_gate` too, so 250 `(technology, profile)` pairs move `available` ->
+    `weight-gated` (never into/out of `locked`/`uncertain`/`config-gated`; D-10 unchanged). See
+    `docs/BUILD-LOG.md`'s "cleanly-gated narrowing" entry and `docs/DEFECTS.md`'s "weight-gate
+    compound-wrapper dissolution" for the root cause and the wrapper-registration follow-up."""
     from collections import Counter
 
     doc, _node_bytes, _edge_bytes = base_dataset
     gated = [t for t in doc["technologies"] if t["gates"]]
     all_gates = [g for t in doc["technologies"] for g in t["gates"]]
-    assert len(all_gates) == 724
+    assert len(all_gates) == 640
     assert dict(Counter(g["kind"] for g in all_gates)) == {
-        "ascension_perk": 198, "origin": 126, "ethics_or_civic": 203, "technology": 197,
+        "ascension_perk": 182, "origin": 108, "ethics_or_civic": 153, "technology": 197,
     }
-    assert len(gated) == 346
-    assert sum(1 for t in gated if len(t["gates"]) > 1) == 196
+    assert len(gated) == 332
+    assert sum(1 for t in gated if len(t["gates"]) > 1) == 162
 
     direct_gates = [g for t in doc["technologies"] for g in t["gates"] if not g["inherited"]]
     directly_gated = [t for t in doc["technologies"] if any(not g["inherited"] for g in t["gates"])]
-    assert len(direct_gates) == 333
+    assert len(direct_gates) == 313
     assert dict(Counter(g["kind"] for g in direct_gates)) == {
-        "ascension_perk": 106, "origin": 60, "ethics_or_civic": 79, "technology": 88,
+        "ascension_perk": 90, "origin": 59, "ethics_or_civic": 76, "technology": 88,
     }
-    assert len(directly_gated) == 206
+    assert len(directly_gated) == 205
 
     # `giga_tech_arkship_neutronium_harvester` stays empty (Item 5 excludes its own direct
     # dual-encoded gate, and it inherits no weight-derived gate from an ancestor). All FOUR
@@ -492,6 +513,74 @@ def test_riddle_escort_gate_is_an_alternative_constrained_to_biological_shipset(
         assert gate["alternative"] is True
         assert gate["label"] == "or: Riddle Escort"  # never "Needs Riddle Escort" -- not unconditional
         assert gate["appliesToEmpireTypes"] == {"shipset": ["biological"]}
+
+
+def test_terrestrial_sculpting_never_shows_a_bare_wilderness_or_devouring_swarm_gate(base_dataset):
+    """Cleanly-gated narrowing (a later session, user-reported). `tech_terrestrial_sculpting`'s
+    only zero-factor `weight_modifier` condition is the single compound scripted trigger
+    `is_lithoid_devouring_swarm = yes`, which `_weight_gate_condition_blocks` expands to
+    `AND(owner_species = { is_lithoid = yes }, has_valid_civic = civic_hive_devouring_swarm,
+    NOT { has_origin = origin_wilderness })` before gate classification sees it. Pre-fix that
+    dissolved into a bare "Needs Wilderness" + "Unavailable to Devouring Swarm", each false for
+    almost every empire (a regular empire does not need Wilderness; a non-lithoid Devouring Swarm
+    is not excluded -- only the lithoid, non-wilderness Devouring Swarm "Terravore" is). The
+    conjunction cannot be phrased leaf-by-leaf, so it must contribute NO badge and fall through
+    to `weight-gated` instead. Proven capable of failing pre-fix by
+    `test_cleanly_gated_guard_is_load_bearing` below."""
+    doc, _node_bytes, _edge_bytes = base_dataset
+    terr = next(t for t in doc["technologies"] if t["id"] == "tech_terrestrial_sculpting")
+    labels = {g["label"] for g in terr["gates"]}
+    assert "Needs Wilderness" not in labels
+    assert "Unavailable to Devouring Swarm" not in labels
+    assert not any(g["refId"] == "civic_hive_devouring_swarm" for g in terr["gates"])
+    assert not any(g["refId"] == "origin_wilderness" for g in terr["gates"])
+    # No `potential` gate, no other weight gate -> no badge at all, and the restriction surfaces
+    # as `weight-gated` (never silently `available`) for the profiles its `potential` allows.
+    assert terr["gates"] == []
+    assert "weight-gated" in terr["availabilityMatrix"]
+    assert "available" not in terr["availabilityMatrix"]  # nomadic=no -> weight-gated, nomadic=yes -> locked
+
+
+def test_large_scale_bioatmospheric_modification_never_shows_bare_wilderness_or_devouring_swarm_gate(base_dataset):
+    """The downstream inheritor named in the original report (its id was fabricated; it is
+    resolved here by its localised name, "Large-Scale Bioatmospheric Modification"). It sits
+    below `tech_terrestrial_sculpting` in the prerequisite graph and used to inherit the same two
+    bad badges. Skips when the technology is absent (it is not in every vendored Gigastructures
+    pin); the always-active guarantee lives in the test above, on the source technology."""
+    doc, _node_bytes, _edge_bytes = base_dataset
+    match = next(
+        (t for t in doc["technologies"]
+         if t["name"].strip().lower() == "large-scale bioatmospheric modification"),
+        None,
+    )
+    if match is None:
+        pytest.skip("'Large-Scale Bioatmospheric Modification' not present in this vendored corpus")
+    labels = {g["label"] for g in match["gates"]}
+    assert "Needs Wilderness" not in labels
+    assert "Unavailable to Devouring Swarm" not in labels
+
+
+def test_cleanly_gated_guard_is_load_bearing(ctx, monkeypatch):
+    """Proves the fix's guard actually decides the outcome: force
+    `weight_gate_condition_is_cleanly_gated` to always pass and the bare
+    `tech_terrestrial_sculpting` badges come straight back (this is the exact pre-fix behaviour --
+    the same classifier, the same dispatch, one predicate neutralised), and the block re-appears
+    in `weight_gate_expressible_mask` so `_apply_weight_gate` would suppress it again. Mirrors
+    `tests/test_gate_patterns_polarity_mutations.py`'s monkeypatch-and-assert-now-red pattern."""
+    import pipeline.dataset_emit as dataset_emit
+
+    assert ctx.weight_gate_gate_matches["tech_terrestrial_sculpting"] == []
+    assert ctx.weight_gate_expressible_mask["tech_terrestrial_sculpting"] == [False]
+
+    monkeypatch.setattr(dataset_emit, "weight_gate_condition_is_cleanly_gated", lambda _block: True)
+    mutated = build_context(VENDOR_ROOT)
+
+    matches = mutated.weight_gate_gate_matches["tech_terrestrial_sculpting"]
+    assert {(m.kind, m.ref_id) for m in matches} == {
+        ("origin", "origin_wilderness"),
+        ("ethics_or_civic", "civic_hive_devouring_swarm"),
+    }
+    assert mutated.weight_gate_expressible_mask["tech_terrestrial_sculpting"] == [True]
 
 
 def test_gate_ordering_puts_ascension_perk_gates_first(base_dataset):

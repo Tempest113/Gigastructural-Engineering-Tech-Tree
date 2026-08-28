@@ -480,6 +480,106 @@ def test_weight_condition_group_id_namespace_never_collides_with_potential_gate_
 
 
 # ---------------------------------------------------------------------------
+# Cleanly-gated narrowing (a later session, user-reported): a weight condition only
+# contributes badges -- and only stays suppressed from `_apply_weight_gate` -- when it is
+# structurally safe to decompose leaf-by-leaf. `weight_gate_condition_is_cleanly_gated`.
+# ---------------------------------------------------------------------------
+
+
+def test_cleanly_gated_lone_gate_leaf():
+    from pipeline.gate_patterns import weight_gate_condition_is_cleanly_gated
+
+    assert weight_gate_condition_is_cleanly_gated(_block("{ has_valid_civic = civic_agrarian_idyll }")) is True
+    assert weight_gate_condition_is_cleanly_gated(_block("{ NOT = { has_ascension_perk = ap_x } }")) is True
+
+
+def test_cleanly_gated_lone_or_group_of_gate_leaves():
+    from pipeline.gate_patterns import weight_gate_condition_is_cleanly_gated
+
+    # `is_egalitarian` -> OR(ethic_egalitarian, ethic_fanatic_egalitarian): every branch is a
+    # gate leaf, nothing AND-combined -> each badge independently gates.
+    assert weight_gate_condition_is_cleanly_gated(
+        _block("{ OR = { has_ethic = ethic_egalitarian has_ethic = ethic_fanatic_egalitarian } }")
+    ) is True
+    # `tech_alloys_1`'s real NOR: gate leaves alongside a non-gate `has_country_flag` sibling --
+    # still one AND-level condition (the NOR), the flag is a disjunctive sibling not a constraint.
+    assert weight_gate_condition_is_cleanly_gated(
+        _block("""
+        { NOR = { has_technology = tech_mine_volatile_motes
+                  has_technology = tech_volatile_motes
+                  has_country_flag = has_market_access } }
+        """)
+    ) is True
+
+
+def test_not_cleanly_gated_gate_leaf_and_combined_with_opaque_conjunct():
+    """`tech_terrestrial_sculpting`'s `is_lithoid_devouring_swarm` after expansion: a gate leaf
+    AND-joined to an opaque `owner_species` conjunct -- each per-leaf badge over-claims."""
+    from pipeline.gate_patterns import weight_gate_condition_is_cleanly_gated
+
+    terravore = _block("""
+    {
+        owner_species = { is_lithoid = yes }
+        has_valid_civic = civic_hive_devouring_swarm
+        NOT = { has_origin = origin_wilderness }
+    }
+    """)
+    assert weight_gate_condition_is_cleanly_gated(terravore) is False
+
+
+def test_not_cleanly_gated_gate_leaf_and_combined_with_calc_true_if():
+    """`tech_fe_*_1`'s second zero-factor modifier: `NOT{ has_ascension_perk = ap_cosmogenesis }`
+    AND `calc_true_if = { ... }` -- "Needs Cosmogenesis" alone is false while the crisis-
+    progression `calc_true_if` conjunct does not hold."""
+    from pipeline.gate_patterns import weight_gate_condition_is_cleanly_gated
+
+    fe = _block("""
+    {
+        NOT = { has_ascension_perk = ap_cosmogenesis }
+        calc_true_if = { amount >= 4 has_technology = tech_fe_lab_1 }
+    }
+    """)
+    assert weight_gate_condition_is_cleanly_gated(fe) is False
+
+
+def test_not_cleanly_gated_gate_or_group_and_constrained_by_a_gate_free_nor():
+    """`tech_psionic_theory`'s materialist modifier: `AND( OR(materialist ethics),
+    NOR(council-trait checks) )` -- the OR-group is real, but AND-constrained by a NOR that
+    carries no gate leaf, so "or: Materialist" over-claims."""
+    from pipeline.gate_patterns import weight_gate_condition_is_cleanly_gated
+
+    psionic = _block("""
+    {
+        AND = {
+            OR = { has_ethic = ethic_materialist has_ethic = ethic_fanatic_materialist }
+            NOR = {
+                has_tier1or2or3_in_council = { TRAIT = leader_trait_expertise_psionics }
+                has_councilor = { COUNCILOR = "councilor_shroudwalker_teacher" }
+            }
+        }
+    }
+    """)
+    assert weight_gate_condition_is_cleanly_gated(psionic) is False
+
+
+def test_not_cleanly_gated_two_and_level_gate_leaves():
+    """No fully-phraseable AND-conjunction of >=2 gate leaves exists in the corpus today; if one
+    appears it returns False (a conservative no-badge) rather than emitting two independently-
+    sufficient-looking labels -- a composed multi-leaf label is a documented follow-up."""
+    from pipeline.gate_patterns import weight_gate_condition_is_cleanly_gated
+
+    assert weight_gate_condition_is_cleanly_gated(
+        _block("{ has_origin = origin_frameworld has_technology = tech_starbase_3 }")
+    ) is False
+
+
+def test_cleanly_gated_empty_condition_is_not_gated():
+    from pipeline.gate_patterns import weight_gate_condition_is_cleanly_gated
+
+    assert weight_gate_condition_is_cleanly_gated(_block("{ }")) is False
+
+
+# ---------------------------------------------------------------------------
 # Polarity mutation harness support (task: "the polarity mutation harness") -- generalises
 # test_double_negation_of_literal_no_value_produces_a_real_gate beyond one hand-picked case, and
 # registers every confirmed real-corpus opposite-polarity pair so a future one is checked the
