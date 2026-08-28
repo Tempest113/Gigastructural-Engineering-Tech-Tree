@@ -1,0 +1,147 @@
+# Field-consumption annotations (Item 3, client test-infrastructure task).
+#
+# tools/check_field_consumption.py walks schema/generated/dataset-types.ts for the full field
+# list, then greps client/src/ for `.fieldName` references. A field that mechanical grep can't
+# find gets ONE of two outcomes: real client/src/ consumption (nothing to do here), or a reviewed
+# entry below. An entry for a field that no longer exists in dataset-types.ts is a hard error
+# (stale-entry rot -- same discipline config/icon_overrides.txt already enforces).
+#
+# Format: one entry per line, `Interface.dotted.path | usage # justification`.
+#   displayed   -- reaches the user, but not through a literal `.fieldName` grep hit (pre-rendered
+#                  label text, groupId-derived equivalence, or another field's value stands in).
+#   key-only    -- consumed only as a map/cache/lookup key, never itself DISPLAYED to the user.
+#                  Distinguished from `displayed` because a naive grep for `.fieldName` treats
+#                  both alike, which is exactly the imprecision this file exists to correct.
+#   not-needed  -- a genuine KNOWN GAP: not consumed today, no shipped feature needs it. Every
+#                  such entry MUST name the gap (issue/spec pointer) so the debt stays visible
+#                  instead of silently laundered into "reviewed and fine."
+#
+# The six fields the original survey found unread (docs/BUILD-LOG.md): .weight, .variants,
+# .source, .repositoryLink, .repeatableCostProgression, .overwriteDiff -- all below as KNOWN GAPS.
+# This file's own build turned up MORE unconsumed fields than that survey named (schemaVersion
+# validation on four of five artefacts, BaseDataset.metadata's "data as of" marker, .categories,
+# .adjacency, .labelPriority, most of Diagnostics) -- also recorded honestly below, not narrowed
+# back down to just the six the task description already knew about.
+
+# --- Gate: known false positives (module docstring's own list) ------------------------------
+# A gate's kind/refId/negated/alternative never appear by name in client code -- their
+# information reaches the user through the gate's pre-rendered `label` string (built server-side
+# by pipeline.dataset_emit's _gate_label_prefix -- "Needs X" / "Unavailable to X" / "or: X") and,
+# for `alternative`, through `groupId`-derived equivalence (two gates sharing a groupId render as
+# one OR choice; main.ts groups on groupId, never reads `alternative` directly). This is correct
+# design, not a gap.
+Gate.kind | displayed # Coded into Gate.label's own wording server-side; groupId-adjacent grep hits on the unrelated `edge.kind`/local `edgeCountByKindForStatus.alternative` are false-positive "consumed" matches this entry deliberately overrides.
+Gate.refId | displayed # Coded into Gate.label's own wording server-side (the perk/technology/origin/civic name is interpolated into "Needs X"/"Unavailable to X" at build time).
+Gate.negated | displayed # Coded into Gate.label's own wording ("Needs X" vs "Unavailable to X") -- see pipeline/gate_patterns.py's module docstring, "Negative gates" section.
+Gate.alternative | displayed # Coded into Gate.label's own wording ("or: X") AND surfaced structurally via groupId (two gates sharing a groupId render as one OR choice in the popup).
+
+# --- Identity/lookup keys (never themselves displayed) --------------------------------------
+BaseDataset.technologies.id | key-only # Used to build techIndexById and every other id-keyed lookup map; the DISPLAYED name is BaseDataset.technologies.name (via displayName()), never the raw id.
+DetailPayload.technologyId | key-only # Used only to key the detailPayloadCache Map (src/dataset.ts) and to correlate a fetched payload with the popup currently open for that id -- never rendered as text.
+SearchIndex.entries.technologyId | key-only # Used only to resolve a search-index entry back to its technology record/index (techIndexById) -- the rendered search-result text is the technology's displayed name, not this id.
+
+# --- KNOWN GAPS: the six fields the original survey found (docs/BUILD-LOG.md) ---------------
+DetailPayload.weight | not-needed # KNOWN GAP -- D-4 (research weight) was never built client-side. Follow-up: display base weight + expandable modifier list per D-4's own spec in CLAUDE.md's "Research weight" section.
+DetailPayload.weight.modifiers | not-needed # KNOWN GAP -- same as DetailPayload.weight (D-4).
+DetailPayload.weight.modifiers.factor | not-needed # KNOWN GAP -- same as DetailPayload.weight (D-4).
+DetailPayload.weight.modifiers.conditionText | not-needed # KNOWN GAP -- same as DetailPayload.weight (D-4).
+DetailPayload.variants | not-needed # KNOWN GAP -- D-14's non-axis-expressible swap variants were never surfaced in the popup. Follow-up: list each variant's name/icon/conditionText somewhere in the detail popup.
+DetailPayload.variants.conditionText | not-needed # KNOWN GAP -- same as DetailPayload.variants (D-14).
+DetailPayload.source | not-needed # KNOWN GAP -- overwrite provenance ("defined by X, overwritten by Y") was never surfaced. Follow-up: a small provenance line in the detail popup.
+DetailPayload.source.definedBy | not-needed # KNOWN GAP -- same as DetailPayload.source.
+DetailPayload.source.overwrites | not-needed # KNOWN GAP -- same as DetailPayload.source.
+DetailPayload.repositoryLink | not-needed # KNOWN GAP -- D-5 (repository links) was never built client-side despite being a locked decision. Follow-up: a "view source" link in the detail popup using this field.
+DetailPayload.repositoryLink.url | not-needed # KNOWN GAP -- same as DetailPayload.repositoryLink (D-5).
+DetailPayload.repositoryLink.lineRange | not-needed # KNOWN GAP -- same as DetailPayload.repositoryLink (D-5).
+DetailPayload.repositoryLink.lineRange.startLine | not-needed # KNOWN GAP -- same as DetailPayload.repositoryLink (D-5).
+DetailPayload.repositoryLink.lineRange.endLine | not-needed # KNOWN GAP -- same as DetailPayload.repositoryLink (D-5).
+DetailPayload.repeatableCostProgression | not-needed # KNOWN GAP -- CLAUDE.md's Repeatables rule ("base cost + costPerLevel, never costPerLevel alone") isn't rendered anywhere client-side yet. Follow-up: show this in the repeatable's detail popup.
+DetailPayload.overwriteDiff | not-needed # KNOWN GAP -- overwrite field-level diff was never surfaced. Follow-up: pairs with DetailPayload.source's provenance line.
+DetailPayload.overwriteDiff.changedFields | not-needed # KNOWN GAP -- same as DetailPayload.overwriteDiff.
+
+# --- Additional gaps this session's field-consumption survey found (new, not in the original six) ---
+BaseDataset.technologies.repeatable.costPerLevel | not-needed # KNOWN GAP -- same feature as DetailPayload.repeatableCostProgression; the raw per-level number isn't rendered, only levels (the ×N/×∞ badge).
+BaseDataset.metadata | not-needed # KNOWN GAP -- P-10's own "data as of" marker (upstream source versions/build timestamp) was never rendered anywhere in the client.
+BaseDataset.metadata.gigastructuresCommit | not-needed # KNOWN GAP -- same as BaseDataset.metadata (P-10).
+BaseDataset.metadata.vanillaVersion | not-needed # KNOWN GAP -- same as BaseDataset.metadata (P-10).
+BaseDataset.metadata.acotVersion | not-needed # KNOWN GAP -- same as BaseDataset.metadata (P-10).
+BaseDataset.metadata.aotVersion | not-needed # KNOWN GAP -- same as BaseDataset.metadata (P-10).
+BaseDataset.metadata.buildTimestamp | not-needed # KNOWN GAP -- same as BaseDataset.metadata (P-10).
+BaseDataset.categories | not-needed # KNOWN GAP -- P-4's derived category list has no client-side consumer yet (no category filter UI exists; filtering today is search/isolation only).
+BaseDataset.adjacency | not-needed # KNOWN GAP, low priority -- a build-time convenience index; every real client need (edges touching a node) is currently served by a plain scan over base.edges instead. Worth wiring up only if that scan becomes a measured perf problem.
+BaseDataset.adjacency.forward | not-needed # KNOWN GAP -- same as BaseDataset.adjacency.
+BaseDataset.adjacency.reverse | not-needed # KNOWN GAP -- same as BaseDataset.adjacency.
+BaseDataset.technologies.labelPriority | not-needed # Internal layout tie-break signal only (pipeline.dataset_emit's own docstring: "within a shared depth slot, zero-cost technologies sort left of costed ones") -- geometry it feeds into is already baked into nodePositions by build time; CLAUDE.md's parallel-geometry rule is exactly why the client must NOT recompute anything from this field itself.
+EmpireOverlay.availability.configGatedSubject | not-needed # KNOWN GAP -- the availability badge for a config-gated technology doesn't yet name which giga_tech_repeatable_*_cap subject blocks it; the research-path popup shows an equivalent message via a separately-computed configGatedTarget.subject (EmpireOverlay.researchPaths), which is why this went unnoticed.
+
+# --- Schema-version validation: unimplemented on 4 of 5 artefacts (a real gap, found by this survey) ---
+# common.schema.json's own SchemaVersion doc comment: "The client validates each fetch against
+# the version it declares and MUST refuse to render an unsupported version with a clear message
+# rather than degrading silently." No artefact's schemaVersion is checked anywhere in client/src/
+# today -- not even BaseDataset's. Follow-up: add a real version check in src/dataset.ts's fetch
+# helpers, most urgently for BaseDataset (fetched unconditionally on every load).
+BaseDataset.schemaVersion | not-needed # KNOWN GAP -- schema-version validation unimplemented (see section header above).
+DetailPayload.schemaVersion | not-needed # KNOWN GAP -- schema-version validation unimplemented (see section header above).
+EmpireOverlay.schemaVersion | not-needed # KNOWN GAP -- schema-version validation unimplemented (see section header above).
+SearchIndex.schemaVersion | not-needed # KNOWN GAP -- schema-version validation unimplemented (see section header above).
+Diagnostics.schemaVersion | not-needed # KNOWN GAP -- schema-version validation unimplemented (see section header above); lowest priority of the five (diagnostics is dev-only/?dev-gated).
+
+# --- Diagnostics: mostly build-time-only by design (CLAUDE.md's own framing) -----------------
+# S-2: diagnostics is a lazy, dev-only artefact (?dev URL param). Its own module docstring in
+# pipeline/dataset_emit.py: only uncertainTechnologies is genuinely consumed by the shipped dev
+# monitor (src/main.ts's devMonitorEl block) -- confirmed real, NOT annotated here (it passes the
+# mechanical check). Everything else below is a build/CI-facing count or report with no shipped
+# UI surface, by design, not by oversight -- annotated as such rather than left silently passing
+# or silently failing.
+Diagnostics.profileDependentUncertainty | not-needed # Build-time-only D-10 count (10% ceiling / 3% warn tracking) -- CI/BUILD-LOG concern, not a dev-monitor field.
+Diagnostics.profileDependentUncertainty.rate | not-needed # Same as Diagnostics.profileDependentUncertainty.
+Diagnostics.profileDependentUncertainty.previousRate | not-needed # Same as Diagnostics.profileDependentUncertainty.
+Diagnostics.unconditionalUncertainty | not-needed # Build-time-only D-10 count, unconditional-uncertainty half.
+Diagnostics.unconditionalUncertainty.count | not-needed # Same as Diagnostics.unconditionalUncertainty.
+Diagnostics.unconditionalUncertainty.previousCount | not-needed # Same as Diagnostics.unconditionalUncertainty.
+Diagnostics.unconditionalUncertainty.rate | not-needed # Same as Diagnostics.unconditionalUncertainty.
+Diagnostics.unconditionalUncertainty.previousRate | not-needed # Same as Diagnostics.unconditionalUncertainty.
+Diagnostics.unconditionalUncertainty.categoryDistribution | not-needed # Same as Diagnostics.unconditionalUncertainty.
+Diagnostics.unconditionalUncertainty.categoryDistribution.count | not-needed # Same as Diagnostics.unconditionalUncertainty.
+Diagnostics.missingInlineScriptParameterCount | not-needed # Build-time regression counter (current vs previous build), a BUILD-LOG/CI concern only.
+Diagnostics.missingInlineScriptParameterCount.current | not-needed # Same as Diagnostics.missingInlineScriptParameterCount.
+Diagnostics.missingInlineScriptParameterCount.previous | not-needed # Same as Diagnostics.missingInlineScriptParameterCount.
+Diagnostics.tierPromotions | not-needed # Build-time layout diagnostic (currently always empty on the real corpus per its own field comment).
+Diagnostics.tierPromotions.declaredTier | not-needed # Same as Diagnostics.tierPromotions.
+Diagnostics.tierPromotions.promotedColumn | not-needed # Same as Diagnostics.tierPromotions.
+Diagnostics.swapsRenderingOnInheritedIcon | not-needed # Build-time icon-resolution diagnostic, a vendored-asset-coverage concern, not a player-facing fact.
+Diagnostics.swapsRenderingOnInheritedIcon.swapKey | not-needed # Same as Diagnostics.swapsRenderingOnInheritedIcon.
+Diagnostics.unrecognisedGatePatterns | not-needed # Build-time gate-classification-registry coverage diagnostic (pipeline/gate_patterns.py maintenance), not player-facing.
+Diagnostics.missingLockReasonOverrides | not-needed # Build-time P-13 override-table coverage diagnostic (config/lock_reason_overrides.txt maintenance), not player-facing.
+Diagnostics.unresolvedTriggers | not-needed # Build-time trigger-evaluator coverage diagnostic, not player-facing.
+Diagnostics.unresolvedModDependencies | not-needed # Build-time requiresMods-resolution diagnostic, not player-facing.
+Diagnostics.unresolvableResearchPaths | not-needed # Build-time P-12.9 diagnostic; the SHIPPED equivalent is EmpireOverlay.researchPaths' own per-technology "unavailable"/"blocked" status, which IS consumed.
+Diagnostics.vendorSourcesLoaded | not-needed # Build-time provenance list (which of vanilla/Gigastructures/ACOT/AoT loaded) -- overlaps BaseDataset.metadata's unbuilt "data as of" marker; same follow-up would cover both.
+Diagnostics.placeholderTechnologiesAbsent | not-needed # Build-time D-18 sanity check (confirms a specific 4-technology exclusion list stayed excluded), not player-facing.
+Diagnostics.placeholderTechnologiesAbsent.requiresMod | not-needed # Same as Diagnostics.placeholderTechnologiesAbsent.
+Diagnostics.vanillaTechnologiesRevertedFromAcotOverwrite | not-needed # Build-time overwrite-resolution diagnostic, not player-facing.
+Diagnostics.vanillaTechnologiesRevertedFromAcotOverwrite.contentDiffersFromOverwrite | not-needed # Same as Diagnostics.vanillaTechnologiesRevertedFromAcotOverwrite.
+Diagnostics.weightGateSuppressions | not-needed # Build-time config/weight_gate_suppressions.txt coverage/hit-count diagnostic, a pipeline-maintenance concern, not player-facing.
+Diagnostics.weightGateSuppressions.leafKey | not-needed # Same as Diagnostics.weightGateSuppressions.
+Diagnostics.weightGateSuppressions.matchCount | not-needed # Same as Diagnostics.weightGateSuppressions.
+Diagnostics.weightGateSuppressions.resolvesTo | not-needed # Same as Diagnostics.weightGateSuppressions.
+Diagnostics.weightGateSuppressions.justification | not-needed # Same as Diagnostics.weightGateSuppressions.
+Diagnostics.overwriteReport | not-needed # Build-time full overwrite report (D-15/BUILD-LOG concern) -- DetailPayload.source/.overwriteDiff are the per-technology, player-facing equivalents (themselves still KNOWN GAPS above).
+Diagnostics.overwriteReport.technologyBlockOverwrites | not-needed # Same as Diagnostics.overwriteReport.
+Diagnostics.overwriteReport.technologyBlockOverwrites.technology | not-needed # Same as Diagnostics.overwriteReport.
+Diagnostics.overwriteReport.technologyBlockOverwrites.definedBy | not-needed # Same as Diagnostics.overwriteReport.
+Diagnostics.overwriteReport.technologyBlockOverwrites.overwrites | not-needed # Same as Diagnostics.overwriteReport.
+Diagnostics.overwriteReport.technologyBlockOverwrites.changedFields | not-needed # Same as Diagnostics.overwriteReport.
+Diagnostics.overwriteReport.technologyBlockOverwrites.fieldChanges | not-needed # Same as Diagnostics.overwriteReport.
+Diagnostics.overwriteReport.technologyBlockOverwrites.fieldChanges.field | not-needed # Same as Diagnostics.overwriteReport.
+Diagnostics.overwriteReport.technologyBlockOverwrites.fieldChanges.beforePresent | not-needed # Same as Diagnostics.overwriteReport.
+Diagnostics.overwriteReport.technologyBlockOverwrites.fieldChanges.beforeRaw | not-needed # Same as Diagnostics.overwriteReport.
+Diagnostics.overwriteReport.technologyBlockOverwrites.fieldChanges.beforeResolved | not-needed # Same as Diagnostics.overwriteReport.
+Diagnostics.overwriteReport.technologyBlockOverwrites.fieldChanges.afterPresent | not-needed # Same as Diagnostics.overwriteReport.
+Diagnostics.overwriteReport.technologyBlockOverwrites.fieldChanges.afterRaw | not-needed # Same as Diagnostics.overwriteReport.
+Diagnostics.overwriteReport.technologyBlockOverwrites.fieldChanges.afterResolved | not-needed # Same as Diagnostics.overwriteReport.
+Diagnostics.overwriteReport.scriptedVariableOverwrites | not-needed # Same as Diagnostics.overwriteReport.
+Diagnostics.overwriteReport.scriptedVariableOverwrites.variable | not-needed # Same as Diagnostics.overwriteReport.
+Diagnostics.overwriteReport.scriptedVariableOverwrites.definedBy | not-needed # Same as Diagnostics.overwriteReport.
+Diagnostics.overwriteReport.scriptedVariableOverwrites.overwrites | not-needed # Same as Diagnostics.overwriteReport.
+Diagnostics.overwriteReport.scriptedVariableOverwrites.affectedTechnologies | not-needed # Same as Diagnostics.overwriteReport.

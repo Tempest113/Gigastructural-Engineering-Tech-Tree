@@ -1,0 +1,65 @@
+name: Client tests
+
+# Runs the client's Vitest suite (client/tests/README.md's "committed, vendor-independent"
+# tier -- unit tests over pure functions plus the committed fixture dataset at
+# client/tests/fixtures/dataset/) and the field-consumption invariant check. Neither needs
+# vendor/ populated: the fixture dataset is committed (regenerated locally via
+# tools/build_client_fixture_dataset.py, never rebuilt here -- see that script's own docstring
+# for why), and the field-consumption check is pure schema + client source. This is therefore a
+# real, always-on CI job, unlike the real dataset build (D-15 -- permanently CI-blocked) or the
+# Playwright end-to-end check (client/tests/e2e/README.md -- needs the full real dataset, local
+# only).
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "client/**"
+      - "schema/**"
+      - "config/consumed_field_annotations.txt"
+      - "tools/check_field_consumption.py"
+      - ".github/workflows/client-tests.yml"
+  pull_request:
+    paths:
+      - "client/**"
+      - "schema/**"
+      - "config/consumed_field_annotations.txt"
+      - "tools/check_field_consumption.py"
+      - ".github/workflows/client-tests.yml"
+  workflow_dispatch: {}
+
+jobs:
+  vitest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node (pinned via client/.nvmrc)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: client/.nvmrc
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: vitest run
+        working-directory: client
+        run: npm run test
+
+  field-consumption:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Field-consumption check
+        run: python tools/check_field_consumption.py
