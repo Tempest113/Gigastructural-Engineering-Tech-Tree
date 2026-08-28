@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from pipeline.availability import EXCLUDED_KEYS
 from pipeline.clausewitz import parse_text
 from pipeline.gate_patterns import (
@@ -475,3 +477,92 @@ def test_weight_condition_group_id_namespace_never_collides_with_potential_gate_
     weight_condition = _block("{ NOR = { has_ascension_perk = ap_c has_ascension_perk = ap_d } }")
     weight_matches = classify_weight_gate_condition("tech_x", weight_condition, 0)
     assert {m.group_id for m in potential_matches}.isdisjoint({m.group_id for m in weight_matches})
+
+
+# ---------------------------------------------------------------------------
+# Polarity mutation harness support (task: "the polarity mutation harness") -- generalises
+# test_double_negation_of_literal_no_value_produces_a_real_gate beyond one hand-picked case, and
+# registers every confirmed real-corpus opposite-polarity pair so a future one is checked the
+# same way the housing pair already is. The actual monkeypatch mutation test (removing
+# `invert_polarity=True` and proving the housing-pair assertions THEN FAIL) lives in
+# tests/test_gate_patterns_polarity_mutations.py, alongside its own module docstring explaining
+# why that file exists permanently, matching tests/clausewitz/test_roundtrip_detects_mutations.py.
+# ---------------------------------------------------------------------------
+
+
+def _wrap_chain(leaf_text: str, chain: list[str]) -> str:
+    inner = leaf_text
+    for kind in reversed(chain):
+        inner = f"{kind} = {{ {inner} }}"
+    return inner
+
+
+# Depth 1, 2 and 3 combinations of AND/OR/NOT/NOR around a single has_technology leaf. Not a full
+# 4^3 cross product (84 cases) -- a curated sample hitting every wrapper kind at every depth and
+# every adjacent-kind pairing is enough to prove the polarity math generalises past NOT/NOR alone.
+WRAPPER_CHAINS = [
+    [],
+    ["NOT"], ["AND"], ["OR"], ["NOR"],
+    ["NOT", "AND"], ["NOT", "OR"], ["AND", "NOT"], ["OR", "NOT"], ["NOR", "NOT"],
+    ["AND", "OR"], ["OR", "AND"], ["NOR", "NOR"],
+    ["NOT", "AND", "OR"], ["OR", "NOT", "NOR"], ["AND", "OR", "NOT"], ["NOR", "AND", "NOT"],
+]
+
+
+@pytest.mark.parametrize("chain", WRAPPER_CHAINS, ids=lambda c: "-".join(c) or "bare")
+def test_negating_the_source_condition_flips_negated_at_every_wrapper_depth(chain):
+    """Generalises test_double_negation_of_literal_no_value_produces_a_real_gate (which checks
+    exactly one hand-picked NOT(NOT(...)) case) across depth-1/2/3 AND/OR/NOT/NOR wrapper
+    combinations: adding one more NOT around ANY of these chains must flip the leaf's reported
+    `negated`, regardless of how deep or which other wrappers surround it -- proving `_leaf_negated`
+    tracks true polarity structurally, not just for the one case that was hand-verified when the
+    negative-gates fix shipped."""
+    leaf = "has_technology = tech_target"
+    base_text = "{ potential = { " + _wrap_chain(leaf, chain) + " } }"
+    negated_text = "{ potential = { " + _wrap_chain(leaf, ["NOT"] + chain) + " } }"
+
+    base_matches = classify_gates("tech_x", _block(base_text))
+    negated_matches = classify_gates("tech_x", _block(negated_text))
+
+    assert len(base_matches) == 1
+    assert len(negated_matches) == 1
+    assert base_matches[0].negated != negated_matches[0].negated
+
+
+# Registered table of confirmed real-corpus swap pairs whose two technologies encode the same
+# fact from opposite sides (see classify_weight_gate_condition's own docstring for the mechanism).
+# Extend this table -- never special-case a newly-found pair only in dataset_emit -- whenever
+# another such pair is confirmed against the real corpus.
+KNOWN_OPPOSITE_POLARITY_WEIGHT_CONDITION_PAIRS = [
+    {
+        "ref_id": "civic_agrarian_idyll",
+        "unwrapped": ("tech_housing_2", "{ has_valid_civic = civic_agrarian_idyll }"),
+        "wrapped": ("tech_housing_agrarian_idyll", "{ NOT = { has_valid_civic = civic_agrarian_idyll } }"),
+        # Not just "opposite of each other" -- a wrongly-INVERTED classifier also produces two
+        # mutually-opposite values (just both flipped from reality), so an `!=`-only check can't
+        # tell a real fix from its own exact inverse. Pin the real-world direction too: unwrapped
+        # means "weight zero WHEN you have the civic" (excludes agrarian-idyll players -- negated),
+        # wrapped means "weight zero WITHOUT it" (needs the civic -- not negated).
+        "unwrapped_negated": True,
+        "wrapped_negated": False,
+    },
+]
+
+
+@pytest.mark.parametrize(
+    "pair", KNOWN_OPPOSITE_POLARITY_WEIGHT_CONDITION_PAIRS, ids=lambda p: p["ref_id"]
+)
+def test_known_corpus_pairs_badge_with_opposite_polarity(pair):
+    from pipeline.gate_patterns import classify_weight_gate_condition
+
+    unwrapped_key, unwrapped_text = pair["unwrapped"]
+    wrapped_key, wrapped_text = pair["wrapped"]
+    unwrapped_matches = classify_weight_gate_condition(unwrapped_key, _block(unwrapped_text), 0)
+    wrapped_matches = classify_weight_gate_condition(wrapped_key, _block(wrapped_text), 0)
+    assert len(unwrapped_matches) == 1
+    assert len(wrapped_matches) == 1
+    assert unwrapped_matches[0].ref_id == pair["ref_id"]
+    assert wrapped_matches[0].ref_id == pair["ref_id"]
+    assert unwrapped_matches[0].negated != wrapped_matches[0].negated
+    assert unwrapped_matches[0].negated is pair["unwrapped_negated"]
+    assert wrapped_matches[0].negated is pair["wrapped_negated"]
