@@ -452,8 +452,99 @@ def classify_weight_gate_condition(technology_key: str, condition_block: Block, 
 
     `invert_polarity=True` -- see `_classify_leaves_in_block`'s own docstring for why a weight
     condition's polarity means the opposite of what the same leaf shape would mean inside
-    `potential`."""
+    `potential`.
+
+    **This returns a match for EVERY registered gate leaf it finds, regardless of how the
+    condition is composed.** Whether those matches are safe to render as independent badges is a
+    SEPARATE question -- see `weight_gate_condition_is_cleanly_gated` below, which
+    `pipeline.dataset_emit.build_context` consults before letting any of these reach the emitted
+    `gates` field (and before suppressing the block from `_apply_weight_gate`)."""
     return _classify_leaves_in_block(technology_key, condition_block, f"weight-gate{index}-alt", invert_polarity=True)
+
+
+def _gate_leaf_count(node: Block) -> int:
+    """Registered gate leaves anywhere inside `node`, descending every AND/OR/NOT/NOR wrapper
+    (an opaque block-valued field is still never entered -- same discipline as
+    `_scoped_gate_leaves`)."""
+    total = 0
+    for item in node.items:
+        if not isinstance(item, Assignment):
+            continue
+        if item.key_name in GATE_LEAF_KEYS:
+            total += 1
+        elif item.key_name.upper() in ("AND", "OR", "NOT", "NOR") and isinstance(item.value, Block):
+            total += _gate_leaf_count(item.value)
+    return total
+
+
+def _and_level_conditions(node: Block) -> list[str]:
+    """One entry per AND-level condition of `node`, descending only `AND`/`NOT` (never `OR`/`NOR`
+    -- that is the disjunctive boundary, exactly `_scoped_gate_leaves`' own descent rule):
+
+    - "gate"    -- a registered gate leaf sitting directly at this AND level
+    - "or-gate" -- an `OR`/`NOR` block that contains at least one gate leaf (the disjunctive
+                   gate-group shape: `is_egalitarian` -> `OR(ethic_egalitarian,
+                   ethic_fanatic_egalitarian)`)
+    - "opaque"  -- anything else real: a non-gate scalar/opaque leaf
+                   (`owner_species = { is_lithoid = yes }`, `has_shroud_dlc = no`,
+                   `calc_true_if = { ... }`), or an `OR`/`NOR` block carrying no gate leaf of
+                   its own (a real disjunctive constraint this registry cannot phrase, e.g.
+                   `tech_psionic_theory`'s council-trait `NOR`)."""
+    out: list[str] = []
+    for item in node.items:
+        if not isinstance(item, Assignment):
+            continue
+        key_upper = item.key_name.upper()
+        if item.key_name in GATE_LEAF_KEYS:
+            out.append("gate")
+        elif key_upper in ("AND", "NOT") and isinstance(item.value, Block):
+            out.extend(_and_level_conditions(item.value))
+        elif key_upper in ("OR", "NOR") and isinstance(item.value, Block):
+            out.append("or-gate" if _gate_leaf_count(item.value) > 0 else "opaque")
+        else:
+            out.append("opaque")
+    return out
+
+
+def weight_gate_condition_is_cleanly_gated(condition_block: Block) -> bool:
+    """True iff a zero-factor `weight_modifier` condition can be honestly rendered as one or more
+    independent gate badges by `classify_weight_gate_condition`'s leaf-by-leaf decomposition.
+
+    That decomposition is sound only when each registered gate leaf INDEPENDENTLY drives the
+    technology's weight to zero -- i.e. the condition is a single gate leaf, or a single
+    `OR`/`NOR` group of them. The moment a gate leaf is AND-combined with another real condition
+    -- a second gate leaf, an opaque leaf (`owner_species = { is_lithoid = yes }`), or an
+    `OR`/`NOR` group that carries no gate leaf of its own -- every per-leaf badge OVER-CLAIMS:
+    each reads as an independently sufficient "Needs X" / "Unavailable to X" when the real
+    exclusion needs the whole conjunction. The motivating case (user-reported, see
+    `docs/DEFECTS.md`'s "weight-gate compound-wrapper dissolution" entry):
+    `tech_terrestrial_sculpting`'s zero-factor modifier is the single compound scripted trigger
+    `is_lithoid_devouring_swarm = yes`, which `pipeline.dataset_emit._weight_gate_condition_
+    blocks` expands to `AND(owner_species = { is_lithoid = yes }, has_valid_civic =
+    civic_hive_devouring_swarm, NOT { has_origin = origin_wilderness })` before this registry
+    ever sees it -- producing a bare "Needs Wilderness" + "Unavailable to Devouring Swarm", both
+    false for almost every empire profile.
+
+    Rule: over `_and_level_conditions` (descend `AND`/`NOT` only), the block is cleanly gated iff
+    there is EXACTLY ONE AND-level condition and it carries a gate leaf ("gate" or "or-gate").
+    Zero conditions (a bare `factor = 0` with no siblings) is not cleanly gated -- it has no
+    match to render anyway. Two or more conditions, or one lone "opaque", is a conjunction whose
+    parts cannot each be phrased as an independent gate.
+
+    No corpus weight condition today is a fully gate-classifiable AND-conjunction of >=2 gate
+    leaves (the one >=2 case, `tech_terrestrial_sculpting`, carries the opaque `owner_species`
+    conjunct), so a single COMPOSED multi-leaf label is never actually needed yet; such a case
+    would also return False here (a conservative no-badge, never a false one) pending a real
+    instance to design the composed wording against.
+
+    A block that returns False here stops badging AND stops being suppressed from
+    `pipeline.availability._apply_weight_gate` (`build_context` narrows
+    `weight_gate_expressible_mask` with this same predicate), so it falls through to a
+    `weight-gated` verdict with descriptive condition text rather than being silently swept into
+    `available` -- `weight-gated` is outside D-10's uncertainty accounting, so no D-10 figure
+    moves."""
+    conditions = _and_level_conditions(condition_block)
+    return len(conditions) == 1 and conditions[0] in ("gate", "or-gate")
 
 
 def order_gates(matches: list[GateMatch]) -> list[GateMatch]:

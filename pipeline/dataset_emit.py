@@ -80,7 +80,14 @@ from .dataset_schema.empire_profile import (
 )
 from .edge_constraints import compute_potential_gate_constraints, edge_active_for_profile
 from .edges import compute_typed_edges
-from .gate_patterns import GATE_KIND_PRIORITY, GateMatch, classify_gates, classify_weight_gate_condition, order_gates
+from .gate_patterns import (
+    GATE_KIND_PRIORITY,
+    GateMatch,
+    classify_gates,
+    classify_weight_gate_condition,
+    order_gates,
+    weight_gate_condition_is_cleanly_gated,
+)
 from .geometry import pack_edge_polylines, pack_node_positions
 from .icons.build import build_atlases, decode_resolved_icons
 from .icons.overrides import load_overrides as load_icon_overrides
@@ -771,6 +778,20 @@ def build_context(vendor_root: Path) -> BuildContext:
     # `weight_gate_conditions` (the axis-pure-LOCKED branch of `_apply_weight_gate` still needs to
     # see it -- see that dict's own docstring) but is flagged in `weight_gate_expressible_mask` so
     # `_apply_weight_gate` never lets it also produce WEIGHT_GATED.
+    #
+    # **Cleanly-gated narrowing (a later session, user-reported):** a match is only KEPT -- both
+    # for the badge and for the `_apply_weight_gate` suppression -- when the condition it came
+    # from is structurally safe to decompose leaf-by-leaf (`weight_gate_condition_is_cleanly_
+    # gated`: a lone gate leaf, or a lone OR/NOR group of them). A conjunction that AND-combines a
+    # gate leaf with an opaque conjunct (`tech_terrestrial_sculpting`'s `is_lithoid_devouring_
+    # swarm`, which expands to `AND(owner_species={is_lithoid}, has_valid_civic=..., NOT{has_
+    # origin=...})`) produced per-leaf badges that were each false for almost every profile. Such
+    # a block now emits NO badge AND is NOT suppressed from `_apply_weight_gate`, so it falls
+    # through to a `weight-gated` verdict with descriptive condition text -- honest that the
+    # technology is restricted, rather than silently `available`. `weight-gated` is outside D-10's
+    # accounting, so no D-10 figure moves; the pairs that shift move only between `available` and
+    # `weight-gated`. Root cause and the wrapper-registration follow-up: `docs/DEFECTS.md`'s
+    # "weight-gate compound-wrapper dissolution" entry.
     weight_gate_conditions: dict[str, list[Block]] = {}
     weight_gate_expressible_mask: dict[str, list[bool]] = {}
     weight_gate_gate_matches: dict[str, list[GateMatch]] = {}
@@ -780,8 +801,9 @@ def build_context(vendor_root: Path) -> BuildContext:
         matches_for_key: list[GateMatch] = []
         for index, cond_block in enumerate(raw_blocks):
             block_matches = classify_weight_gate_condition(key, cond_block, index)
-            mask.append(bool(block_matches))
-            if block_matches:
+            cleanly_gated = bool(block_matches) and weight_gate_condition_is_cleanly_gated(cond_block)
+            mask.append(cleanly_gated)
+            if cleanly_gated:
                 matches_for_key.extend(block_matches)
         weight_gate_conditions[key] = raw_blocks
         weight_gate_expressible_mask[key] = mask
